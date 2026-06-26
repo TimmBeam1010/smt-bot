@@ -463,8 +463,74 @@ cron.schedule('*/1 * * * *', async () => {
 
 console.log('⏰ Планировщик запущен (каждую минуту)');
 
-// ============================================ //  ЧАТ-ЛОГИ (ПАМЯТЬ) - НЕ СМЕШИВАТЬ С ОСНОВНЫМ ПРОЕКТОМ // ============================================  // --- СОХРАНЕНИЕ СООБЩЕНИЯ --- app.post('/api/chat/save', async (req, res) => {     const { role, content, session_id } = req.body;     if (!role || !content) {         return res.status(400).json({ error: 'role и content обязательны' });     }      try {         const { data, error } = await supabase             .from('chat_logs')             .insert({ role, content, session_id: session_id || 'default' })             .select();         if (error) throw error;         res.json({ success: true, data });     } catch (err) {         console.error('❌ Ошибка сохранения чата:', err);         res.status(500).json({ error: 'Ошибка сохранения' });     } });  // --- ПОЛУЧЕНИЕ ИСТОРИИ --- app.get('/api/chat/history', async (req, res) => {     const { session_id, limit = 50 } = req.query;      try {         const query = supabase             .from('chat_logs')             .select('*')             .order('created_at', { ascending: false })             .limit(parseInt(limit));          if (session_id) {             query.eq('session_id', session_id);         }          const { data, error } = await query;         if (error) throw error;         res.json({ history: data.reverse() });     } catch (err) {         console.error('❌ Ошибка получения истории:', err);         res.status(500).json({ error: 'Ошибка получения истории' });     } });  // --- ЭКСПОРТ ИСТОРИИ (ДЛЯ ВОССТАНОВЛЕНИЯ КОНТЕКСТА) --- app.get('/api/chat/export', async (req, res) => {     const { limit = 20 } = req.query;     try {         const { data, error } = await supabase             .from('chat_logs')             .select('*')             .order('created_at', { ascending: false })             .limit(parseInt(limit));         if (error) throw error;         res.json({             status: 'ok',             count: data.length,             history: data.reverse()         });     } catch (err) {         console.error('❌ Ошибка экспорта чата:', err);         res.status(500).json({ error: err.message });     } });
+// ============================================
+//  ЧАТ-ЛОГИ (ПАМЯТЬ)
+// ============================================
 
+// --- СОХРАНЕНИЕ СООБЩЕНИЯ ---
+app.post('/api/chat/save', async (req, res) => {
+    const { role, content, session_id } = req.body;
+    if (!role || !content) {
+        return res.status(400).json({ error: 'role и content обязательны' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('chat_logs')
+            .insert({ role, content, session_id: session_id || 'default' })
+            .select();
+        if (error) throw error;
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error('❌ Ошибка сохранения чата:', err);
+        res.status(500).json({ error: 'Ошибка сохранения' });
+    }
+});
+
+// --- ПОЛУЧЕНИЕ ИСТОРИИ ---
+app.get('/api/chat/history', async (req, res) => {
+    const { session_id, limit = 50 } = req.query;
+
+    try {
+        const query = supabase
+            .from('chat_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(parseInt(limit));
+
+        if (session_id) {
+            query.eq('session_id', session_id);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        res.json({ history: data.reverse() });
+    } catch (err) {
+        console.error('❌ Ошибка получения истории:', err);
+        res.status(500).json({ error: 'Ошибка получения истории' });
+    }
+});
+
+// --- ЭКСПОРТ ИСТОРИИ (ДЛЯ ВОССТАНОВЛЕНИЯ КОНТЕКСТА) ---
+app.get('/api/chat/export', async (req, res) => {
+    const { limit = 20 } = req.query;
+    try {
+        const { data, error } = await supabase
+            .from('chat_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(parseInt(limit));
+        if (error) throw error;
+        res.json({
+            status: 'ok',
+            count: data.length,
+            history: data.reverse()
+        });
+    } catch (err) {
+        console.error('❌ Ошибка экспорта чата:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // ============================================
 //  ЗАПУСК СЕРВЕРА
