@@ -59,7 +59,7 @@ async function sendTelegram(message) {
 // ============================================
 
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'AlphaBot API работает!' });
+    res.json({ status: 'ok', message: 'SMT Bot API работает!' });
 });
 
 app.get('/api/test-price/:symbol', async (req, res) => {
