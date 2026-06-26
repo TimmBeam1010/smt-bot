@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AlphaBot — Админ-панель</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0e17;
+            color: #fff;
+            padding: 24px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin-bottom: 24px;
+            font-size: 28px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1a1f2e;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        th,
+        td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #2d3748;
+        }
+        th {
+            background: #2d3748;
+            font-weight: 600;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        td {
+            font-size: 14px;
+        }
+        .status-active {
+            color: #34d399;
+        }
+        .status-blocked {
+            color: #f87171;
+        }
+        .btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .btn-block {
+            background: #f87171;
+            color: #fff;
+        }
+        .btn-unblock {
+            background: #34d399;
+            color: #fff;
+        }
+        .btn-block:hover,
+        .btn-unblock:hover {
+            opacity: 0.8;
+        }
+        .logout-btn {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .logout-btn:hover {
+            background: #4338ca;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>🔐 Админ-панель AlphaBot</h1>
+            <button class="logout-btn" id="logoutBtn">Выйти</button>
+        </div>
+
+        <div id="usersList">
+            <p>Загрузка пользователей...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+
+        // Проверка, что пользователь — админ (простая версия)
+        const user = JSON.parse(localStorage.getItem('alphaBotUser'));
+        if (!user || user.email !== 'trnabiev@gmail.com') {
+            window.location.href = '/';
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(`${API_URL}/api/admin/users`);
+                const data = await res.json();
+                if (res.ok) {
+                    renderUsers(data.users);
+                } else {
+                    document.getElementById('usersList').innerHTML =
+                        '<p style="color: #f87171;">❌ Ошибка загрузки пользователей</p>';
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('usersList').innerHTML =
+                    '<p style="color: #f87171;">❌ Ошибка соединения с сервером</p>';
+            }
+        }
+
+        function renderUsers(users) {
+            if (!users || users.length === 0) {
+                document.getElementById('usersList').innerHTML = '<p>Пользователей пока нет.</p>';
+                return;
+            }
+
+            let html = `<table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Имя</th>
+                        <th>Статус</th>
+                        <th>Дата регистрации</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            users.forEach(u => {
+                const statusClass = u.is_active ? 'status-active' : 'status-blocked';
+                const statusText = u.is_active ? 'Активен' : 'Заблокирован';
+                const actionBtn = u.is_active ?
+                    `<button class="btn btn-block" data-id="${u.id}" data-action="block">Заблокировать</button>` :
+                    `<button class="btn btn-unblock" data-id="${u.id}" data-action="unblock">Разблокировать</button>`;
+
+                html += `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td>${u.email}</td>
+                        <td>${u.telegram_username || '—'}</td>
+                        <td class="${statusClass}">${statusText}</td>
+                        <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                        <td>${actionBtn}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            document.getElementById('usersList').innerHTML = html;
+
+            // Обработчики кнопок
+            document.querySelectorAll('.btn-block, .btn-unblock').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const userId = btn.dataset.id;
+                    const action = btn.dataset.action;
+                    const newStatus = action === 'block' ? false : true;
+
+                    try {
+                        const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ is_active: newStatus }),
+                        });
+                        if (res.ok) {
+                            loadUsers(); // Перезагружаем список
+                        } else {
+                            alert('Ошибка обновления статуса');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Ошибка соединения с сервером');
+                    }
+                });
+            });
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('alphaBotUser');
+            window.location.href = '/';
+        });
+
+        loadUsers();
+    </script>
+</body>
+</html>
