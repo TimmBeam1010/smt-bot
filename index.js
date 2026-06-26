@@ -7,9 +7,6 @@ const axios = require('axios');
 const trading = require('./trading');
 require('dotenv').config();
 
-const WebSocket = require('ws');
-global.WebSocket = WebSocket;
-
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -32,28 +29,6 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("✅ Подключение к Supabase установлено");
 
-// --- TELEGRAM НАСТРОЙКИ (опционально) ---
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-
-async function sendTelegram(message) {
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-        console.warn('⚠️ Telegram не настроен');
-        return;
-    }
-    try {
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await axios.post(url, {
-            chat_id: TELEGRAM_CHAT_ID,
-            text: message,
-            parse_mode: 'Markdown'
-        });
-        console.log('✅ Сообщение отправлено в Telegram');
-    } catch (error) {
-        console.error('❌ Ошибка отправки в Telegram:', error.message);
-    }
-}
-
 // ============================================
 //  МАРШРУТЫ API
 // ============================================
@@ -66,27 +41,9 @@ app.get('/api/test-price/:symbol', async (req, res) => {
     const { symbol } = req.params;
     const price = await trading.getPrice(symbol);
     if (price !== null) {
-        res.json({ symbol, price });'SMT Bot
-cd /root/smt-bot git init git remote add origin https://github.com/TimmBeam1010/smt-bot.git git add . git commit -m "SMT Bot v1.0" git branch -M main git push -u origin main
-x
-   } else {
+        res.json({ symbol, price });
+    } else {
         res.status(500).json({ error: 'Не удалось получить цену' });
-    }
-});
-
-// --- ТЕСТОВЫЙ МАРШРУТ: ОТПРАВКА В TELEGRAM ---
-app.get('/api/test-telegram', async (req, res) => {
-    try {
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await axios.post(url, {
-            chat_id: TELEGRAM_CHAT_ID,
-            text: '🤖 *AlphaBot тест!* Бот работает и может отправлять сообщения.',
-            parse_mode: 'Markdown'
-        });
-        res.json({ status: 'ok', message: 'Тестовое сообщение отправлено в Telegram' });
-    } catch (error) {
-        console.error('❌ Ошибка отправки теста:', error.message);
-        res.status(500).json({ error: 'Не удалось отправить сообщение' });
     }
 });
 
@@ -288,70 +245,68 @@ app.put('/api/admin/users/:id', async (req, res) => {
 });
 
 // ============================================
-//  УВЕДОМЛЕНИЯ В ЛИЧНОМ КАБИНЕТЕ
+//  ЧАТ-ЛОГИ (ПАМЯТЬ)
 // ============================================
 
-// --- ПОЛУЧЕНИЕ УВЕДОМЛЕНИЙ ПОЛЬЗОВАТЕЛЯ ---
-app.get('/api/notifications/:email', async (req, res) => {
-    const { email } = req.params;
+app.post('/api/chat/save', async (req, res) => {
+    const { role, content, session_id } = req.body;
+    if (!role || !content) {
+        return res.status(400).json({ error: 'role и content обязательны' });
+    }
 
     try {
-        const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', email)
-            .maybeSingle();
-
-        if (userError || !user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        const { data: notifications, error: notifError } = await supabase
-            .from('notifications')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(50);
-
-        if (notifError) {
-            console.error('Ошибка получения уведомлений:', notifError);
-            return res.status(500).json({ error: 'Ошибка базы данных' });
-        }
-
-        res.json({ notifications });
-
+        const { data, error } = await supabase
+            .from('chat_logs')
+            .insert({ role, content, session_id: session_id || 'default' })
+            .select();
+        if (error) throw error;
+        res.json({ success: true, data });
     } catch (err) {
-        console.error('Непредвиденная ошибка:', err);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        console.error('❌ Ошибка сохранения чата:', err);
+        res.status(500).json({ error: 'Ошибка сохранения' });
     }
 });
 
-// --- ПОМЕТИТЬ УВЕДОМЛЕНИЕ КАК ПРОЧИТАННОЕ ---
-app.put('/api/notifications/:id/read', async (req, res) => {
-    const { id } = req.params;
+app.get('/api/chat/history', async (req, res) => {
+    const { session_id, limit = 50 } = req.query;
 
     try {
-        const { data: notification, error } = await supabase
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('id', id)
-            .select()
-            .single();
+        const query = supabase
+            .from('chat_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(parseInt(limit));
 
-        if (error) {
-            console.error('Ошибка обновления:', error);
-            return res.status(500).json({ error: 'Ошибка базы данных' });
+        if (session_id) {
+            query.eq('session_id', session_id);
         }
 
-        if (!notification) {
-            return res.status(404).json({ error: 'Уведомление не найдено' });
-        }
-
-        res.json({ notification });
-
+        const { data, error } = await query;
+        if (error) throw error;
+        res.json({ history: data.reverse() });
     } catch (err) {
-        console.error('Непредвиденная ошибка:', err);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        console.error('❌ Ошибка получения истории:', err);
+        res.status(500).json({ error: 'Ошибка получения истории' });
+    }
+});
+
+app.get('/api/chat/export', async (req, res) => {
+    const { limit = 20 } = req.query;
+    try {
+        const { data, error } = await supabase
+            .from('chat_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(parseInt(limit));
+        if (error) throw error;
+        res.json({
+            status: 'ok',
+            count: data.length,
+            history: data.reverse()
+        });
+    } catch (err) {
+        console.error('❌ Ошибка экспорта чата:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -385,7 +340,6 @@ cron.schedule('*/1 * * * *', async () => {
                 if (signal) {
                     console.log(`📈 СИГНАЛ: ${signal.symbol} ${signal.side} (${signal.confidence})`);
 
-                    // --- 1. СОХРАНЯЕМ В ТАБЛИЦУ signals ---
                     try {
                         const { data: users, error: userError } = await supabase
                             .from('users')
@@ -394,8 +348,6 @@ cron.schedule('*/1 * * * *', async () => {
 
                         if (!userError && users && users.length > 0) {
                             const userId = users[0].id;
-
-                            // Сохраняем сигнал
                             const { error: insertError } = await supabase
                                 .from('signals')
                                 .insert({
@@ -414,40 +366,12 @@ cron.schedule('*/1 * * * *', async () => {
                             } else {
                                 console.log(`✅ Сигнал сохранён в БД для пользователя ${userId}`);
                             }
-
-                            // --- 2. СОХРАНЯЕМ УВЕДОМЛЕНИЕ ---
-                            const { error: notifyError } = await supabase
-                                .from('notifications')
-                                .insert({
-                                    user_id: userId,
-                                    type: 'signal',
-                                    title: `📈 ${signal.symbol} ${signal.side}`,
-                                    message: `Вход: ${signal.entry}\nУверенность: ${signal.confidence}\nRSI: ${signal.rsi || 'N/A'}\nПричины: ${signal.reasons.join(', ')}`,
-                                    data: signal,
-                                    is_read: false
-                                });
-
-                            if (notifyError) {
-                                console.error('❌ Ошибка сохранения уведомления:', notifyError);
-                            } else {
-                                console.log(`✅ Уведомление сохранено для пользователя ${userId}`);
-                            }
                         } else {
-                            console.warn('⚠️ Нет пользователей для сохранения');
+                            console.warn('⚠️ Нет пользователей для сохранения сигнала');
                         }
                     } catch (dbError) {
                         console.error('❌ Ошибка БД:', dbError.message);
                     }
-
-                    // --- 3. ОТПРАВКА В TELEGRAM (опционально) ---
-                    const emoji = signal.side === 'LONG' ? '🟢' : '🔴';
-                    const msg = `${emoji} *${signal.symbol}* ${signal.side}\n` +
-                        `💰 Вход: ${signal.entry}\n` +
-                        `🎯 Уверенность: ${signal.confidence}\n` +
-                        `📊 RSI: ${signal.rsi || 'N/A'}\n` +
-                        `📈 MACD: ${signal.macd || 'N/A'}\n` +
-                        `📝 Причины: ${signal.reasons.join(', ')}`;
-                    await sendTelegram(msg);
                 }
             }
         }
@@ -455,8 +379,6 @@ cron.schedule('*/1 * * * *', async () => {
     } catch (error) {
         console.error('❌ Ошибка анализа рынка:', error.message);
     }
-
-
 }, {
     timezone: "Europe/Moscow"
 });
@@ -464,80 +386,11 @@ cron.schedule('*/1 * * * *', async () => {
 console.log('⏰ Планировщик запущен (каждую минуту)');
 
 // ============================================
-//  ЧАТ-ЛОГИ (ПАМЯТЬ)
-// ============================================
-
-// --- СОХРАНЕНИЕ СООБЩЕНИЯ ---
-app.post('/api/chat/save', async (req, res) => {
-    const { role, content, session_id } = req.body;
-    if (!role || !content) {
-        return res.status(400).json({ error: 'role и content обязательны' });
-    }
-
-    try {
-        const { data, error } = await supabase
-            .from('chat_logs')
-            .insert({ role, content, session_id: session_id || 'default' })
-            .select();
-        if (error) throw error;
-        res.json({ success: true, data });
-    } catch (err) {
-        console.error('❌ Ошибка сохранения чата:', err);
-        res.status(500).json({ error: 'Ошибка сохранения' });
-    }
-});
-
-// --- ПОЛУЧЕНИЕ ИСТОРИИ ---
-app.get('/api/chat/history', async (req, res) => {
-    const { session_id, limit = 50 } = req.query;
-
-    try {
-        const query = supabase
-            .from('chat_logs')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(parseInt(limit));
-
-        if (session_id) {
-            query.eq('session_id', session_id);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-        res.json({ history: data.reverse() });
-    } catch (err) {
-        console.error('❌ Ошибка получения истории:', err);
-        res.status(500).json({ error: 'Ошибка получения истории' });
-    }
-});
-
-// --- ЭКСПОРТ ИСТОРИИ (ДЛЯ ВОССТАНОВЛЕНИЯ КОНТЕКСТА) ---
-app.get('/api/chat/export', async (req, res) => {
-    const { limit = 20 } = req.query;
-    try {
-        const { data, error } = await supabase
-            .from('chat_logs')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(parseInt(limit));
-        if (error) throw error;
-        res.json({
-            status: 'ok',
-            count: data.length,
-            history: data.reverse()
-        });
-    } catch (err) {
-        console.error('❌ Ошибка экспорта чата:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ============================================
 //  ЗАПУСК СЕРВЕРА
 // ============================================
 
 app.listen(port, () => {
-    console.log(`🚀 AlphaBot backend запущен на порту ${port}`);
+    console.log(`🚀 SMT Bot запущен на порту ${port}`);
     console.log(`🌐 Открой: http://localhost:${port}/`);
     console.log(`📡 API: http://localhost:${port}/api/health`);
 });
