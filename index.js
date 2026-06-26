@@ -6,7 +6,8 @@ const cron = require('node-cron');
 const axios = require('axios');
 const trading = require('./trading');
 require('dotenv').config();
-
+const WebSocket = require('ws');
+global.WebSocket = WebSocket;
 const app = express();
 const port = process.env.PORT || 5000;
 
