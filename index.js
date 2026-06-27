@@ -386,6 +386,38 @@ cron.schedule('*/1 * * * *', async () => {
 
 console.log('⏰ Планировщик запущен (каждую минуту)');
 
+
+// === ПРОКСИ ДЛЯ DEEPSEEK API ===
+app.post('/api/deepseek', async (req, res) => {
+    const { message } = req.body;
+    if (!message) {
+        return res.status(400).json({ error: 'Сообщение обязательно' });
+    }
+
+    try {
+        const response = await axios.post(
+            'https://api.deepseek.com/v1/chat/completions',
+            {
+                model: 'deepseek-chat',
+                messages: [{ role: 'user', content: message }]
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        const reply = response.data.choices[0].message.content;
+        res.json({ reply });
+
+    } catch (error) {
+        console.error('❌ Ошибка DeepSeek API:', error.message);
+        res.status(500).json({ error: 'Ошибка получения ответа от DeepSeek' });
+    }
+});
+
 // ============================================
 //  ЗАПУСК СЕРВЕРА
 // ============================================
