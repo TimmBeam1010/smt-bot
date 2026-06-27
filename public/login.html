@@ -155,14 +155,13 @@
 <body>
     <div class="login-card">
         <h1>🤖 <span>SMT</span> Bot</h1>
-        <p class="sub" id="formTitle">Войдите или создайте аккаунт</p>
+        <p class="sub" id="formTitle">Войдите в аккаунт</p>
 
         <form id="authForm">
             <input type="email" id="email" placeholder="Email" required autofocus>
             <input type="password" id="password" placeholder="Пароль (мин. 6 символов)" required>
             <input type="text" id="username" placeholder="Имя (опционально)" style="display: none;">
 
-            <!-- Поле для кода верификации (скрыто по умолчанию) -->
             <div id="codeBlock" class="hidden">
                 <div class="code-row">
                     <input type="text" id="verificationCode" placeholder="Код из письма" maxlength="6">
@@ -201,9 +200,9 @@
         const formTitle = document.getElementById('formTitle');
 
         let isLogin = true;
-        let pendingEmail = ''; // для верификации
+        let pendingEmail = '';
 
-        // ===== ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ =====
+        // ===== ПЕРЕКЛЮЧЕНИЕ МЕЖДУ ВХОДОМ И РЕГИСТРАЦИЕЙ =====
         toggleLink.addEventListener('click', () => {
             isLogin = !isLogin;
             codeBlock.classList.add('hidden');
@@ -264,9 +263,8 @@
             const usernameValue = username.value.trim() || null;
             const codeValue = verificationCode.value.trim();
 
-            // Если режим верификации — проверяем код
+            // ===== РЕЖИМ ВЕРИФИКАЦИИ (код) =====
             if (!isLogin && codeBlock.classList.contains('hidden') === false) {
-                // Верификация
                 if (!codeValue) {
                     message.textContent = '❌ Введите код из письма';
                     message.className = 'error';
@@ -327,19 +325,16 @@
                     });
                     const data = await res.json();
                     if (res.ok && data.needVerification) {
-                        // Показываем поле для кода
                         codeBlock.classList.remove('hidden');
                         submitBtn.textContent = 'Подтвердить код';
                         message.textContent = '✅ Код отправлен на почту. Введите его ниже.';
                         message.className = 'success';
                         pendingEmail = emailValue;
-                        // Меняем текст формы
                         formTitle.textContent = 'Подтверждение почты';
                         document.querySelector('.sub').textContent = 'Введите код из письма';
                     } else if (res.ok) {
                         message.textContent = '✅ Регистрация успешна! Войдите.';
                         message.className = 'success';
-                        // Переключаем на вход
                         isLogin = true;
                         submitBtn.textContent = 'Войти';
                         toggleText.textContent = 'Нет аккаунта? ';
@@ -362,7 +357,7 @@
                 return;
             }
 
-            // ===== ВХОД =====
+            // ===== ВХОД (новая логика) =====
             if (!emailValue || !passwordValue) {
                 message.textContent = '❌ Заполните все обязательные поля';
                 message.className = 'error';
@@ -375,31 +370,63 @@
             message.className = '';
 
             try {
-                const res = await fetch('/api/login', {
+                // 1. Проверяем, существует ли пользователь
+                const checkRes = await fetch('/api/user/' + encodeURIComponent(emailValue));
+                const userData = await checkRes.json();
+
+                if (!checkRes.ok || !userData.user) {
+                    // Пользователь не найден → переключаем на регистрацию
+                    message.textContent = '🔍 Пользователь не найден. Переключаем на регистрацию...';
+                    message.className = 'success';
+                    isLogin = false;
+                    submitBtn.textContent = 'Зарегистрироваться';
+                    toggleText.textContent = 'Уже есть аккаунт? ';
+                    toggleLink.textContent = 'Войти';
+                    username.style.display = 'block';
+                    formTitle.textContent = 'Создайте аккаунт';
+                    document.querySelector('.sub').textContent = 'Зарегистрируйтесь, чтобы начать';
+                    // email уже заполнен
+                    password.value = '';
+                    username.value = '';
+                    codeBlock.classList.add('hidden');
+                    // Сбрасываем сообщение через 1 секунду
+                    setTimeout(() => {
+                        message.textContent = '';
+                        message.className = '';
+                    }, 1500);
+                    return;
+                }
+
+                // 2. Пользователь существует → проверяем пароль
+                const loginRes = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: emailValue, password: passwordValue })
                 });
-                const data = await res.json();
-                if (res.ok) {
+                const loginData = await loginRes.json();
+
+                if (loginRes.ok) {
                     message.textContent = '✅ Вход выполнен!';
                     message.className = 'success';
-                    localStorage.setItem('smtUser', JSON.stringify(data.user));
+                    localStorage.setItem('smtUser', JSON.stringify(loginData.user));
                     setTimeout(() => {
                         window.location.href = '/dashboard.html';
                     }, 500);
-                } else if (res.status === 403 && data.needVerification) {
-                    // Пользователь не верифицирован
+                } else if (loginRes.status === 403 && loginData.needVerification) {
+                    // Не верифицирован
                     codeBlock.classList.remove('hidden');
                     submitBtn.textContent = 'Подтвердить код';
-                    message.textContent = '⚠️ ' + data.error;
+                    message.textContent = '⚠️ ' + loginData.error;
                     message.className = 'error';
-                    pendingEmail = data.email || emailValue;
+                    pendingEmail = loginData.email || emailValue;
                     formTitle.textContent = 'Подтверждение почты';
                     document.querySelector('.sub').textContent = 'Введите код из письма';
                 } else {
-                    message.textContent = '❌ ' + (data.error || 'Ошибка входа');
+                    // Неверный пароль
+                    message.textContent = '❌ Неверный пароль. Попробуйте снова.';
                     message.className = 'error';
+                    password.value = ''; // Сбрасываем только пароль
+                    password.focus();
                 }
             } catch (err) {
                 message.textContent = '❌ Ошибка соединения';
