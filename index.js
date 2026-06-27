@@ -216,6 +216,121 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ============================================
+//  АДМИН-МАРШРУТЫ
+// ============================================
+
+// --- АДМИН: СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ (ручная регистрация) ---
+app.post('/api/admin/create-user', async (req, res) => {
+    const { email, password, username } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email и пароль обязательны' });
+    }
+    if (password.length < 6) {
+        return res.status(400).json({ error: 'Пароль должен быть минимум 6 символов' });
+    }
+
+    try {
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (existingUser) {
+            return res.status(400).json({ error: 'Пользователь с таким email уже существует' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const { data: newUser, error: createError } = await supabase
+            .from('users')
+            .insert({
+                email,
+                password: hashedPassword,
+                telegram_username: username || null,
+                auth_provider: 'email',
+                is_verified: true,
+                is_active: true
+            })
+            .select()
+            .single();
+
+        if (createError) {
+            console.error('Ошибка создания:', createError);
+            return res.status(500).json({ error: 'Ошибка создания пользователя' });
+        }
+
+        delete newUser.password;
+        res.status(201).json({ user: newUser });
+
+    } catch (err) {
+        console.error('Непредвиденная ошибка:', err);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+// --- АДМИН: ПОЛУЧИТЬ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ ---
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        const { data: users, error } = await supabase
+            .from('users')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Ошибка получения пользователей:', error);
+            return res.status(500).json({ error: 'Ошибка базы данных' });
+        }
+
+        const safeUsers = users.map(u => {
+            delete u.password;
+            return u;
+        });
+
+        res.json({ users: safeUsers });
+
+    } catch (err) {
+        console.error('Непредвиденная ошибка:', err);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+// --- АДМИН: ОБНОВИТЬ СТАТУС ПОЛЬЗОВАТЕЛЯ ---
+app.put('/api/admin/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const { is_active } = req.body;
+
+    if (typeof is_active !== 'boolean') {
+        return res.status(400).json({ error: 'is_active должен быть boolean' });
+    }
+
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .update({ is_active, updated_at: new Date() })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Ошибка обновления:', error);
+            return res.status(500).json({ error: 'Ошибка обновления статуса' });
+        }
+
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        delete user.password;
+        res.json({ user });
+
+    } catch (err) {
+        console.error('Непредвиденная ошибка:', err);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+// ============================================
 //  ОСТАЛЬНЫЕ МАРШРУТЫ API
 // ============================================
 
@@ -280,65 +395,6 @@ app.put('/api/user/:email/settings', async (req, res) => {
         if (error) {
             console.error('Ошибка обновления:', error);
             return res.status(500).json({ error: 'Ошибка обновления настроек' });
-        }
-
-        if (!user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        delete user.password;
-        res.json({ user });
-
-    } catch (err) {
-        console.error('Непредвиденная ошибка:', err);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-    }
-});
-
-app.get('/api/admin/users', async (req, res) => {
-    try {
-        const { data: users, error } = await supabase
-            .from('users')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Ошибка получения пользователей:', error);
-            return res.status(500).json({ error: 'Ошибка базы данных' });
-        }
-
-        const safeUsers = users.map(u => {
-            delete u.password;
-            return u;
-        });
-
-        res.json({ users: safeUsers });
-
-    } catch (err) {
-        console.error('Непредвиденная ошибка:', err);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-    }
-});
-
-app.put('/api/admin/users/:id', async (req, res) => {
-    const { id } = req.params;
-    const { is_active } = req.body;
-
-    if (typeof is_active !== 'boolean') {
-        return res.status(400).json({ error: 'is_active должен быть boolean' });
-    }
-
-    try {
-        const { data: user, error } = await supabase
-            .from('users')
-            .update({ is_active, updated_at: new Date() })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Ошибка обновления:', error);
-            return res.status(500).json({ error: 'Ошибка обновления статуса' });
         }
 
         if (!user) {
