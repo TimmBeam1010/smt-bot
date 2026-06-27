@@ -1,235 +1,224 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AlphaBot — Вход</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Bot — Умный криптотрейдинг</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
         }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
             background: #0a0e17;
             color: #fff;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        header {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            min-height: 100vh;
-            padding: 16px;
+            padding: 20px 0;
+            border-bottom: 1px solid #1a1f2e;
         }
-        .card {
-            background: #1a1f2e;
-            padding: 32px 24px;
-            border-radius: 20px;
-            width: 100%;
-            max-width: 380px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4f46e5;
         }
-        .card h1 {
-            text-align: center;
-            font-weight: 600;
-            font-size: 28px;
-            margin-bottom: 4px;
-        }
-        .card p.sub {
-            text-align: center;
+        .nav a {
             color: #94a3b8;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-        input {
-            width: 100%;
-            padding: 12px 14px;
-            margin: 6px 0 12px;
-            background: #2d3748;
-            border: none;
-            border-radius: 12px;
-            color: #fff;
-            font-size: 15px;
+            text-decoration: none;
+            margin-left: 24px;
+            font-size: 16px;
             transition: 0.2s;
         }
-        input:focus {
-            outline: 2px solid #4f46e5;
-            background: #374151;
+        .nav a:hover {
+            color: #fff;
         }
-        button {
-            width: 100%;
-            padding: 14px;
+        .btn-primary {
             background: #4f46e5;
             color: #fff;
-            font-weight: 600;
-            font-size: 16px;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            margin-top: 4px;
-        }
-        button:hover {
-            background: #4338ca;
-            transform: scale(1.01);
-        }
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .toggle {
-            text-align: center;
-            margin-top: 16px;
-            font-size: 14px;
-            color: #94a3b8;
-        }
-        .toggle a {
-            color: #818cf8;
-            cursor: pointer;
+            padding: 10px 24px;
+            border-radius: 8px;
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
+            transition: 0.2s;
         }
-        .toggle a:hover {
-            text-decoration: underline;
+        .btn-primary:hover {
+            background: #4338ca;
         }
-        #message {
-            margin-top: 16px;
-            text-align: center;
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 60px 0;
+            gap: 40px;
+        }
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .hero h1 span {
+            color: #4f46e5;
+        }
+        .hero p {
+            font-size: 18px;
+            color: #94a3b8;
+            margin: 20px 0;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            padding: 40px 0;
+        }
+        .feature-card {
+            background: #1a1f2e;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid #2d3748;
+            transition: 0.3s;
+        }
+        .feature-card:hover {
+            border-color: #4f46e5;
+        }
+        .feature-card h3 {
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            color: #94a3b8;
             font-size: 14px;
-            min-height: 22px;
         }
-        .success {
-            color: #34d399;
+        .footer {
+            border-top: 1px solid #1a1f2e;
+            padding: 24px 0;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
         }
-        .error {
-            color: #f87171;
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #4f46e5;
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.2s;
         }
-        .loader {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #fff;
-            border-top: 2px solid transparent;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 10px auto 0;
+        .btn-outline:hover {
+            background: #4f46e5;
         }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        .nav-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
         }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>🤖 AlphaBot</h1>
-        <p class="sub">Умный помощник для криптотрейдинга</p>
+    <div class="container">
+        <header>
+            <div class="logo">🤖 SMT Bot</div>
+            <div class="nav">
+                <a href="#">Главная</a>
+                <a href="#features">Функции</a>
+                <a href="#pricing">Тарифы</a>
+                <div class="nav-actions">
+                    <a href="/login.html" class="btn-outline">Войти</a>
+                    <a href="/login.html" class="btn-primary">Начать</a>
+                </div>
+            </div>
+        </header>
 
-        <form id="authForm">
-            <input type="email" id="email" placeholder="Email" required autofocus />
-            <input type="password" id="password" placeholder="Пароль (мин. 6 символов)" required />
-            <input type="text" id="username" placeholder="Имя (опционально)" style="display: none" />
-            <button type="submit" id="submitBtn">Войти</button>
-        </form>
+        <section class="hero">
+            <div>
+                <h1>Торгуй <span>умнее</span> с SMT Bot</h1>
+                <p>Автоматический помощник для криптотрейдинга на основе RSI, MACD, Smart Money и маркет-мейкер анализа.</p>
+                <a href="/login.html" class="btn-primary">Начать бесплатно</a>
+            </div>
+            <div style="background: #1a1f2e; padding: 30px; border-radius: 16px; border: 1px solid #2d3748; text-align: center; min-width: 280px;">
+                <div style="font-size: 48px; margin-bottom: 12px;">📈</div>
+                <h3>Пример сигнала</h3>
+                <div style="background: #2d3748; padding: 16px; border-radius: 8px; margin-top: 12px; text-align: left; font-size: 14px;">
+                    🟢 <strong>BONK-USDT</strong> LONG<br>
+                    💰 Вход: 0.00000452<br>
+                    🎯 Уверенность: high<br>
+                    📊 RSI: 28.5
+                </div>
+            </div>
+        </section>
 
-        <div class="toggle">
-            <span id="toggleText">Нет аккаунта? </span>
-            <a id="toggleLink">Зарегистрироваться</a>
-        </div>
+        <section id="features" class="features">
+            <div class="feature-card">
+                <h3>📊 Технический анализ</h3>
+                <p>RSI, MACD, Bollinger Bands, ADX, Stochastic — полный набор индикаторов.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🧠 Smart Money</h3>
+                <p>Анализ VWAP, ликвидационных уровней и дивергенций.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🛡️ Управление риском</h3>
+                <p>Адаптивный риск, расчёт позиции и 4 профиля торговли.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📱 Личный кабинет</h3>
+                <p>Настройки, история сигналов, уведомления — всё в одном месте.</p>
+            </div>
+        </section>
 
-        <div id="message"></div>
-        <div class="loader" id="loader"></div>
+        <section id="pricing" style="padding: 40px 0;">
+            <h2 style="text-align: center; font-size: 32px; margin-bottom: 32px;">💰 Выбери тариф</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+                <div style="background: #1a1f2e; padding: 24px; border-radius: 12px; border: 1px solid #2d3748; text-align: center;">
+                    <h3>🛡️ Базовый</h3>
+                    <p style="font-size: 28px; font-weight: 700; margin: 12px 0;">1 500 ₽</p>
+                    <ul style="list-style: none; color: #94a3b8; font-size: 14px; text-align: left;">
+                        <li>✅ 10 сигналов/день</li>
+                        <li>✅ 10 монет</li>
+                        <li>✅ 2 стратегии</li>
+                    </ul>
+                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px;">Выбрать</a>
+                </div>
+                <div style="background: #1a1f2e; padding: 24px; border-radius: 12px; border: 2px solid #4f46e5; text-align: center;">
+                    <h3>⚖️ Стандарт</h3>
+                    <p style="font-size: 28px; font-weight: 700; margin: 12px 0;">3 500 ₽</p>
+                    <ul style="list-style: none; color: #94a3b8; font-size: 14px; text-align: left;">
+                        <li>✅ 30 сигналов/день</li>
+                        <li>✅ 30 монет</li>
+                        <li>✅ 4 стратегии</li>
+                        <li>✅ Smart Money</li>
+                    </ul>
+                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px;">Выбрать</a>
+                </div>
+                <div style="background: #1a1f2e; padding: 24px; border-radius: 12px; border: 1px solid #2d3748; text-align: center;">
+                    <h3>⚡ Про</h3>
+                    <p style="font-size: 28px; font-weight: 700; margin: 12px 0;">7 000 ₽</p>
+                    <ul style="list-style: none; color: #94a3b8; font-size: 14px; text-align: left;">
+                        <li>✅ ∞ сигналы</li>
+                        <li>✅ ∞ монеты</li>
+                        <li>✅ Все стратегии</li>
+                        <li>✅ Smart Money</li>
+                        <li>✅ Автоторговля</li>
+                    </ul>
+                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px;">Выбрать</a>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>© 2026 SMT Bot. Не является финансовой рекомендацией.</p>
+        </footer>
     </div>
-
-    <script>
-        const form = document.getElementById('authForm');
-        const email = document.getElementById('email');
-        const password = document.getElementById('password');
-        const username = document.getElementById('username');
-        const submitBtn = document.getElementById('submitBtn');
-        const toggleLink = document.getElementById('toggleLink');
-        const toggleText = document.getElementById('toggleText');
-        const message = document.getElementById('message');
-        const loader = document.getElementById('loader');
-
-        let isLogin = true;
-
-        toggleLink.addEventListener('click', () => {
-            isLogin = !isLogin;
-            if (isLogin) {
-                submitBtn.textContent = 'Войти';
-                toggleText.textContent = 'Нет аккаунта? ';
-                toggleLink.textContent = 'Зарегистрироваться';
-                username.style.display = 'none';
-                document.querySelector('.sub').textContent = 'Умный помощник для криптотрейдинга';
-            } else {
-                submitBtn.textContent = 'Зарегистрироваться';
-                toggleText.textContent = 'Уже есть аккаунт? ';
-                toggleLink.textContent = 'Войти';
-                username.style.display = 'block';
-                document.querySelector('.sub').textContent = 'Создайте аккаунт для доступа к сервису';
-            }
-            message.textContent = '';
-            message.className = '';
-        });
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const endpoint = isLogin ? '/api/login' : '/api/register';
-            const body = isLogin ? {
-                email: email.value.trim(),
-                password: password.value
-            } : {
-                email: email.value.trim(),
-                password: password.value,
-                username: username.value.trim() || null
-            };
-
-            if (!body.email || !body.password) {
-                message.textContent = '❌ Заполните все обязательные поля';
-                message.className = 'error';
-                return;
-            }
-            if (!isLogin && body.password.length < 6) {
-                message.textContent = '❌ Пароль должен быть минимум 6 символов';
-                message.className = 'error';
-                return;
-            }
-
-            submitBtn.disabled = true;
-            loader.style.display = 'block';
-            message.textContent = '';
-            message.className = '';
-
-            try {
-                const res = await fetch(`http://localhost:5000${endpoint}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                });
-
-                const data = await res.json();
-
-                if (res.ok) {
-                    message.textContent = isLogin ? '✅ Вход выполнен!' : '✅ Регистрация успешна!';
-                    message.className = 'success';
-                    localStorage.setItem('alphaBotUser', JSON.stringify(data.user));
-                    setTimeout(() => {
-                        window.location.href = '/dashboard.html';
-                    }, 500);
-                } else {
-                    message.textContent = '❌ ' + (data.error || 'Неизвестная ошибка');
-                    message.className = 'error';
-                }
-            } catch (err) {
-                console.error(err);
-                message.textContent = '❌ Ошибка соединения с сервером. Запущен ли сервер?';
-                message.className = 'error';
-            } finally {
-                submitBtn.disabled = false;
-                loader.style.display = 'none';
-            }
-        });
-    </script>
 </body>
 </html>
