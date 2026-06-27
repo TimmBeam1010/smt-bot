@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Bot — Вход</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .login-card {
+            background: #1a1f2e;
+            padding: 32px 28px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+        }
+        .login-card h1 {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .login-card h1 span {
+            color: #4f46e5;
+        }
+        .login-card .sub {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .login-card input {
+            width: 100%;
+            padding: 12px 14px;
+            margin: 8px 0 16px;
+            background: #2d3748;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+        }
+        .login-card input:focus {
+            outline: 2px solid #4f46e5;
+            background: #374151;
+        }
+        .login-card button {
+            width: 100%;
+            padding: 14px;
+            background: #4f46e5;
+            color: #fff;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 4px;
+        }
+        .login-card button:hover {
+            background: #4338ca;
+            transform: scale(1.01);
+        }
+        .login-card button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .toggle {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .toggle a {
+            color: #818cf8;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .toggle a:hover {
+            text-decoration: underline;
+        }
+        #message {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 14px;
+            min-height: 22px;
+        }
+        .success {
+            color: #34d399;
+        }
+        .error {
+            color: #f87171;
+        }
+        .loader {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 10px auto 0;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 12px;
+            color: #94a3b8;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1>🤖 <span>SMT</span> Bot</h1>
+        <p class="sub">Войдите или создайте аккаунт</p>
+
+        <form id="authForm">
+            <input type="email" id="email" placeholder="Email" required autofocus>
+            <input type="password" id="password" placeholder="Пароль (мин. 6 символов)" required>
+            <input type="text" id="username" placeholder="Имя (опционально)" style="display: none;">
+            <button type="submit" id="submitBtn">Войти</button>
+        </form>
+
+        <div class="toggle">
+            <span id="toggleText">Нет аккаунта? </span>
+            <a id="toggleLink">Зарегистрироваться</a>
+        </div>
+
+        <div id="message"></div>
+        <div class="loader" id="loader"></div>
+
+        <a href="/" class="back-link">← На главную</a>
+    </div>
+
+    <script>
+        const form = document.getElementById('authForm');
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        const username = document.getElementById('username');
+        const submitBtn = document.getElementById('submitBtn');
+        const toggleLink = document.getElementById('toggleLink');
+        const toggleText = document.getElementById('toggleText');
+        const message = document.getElementById('message');
+        const loader = document.getElementById('loader');
+
+        let isLogin = true;
+        const API_URL = ''; // пусто, так как API на том же хосте
+
+        toggleLink.addEventListener('click', () => {
+            isLogin = !isLogin;
+            if (isLogin) {
+                submitBtn.textContent = 'Войти';
+                toggleText.textContent = 'Нет аккаунта? ';
+                toggleLink.textContent = 'Зарегистрироваться';
+                username.style.display = 'none';
+            } else {
+                submitBtn.textContent = 'Зарегистрироваться';
+                toggleText.textContent = 'Уже есть аккаунт? ';
+                toggleLink.textContent = 'Войти';
+                username.style.display = 'block';
+            }
+            message.textContent = '';
+            message.className = '';
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const endpoint = isLogin ? '/api/login' : '/api/register';
+            const body = isLogin ? {
+                email: email.value.trim(),
+                password: password.value
+            } : {
+                email: email.value.trim(),
+                password: password.value,
+                username: username.value.trim() || null
+            };
+
+            if (!body.email || !body.password) {
+                message.textContent = '❌ Заполните все обязательные поля';
+                message.className = 'error';
+                return;
+            }
+            if (!isLogin && body.password.length < 6) {
+                message.textContent = '❌ Пароль должен быть минимум 6 символов';
+                message.className = 'error';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            loader.style.display = 'block';
+            message.textContent = '';
+            message.className = '';
+
+            try {
+                const res = await fetch(`/api${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    message.textContent = isLogin ? '✅ Вход выполнен!' : '✅ Регистрация успешна!';
+                    message.className = 'success';
+                    localStorage.setItem('smtUser', JSON.stringify(data.user));
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 500);
+                } else {
+                    message.textContent = '❌ ' + (data.error || 'Неизвестная ошибка');
+                    message.className = 'error';
+                }
+            } catch (err) {
+                console.error(err);
+                message.textContent = '❌ Ошибка соединения с сервером. Попробуйте позже.';
+                message.className = 'error';
+            } finally {
+                submitBtn.disabled = false;
+                loader.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
