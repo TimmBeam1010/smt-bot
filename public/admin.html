@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AlphaBot — Админ-панель</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Bot — Админка</title>
     <style>
         * {
             box-sizing: border-box;
@@ -19,9 +19,85 @@
             max-width: 1200px;
             margin: 0 auto;
         }
-        h1 {
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #2d3748;
+        }
+        .header h1 {
+            font-size: 24px;
+        }
+        .logout-btn {
+            background: #f87171;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background: #ef4444;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #1a1f2e;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #2d3748;
+        }
+        .stat-card h3 {
             font-size: 28px;
+            color: #4f46e5;
+        }
+        .stat-card p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .login-box {
+            max-width: 400px;
+            margin: 40px auto;
+            background: #1a1f2e;
+            padding: 32px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: #2d3748;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+        .login-box button:hover {
+            background: #4338ca;
+        }
+        .error {
+            color: #f87171;
+            margin-top: 8px;
         }
         table {
             width: 100%;
@@ -71,7 +147,10 @@
         .btn-unblock:hover {
             opacity: 0.8;
         }
-        .logout-btn {
+        .hidden {
+            display: none;
+        }
+        .refresh-btn {
             background: #4f46e5;
             color: #fff;
             border: none;
@@ -79,40 +158,89 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
         }
-        .logout-btn:hover {
+        .refresh-btn:hover {
             background: #4338ca;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>🔐 Админ-панель AlphaBot</h1>
-            <button class="logout-btn" id="logoutBtn">Выйти</button>
+
+        <!-- Форма входа -->
+        <div id="loginBox" class="login-box">
+            <h2>🔐 Вход в админку</h2>
+            <p style="color: #94a3b8; margin-bottom: 16px;">Введите пароль для доступа</p>
+            <input type="password" id="adminPassword" placeholder="Пароль">
+            <button id="loginBtn">Войти</button>
+            <div id="loginError" class="error hidden"></div>
         </div>
 
-        <div id="usersList">
-            <p>Загрузка пользователей...</p>
+        <!-- Админ-панель (скрыта до входа) -->
+        <div id="adminPanel" class="hidden">
+            <div class="header">
+                <h1>🔐 Админ-панель SMT Bot</h1>
+                <button class="logout-btn" id="logoutBtn">Выйти</button>
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats">
+                <div class="stat-card">
+                    <h3 id="totalUsers">0</h3>
+                    <p>Всего пользователей</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="activeUsers">0</h3>
+                    <p>Активных</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="blockedUsers">0</h3>
+                    <p>Заблокированных</p>
+                </div>
+            </div>
+
+            <button class="refresh-btn" id="refreshBtn">🔄 Обновить</button>
+
+            <!-- Таблица пользователей -->
+            <div id="usersList">
+                <p>Загрузка пользователей...</p>
+            </div>
         </div>
     </div>
 
     <script>
-        const API_URL = 'http://localhost:5000';
+        const API_URL = 'http://localhost:5000'; // Поменяй на свой URL при деплое
+        const ADMIN_PASSWORD = 'admin123'; // Смени пароль!
 
-        // Проверка, что пользователь — админ (простая версия)
-        const user = JSON.parse(localStorage.getItem('alphaBotUser'));
-        if (!user || user.email !== 'trnabiev@gmail.com') {
-            window.location.href = '/';
-        }
+        // === АВТОРИЗАЦИЯ ===
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('loginBox').classList.add('hidden');
+                document.getElementById('adminPanel').classList.remove('hidden');
+                loadUsers();
+            } else {
+                const error = document.getElementById('loginError');
+                error.textContent = '❌ Неверный пароль';
+                error.classList.remove('hidden');
+            }
+        });
 
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            document.getElementById('loginBox').classList.remove('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('adminPassword').value = '';
+        });
+
+        // === ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ ===
         async function loadUsers() {
             try {
                 const res = await fetch(`${API_URL}/api/admin/users`);
                 const data = await res.json();
                 if (res.ok) {
                     renderUsers(data.users);
+                    updateStats(data.users);
                 } else {
                     document.getElementById('usersList').innerHTML =
                         '<p style="color: #f87171;">❌ Ошибка загрузки пользователей</p>';
@@ -124,6 +252,7 @@
             }
         }
 
+        // === ОТОБРАЖЕНИЕ ===
         function renderUsers(users) {
             if (!users || users.length === 0) {
                 document.getElementById('usersList').innerHTML = '<p>Пользователей пока нет.</p>';
@@ -179,7 +308,7 @@
                             body: JSON.stringify({ is_active: newStatus }),
                         });
                         if (res.ok) {
-                            loadUsers(); // Перезагружаем список
+                            loadUsers();
                         } else {
                             alert('Ошибка обновления статуса');
                         }
@@ -191,12 +320,18 @@
             });
         }
 
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('alphaBotUser');
-            window.location.href = '/';
-        });
+        // === СТАТИСТИКА ===
+        function updateStats(users) {
+            document.getElementById('totalUsers').textContent = users.length;
+            document.getElementById('activeUsers').textContent = users.filter(u => u.is_active).length;
+            document.getElementById('blockedUsers').textContent = users.filter(u => !u.is_active).length;
+        }
 
-        loadUsers();
+        // === ОБНОВЛЕНИЕ ===
+        document.getElementById('refreshBtn').addEventListener('click', loadUsers);
+
+        // Если уже залогинен (для удобства)
+        // Загружаем пользователей при входе
     </script>
 </body>
 </html>
