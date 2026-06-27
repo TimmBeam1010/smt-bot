@@ -6,14 +6,15 @@
     <title>SMT Bot — Админка</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
         }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
             background: #0a0e17;
             color: #fff;
-            padding: 24px;
+            padding: 20px;
         }
         .container {
             max-width: 1200px;
@@ -23,12 +24,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
             margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #2d3748;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #1a1f2e;
         }
         .header h1 {
-            font-size: 24px;
+            font-size: clamp(22px, 3vw, 28px);
+        }
+        .header h1 span {
+            color: #4f46e5;
         }
         .logout-btn {
             background: #f87171;
@@ -37,89 +43,79 @@
             padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
         }
         .logout-btn:hover {
             background: #ef4444;
         }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
+        .card {
+            background: #1a1f2e;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid #2d3748;
             margin-bottom: 24px;
         }
-        .stat-card {
-            background: #1a1f2e;
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid #2d3748;
-        }
-        .stat-card h3 {
-            font-size: 28px;
-            color: #4f46e5;
-        }
-        .stat-card p {
+        .card h2 {
+            font-size: clamp(18px, 2vw, 22px);
+            margin-bottom: 16px;
             color: #94a3b8;
-            font-size: 14px;
         }
-        .login-box {
-            max-width: 400px;
-            margin: 40px auto;
-            background: #1a1f2e;
-            padding: 32px;
-            border-radius: 16px;
-            text-align: center;
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
         }
-        .login-box input {
-            width: 100%;
+        .form-row input {
             padding: 12px;
-            margin: 8px 0;
             background: #2d3748;
             border: none;
             border-radius: 8px;
             color: #fff;
             font-size: 16px;
-        }
-        .login-box button {
             width: 100%;
-            padding: 12px;
+        }
+        .form-row input:focus {
+            outline: 2px solid #4f46e5;
+        }
+        .btn-primary {
             background: #4f46e5;
             color: #fff;
             border: none;
+            padding: 10px 20px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
-            margin-top: 8px;
+            font-weight: 600;
+            transition: 0.2s;
         }
-        .login-box button:hover {
+        .btn-primary:hover {
             background: #4338ca;
         }
-        .error {
-            color: #f87171;
-            margin-top: 8px;
+        .btn-danger {
+            background: #f87171;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-danger:hover {
+            background: #ef4444;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            background: #1a1f2e;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        th,
-        td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid #2d3748;
+            font-size: clamp(13px, 1.2vw, 15px);
         }
         th {
             background: #2d3748;
-            font-weight: 600;
+            padding: 12px;
+            text-align: left;
             color: #94a3b8;
-            font-size: 14px;
         }
         td {
-            font-size: 14px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #2d3748;
         }
         .status-active {
             color: #34d399;
@@ -127,211 +123,252 @@
         .status-blocked {
             color: #f87171;
         }
-        .btn {
-            padding: 6px 14px;
+        .btn-sm {
+            padding: 4px 12px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
             font-weight: 500;
         }
-        .btn-block {
+        .btn-sm-block {
             background: #f87171;
             color: #fff;
         }
-        .btn-unblock {
+        .btn-sm-unblock {
             background: #34d399;
             color: #fff;
         }
-        .btn-block:hover,
-        .btn-unblock:hover {
+        .btn-sm-block:hover,
+        .btn-sm-unblock:hover {
             opacity: 0.8;
         }
-        .hidden {
-            display: none;
-        }
-        .refresh-btn {
-            background: #4f46e5;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
             margin-bottom: 16px;
         }
-        .refresh-btn:hover {
-            background: #4338ca;
+        .stat-item {
+            background: #2d3748;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-item h3 {
+            font-size: clamp(24px, 3vw, 32px);
+            color: #4f46e5;
+        }
+        .stat-item p {
+            color: #94a3b8;
+            font-size: clamp(12px, 1.2vw, 14px);
+        }
+        .message {
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        .message-success {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+        }
+        .message-error {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            table {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-
-        <!-- Форма входа -->
-        <div id="loginBox" class="login-box">
-            <h2>🔐 Вход в админку</h2>
-            <p style="color: #94a3b8; margin-bottom: 16px;">Введите пароль для доступа</p>
-            <input type="password" id="adminPassword" placeholder="Пароль">
-            <button id="loginBtn">Войти</button>
-            <div id="loginError" class="error hidden"></div>
+        <div class="header">
+            <h1>🔐 <span>SMT</span> Bot — Админка</h1>
+            <button class="logout-btn" id="logoutBtn">Выйти</button>
         </div>
 
-        <!-- Админ-панель (скрыта до входа) -->
-        <div id="adminPanel" class="hidden">
-            <div class="header">
-                <h1>🔐 Админ-панель SMT Bot</h1>
-                <button class="logout-btn" id="logoutBtn">Выйти</button>
-            </div>
-
-            <!-- Статистика -->
+        <!-- Статистика -->
+        <div class="card">
+            <h2>📊 Статистика</h2>
             <div class="stats">
-                <div class="stat-card">
+                <div class="stat-item">
                     <h3 id="totalUsers">0</h3>
-                    <p>Всего пользователей</p>
+                    <p>Всего</p>
                 </div>
-                <div class="stat-card">
+                <div class="stat-item">
                     <h3 id="activeUsers">0</h3>
                     <p>Активных</p>
                 </div>
-                <div class="stat-card">
+                <div class="stat-item">
                     <h3 id="blockedUsers">0</h3>
-                    <p>Заблокированных</p>
+                    <p>Заблокировано</p>
                 </div>
             </div>
+        </div>
 
-            <button class="refresh-btn" id="refreshBtn">🔄 Обновить</button>
-
-            <!-- Таблица пользователей -->
-            <div id="usersList">
-                <p>Загрузка пользователей...</p>
+        <!-- Форма создания пользователя -->
+        <div class="card">
+            <h2>👤 Создать пользователя</h2>
+            <div class="form-row">
+                <input type="email" id="newEmail" placeholder="Email">
+                <input type="password" id="newPassword" placeholder="Пароль (мин. 6 символов)">
             </div>
+            <input type="text" id="newUsername" placeholder="Имя (опционально)" style="width:100%; padding:12px; background:#2d3748; border:none; border-radius:8px; color:#fff; margin-bottom:12px;">
+            <button class="btn-primary" id="createUserBtn">➕ Создать пользователя</button>
+            <div id="createMessage"></div>
+        </div>
+
+        <!-- Список пользователей -->
+        <div class="card">
+            <h2>👥 Все пользователи</h2>
+            <button class="btn-primary" id="refreshBtn" style="margin-bottom:12px;">🔄 Обновить</button>
+            <div id="usersList">Загрузка...</div>
         </div>
     </div>
 
     <script>
-        const API_URL = 'http://localhost:5000'; // Поменяй на свой URL при деплое
-        const ADMIN_PASSWORD = 'admin123'; // Смени пароль!
+        const API_URL = '';
+        const ADMIN_PASSWORD = 'admin123';
+        const user = JSON.parse(localStorage.getItem('smtUser'));
 
-        // === АВТОРИЗАЦИЯ ===
-        document.getElementById('loginBtn').addEventListener('click', () => {
-            const password = document.getElementById('adminPassword').value;
-            if (password === ADMIN_PASSWORD) {
-                document.getElementById('loginBox').classList.add('hidden');
-                document.getElementById('adminPanel').classList.remove('hidden');
-                loadUsers();
-            } else {
-                const error = document.getElementById('loginError');
-                error.textContent = '❌ Неверный пароль';
-                error.classList.remove('hidden');
-            }
-        });
+        // Проверка авторизации (только админ)
+        if (!user || user.email !== 'trnabiev@gmail.com') {
+            window.location.href = '/login.html';
+        }
 
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            document.getElementById('loginBox').classList.remove('hidden');
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('adminPassword').value = '';
-        });
+        // ===== ЭЛЕМЕНТЫ =====
+        const totalUsers = document.getElementById('totalUsers');
+        const activeUsers = document.getElementById('activeUsers');
+        const blockedUsers = document.getElementById('blockedUsers');
+        const usersList = document.getElementById('usersList');
+        const createMessage = document.getElementById('createMessage');
 
-        // === ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ ===
+        // ===== ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ =====
         async function loadUsers() {
             try {
-                const res = await fetch(`${API_URL}/api/admin/users`);
+                const res = await fetch('/api/admin/users');
                 const data = await res.json();
                 if (res.ok) {
                     renderUsers(data.users);
                     updateStats(data.users);
                 } else {
-                    document.getElementById('usersList').innerHTML =
-                        '<p style="color: #f87171;">❌ Ошибка загрузки пользователей</p>';
+                    usersList.innerHTML = '<p style="color:#f87171;">Ошибка загрузки</p>';
                 }
             } catch (err) {
-                console.error(err);
-                document.getElementById('usersList').innerHTML =
-                    '<p style="color: #f87171;">❌ Ошибка соединения с сервером</p>';
+                usersList.innerHTML = '<p style="color:#f87171;">Ошибка соединения</p>';
             }
         }
 
-        // === ОТОБРАЖЕНИЕ ===
+        function updateStats(users) {
+            totalUsers.textContent = users.length;
+            activeUsers.textContent = users.filter(u => u.is_active).length;
+            blockedUsers.textContent = users.filter(u => !u.is_active).length;
+        }
+
         function renderUsers(users) {
             if (!users || users.length === 0) {
-                document.getElementById('usersList').innerHTML = '<p>Пользователей пока нет.</p>';
+                usersList.innerHTML = '<p style="color:#94a3b8;">Нет пользователей</p>';
                 return;
             }
-
             let html = `<table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Email</th>
-                        <th>Имя</th>
-                        <th>Статус</th>
-                        <th>Дата регистрации</th>
-                        <th>Действие</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
+                <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Имя</th>
+                    <th>Верифицирован</th>
+                    <th>Статус</th>
+                    <th>Действие</th>
+                </tr>`;
             users.forEach(u => {
                 const statusClass = u.is_active ? 'status-active' : 'status-blocked';
                 const statusText = u.is_active ? 'Активен' : 'Заблокирован';
+                const verified = u.is_verified ? '✅' : '❌';
                 const actionBtn = u.is_active ?
-                    `<button class="btn btn-block" data-id="${u.id}" data-action="block">Заблокировать</button>` :
-                    `<button class="btn btn-unblock" data-id="${u.id}" data-action="unblock">Разблокировать</button>`;
-
-                html += `
-                    <tr>
-                        <td>${u.id}</td>
-                        <td>${u.email}</td>
-                        <td>${u.telegram_username || '—'}</td>
-                        <td class="${statusClass}">${statusText}</td>
-                        <td>${new Date(u.created_at).toLocaleDateString()}</td>
-                        <td>${actionBtn}</td>
-                    </tr>
-                `;
+                    `<button class="btn-sm btn-sm-block" data-id="${u.id}" data-action="block">Блок</button>` :
+                    `<button class="btn-sm btn-sm-unblock" data-id="${u.id}" data-action="unblock">Разблок</button>`;
+                html += `<tr>
+                    <td>${u.id}</td>
+                    <td>${u.email}</td>
+                    <td>${u.telegram_username || '—'}</td>
+                    <td>${verified}</td>
+                    <td class="${statusClass}">${statusText}</td>
+                    <td>${actionBtn}</td>
+                </tr>`;
             });
+            html += '</table>';
+            usersList.innerHTML = html;
 
-            html += `</tbody></table>`;
-            document.getElementById('usersList').innerHTML = html;
-
-            // Обработчики кнопок
-            document.querySelectorAll('.btn-block, .btn-unblock').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const userId = btn.dataset.id;
+            document.querySelectorAll('.btn-sm-block, .btn-sm-unblock').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.dataset.id;
                     const action = btn.dataset.action;
                     const newStatus = action === 'block' ? false : true;
-
                     try {
-                        const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+                        const res = await fetch(`/api/admin/users/${id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ is_active: newStatus }),
+                            body: JSON.stringify({ is_active: newStatus })
                         });
-                        if (res.ok) {
-                            loadUsers();
-                        } else {
-                            alert('Ошибка обновления статуса');
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        alert('Ошибка соединения с сервером');
-                    }
+                        if (res.ok) loadUsers();
+                    } catch (err) { alert('Ошибка'); }
                 });
             });
         }
 
-        // === СТАТИСТИКА ===
-        function updateStats(users) {
-            document.getElementById('totalUsers').textContent = users.length;
-            document.getElementById('activeUsers').textContent = users.filter(u => u.is_active).length;
-            document.getElementById('blockedUsers').textContent = users.filter(u => !u.is_active).length;
-        }
+        // ===== СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ =====
+        document.getElementById('createUserBtn').addEventListener('click', async () => {
+            const email = document.getElementById('newEmail').value.trim();
+            const password = document.getElementById('newPassword').value;
+            const username = document.getElementById('newUsername').value.trim() || null;
 
-        // === ОБНОВЛЕНИЕ ===
+            if (!email || !password) {
+                createMessage.innerHTML = '<div class="message message-error">❌ Заполните email и пароль</div>';
+                return;
+            }
+            if (password.length < 6) {
+                createMessage.innerHTML = '<div class="message message-error">❌ Пароль минимум 6 символов</div>';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/create-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, username })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    createMessage.innerHTML = `<div class="message message-success">✅ Пользователь ${email} создан!</div>`;
+                    document.getElementById('newEmail').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('newUsername').value = '';
+                    loadUsers();
+                } else {
+                    createMessage.innerHTML = `<div class="message message-error">❌ ${data.error || 'Ошибка'}</div>`;
+                }
+            } catch (err) {
+                createMessage.innerHTML = '<div class="message message-error">❌ Ошибка соединения</div>';
+            }
+        });
+
+        // ===== ВЫХОД =====
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('smtUser');
+            window.location.href = '/';
+        });
+
+        // ===== ОБНОВЛЕНИЕ =====
         document.getElementById('refreshBtn').addEventListener('click', loadUsers);
 
-        // Если уже залогинен (для удобства)
-        // Загружаем пользователей при входе
+        loadUsers();
     </script>
 </body>
 </html>
