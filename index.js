@@ -4,6 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const axios = require('axios');
+const nodemailer = require('nodemailer');
 const trading = require('./trading');
 require('dotenv').config();
 
@@ -33,6 +34,44 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("✅ Подключение к Supabase установлено");
+
+// ============================================
+//  НАСТРОЙКА ПОЧТЫ (SMTP)
+// ============================================
+
+const emailTransporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: parseInt(process.env.EMAIL_PORT),
+    secure: process.env.EMAIL_SECURE === 'true',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+async function sendVerificationCode(email, code) {
+    try {
+        await emailTransporter.sendMail({
+            from: process.env.EMAIL_FROM,
+            to: email,
+            subject: 'Код верификации SMT Bot',
+            html: `
+                <h2>Добро пожаловать в SMT Bot!</h2>
+                <p>Ваш код верификации:</p>
+                <h1 style="font-size: 32px; letter-spacing: 4px;">${code}</h1>
+                <p>Код действителен 15 минут.</p>
+                <p>Если вы не регистрировались, просто проигнорируйте это письмо.</p>
+                <hr>
+                <p>SMT Bot — торгуй умнее.</p>
+            `
+        });
+        console.log(`✅ Письмо с кодом отправлено на ${email}`);
+        return true;
+    } catch (err) {
+        console.error('❌ Ошибка отправки письма:', err.message);
+        return false;
+    }
+}
 
 // ============================================
 //  МАРШРУТЫ АВТОРИЗАЦИИ И ВЕРИФИКАЦИИ
@@ -88,7 +127,8 @@ app.post('/api/register', async (req, res) => {
                 expires_at: new Date(Date.now() + 15 * 60 * 1000)
             });
 
-        console.log(`📧 Код верификации для ${email}: ${verificationCode}`);
+        // === ОТПРАВКА КОДА НА ПОЧТУ ===
+        await sendVerificationCode(email, verificationCode);
 
         delete newUser.password;
         res.status(201).json({ user: newUser, needVerification: true });
@@ -166,7 +206,9 @@ app.post('/api/resend-code', async (req, res) => {
                 expires_at: new Date(Date.now() + 15 * 60 * 1000)
             });
 
-        console.log(`📧 Новый код для ${email}: ${verificationCode}`);
+        // === ОТПРАВКА НОВОГО КОДА НА ПОЧТУ ===
+        await sendVerificationCode(email, verificationCode);
+
         res.json({ success: true });
 
     } catch (err) {
@@ -219,7 +261,6 @@ app.post('/api/login', async (req, res) => {
 //  АДМИН-МАРШРУТЫ
 // ============================================
 
-// --- АДМИН: СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ (ручная регистрация) ---
 app.post('/api/admin/create-user', async (req, res) => {
     const { email, password, username } = req.body;
     if (!email || !password) {
@@ -269,7 +310,6 @@ app.post('/api/admin/create-user', async (req, res) => {
     }
 });
 
-// --- АДМИН: ПОЛУЧИТЬ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ ---
 app.get('/api/admin/users', async (req, res) => {
     try {
         const { data: users, error } = await supabase
@@ -295,7 +335,6 @@ app.get('/api/admin/users', async (req, res) => {
     }
 });
 
-// --- АДМИН: ОБНОВИТЬ СТАТУС ПОЛЬЗОВАТЕЛЯ ---
 app.put('/api/admin/users/:id', async (req, res) => {
     const { id } = req.params;
     const { is_active } = req.body;
