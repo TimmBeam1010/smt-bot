@@ -1,368 +1,258 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AlphaBot — Личный кабинет</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Bot — Личный кабинет</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
         }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
             background: #0a0e17;
             color: #fff;
-            padding: 24px;
+            padding: 16px;
         }
         .container {
-            max-width: 900px;
+            max-width: 800px;
             margin: 0 auto;
         }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 32px;
             padding-bottom: 16px;
-            border-bottom: 1px solid #2d3748;
-        }
-        .header h1 {
-            font-size: 24px;
-        }
-        .header .user {
-            display: flex;
-            align-items: center;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
             gap: 12px;
         }
-        .header .user span {
-            color: #94a3b8;
+        .header h1 {
+            font-size: clamp(20px, 4vw, 28px);
+            font-weight: 700;
+        }
+        .header h1 span {
+            color: #4f46e5;
         }
         .logout-btn {
-            background: #4f46e5;
+            background: #f87171;
             color: #fff;
             border: none;
             padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: clamp(14px, 1.5vw, 16px);
+            transition: 0.2s;
         }
         .logout-btn:hover {
-            background: #4338ca;
+            background: #ef4444;
         }
         .card {
             background: #1a1f2e;
-            padding: 24px;
+            padding: 20px;
             border-radius: 16px;
-            margin-bottom: 24px;
+            border: 1px solid #2d3748;
+            margin-top: 20px;
         }
         .card h2 {
-            font-size: 18px;
-            margin-bottom: 16px;
+            font-size: clamp(18px, 2vw, 22px);
+            margin-bottom: 12px;
             color: #94a3b8;
         }
-        .settings-row {
-            display: flex;
-            flex-wrap: wrap;
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 16px;
-            margin-bottom: 16px;
-        }
-        .settings-row label {
-            flex: 1 1 200px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            font-size: 14px;
-            color: #94a3b8;
-        }
-        .settings-row input,
-        .settings-row select {
-            padding: 10px 12px;
-            background: #2d3748;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 14px;
-        }
-        .settings-row input:focus,
-        .settings-row select:focus {
-            outline: 2px solid #4f46e5;
-        }
-        .save-btn {
-            background: #4f46e5;
-            color: #fff;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .save-btn:hover {
-            background: #4338ca;
-        }
-        #message {
             margin-top: 12px;
-            font-size: 14px;
         }
-        .success {
-            color: #34d399;
+        .stat-item {
+            background: #2d3748;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
         }
-        .error {
-            color: #f87171;
+        .stat-item h3 {
+            font-size: clamp(22px, 3vw, 30px);
+            color: #4f46e5;
         }
-        .notification-item {
+        .stat-item p {
+            color: #94a3b8;
+            font-size: clamp(12px, 1.2vw, 14px);
+        }
+        .signal-item {
             background: #2d3748;
             padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 8px;
+            border-radius: 10px;
+            margin-bottom: 10px;
             border-left: 4px solid #4f46e5;
         }
-        .notification-item .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: none;
-            margin-bottom: 4px;
-            padding-bottom: 0;
+        .signal-item .symbol {
+            font-weight: 600;
+            font-size: clamp(16px, 1.5vw, 18px);
         }
-        .notification-item .header strong {
-            font-size: 16px;
+        .signal-item .side {
+            font-weight: 600;
+            font-size: clamp(14px, 1.3vw, 16px);
         }
-        .notification-item .date {
-            font-size: 12px;
+        .signal-item .side.long {
+            color: #34d399;
+        }
+        .signal-item .side.short {
+            color: #f87171;
+        }
+        .signal-item .meta {
             color: #94a3b8;
-        }
-        .notification-item p {
-            margin: 4px 0;
-            font-size: 14px;
-            white-space: pre-wrap;
-        }
-        .notification-item .footer {
+            font-size: clamp(12px, 1.2vw, 14px);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
             margin-top: 4px;
         }
-        .notification-item .status {
-            font-size: 12px;
-            color: #94a3b8;
-        }
-        .read-btn {
+        .btn-primary {
             background: #4f46e5;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
             border: none;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 4px;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 12px;
+            transition: 0.2s;
+            font-size: clamp(14px, 1.5vw, 16px);
         }
-        .read-btn:hover {
+        .btn-primary:hover {
             background: #4338ca;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 16px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: clamp(14px, 1.5vw, 16px);
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+        .empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        /* Адаптив */
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .stats {
+                grid-template-columns: 1fr 1fr;
+            }
+            .logout-btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
+
+        <!-- Шапка -->
         <div class="header">
-            <h1>🤖 AlphaBot</h1>
-            <div class="user">
-                <span id="userEmail">user@example.com</span>
-                <button class="logout-btn" id="logoutBtn">Выйти</button>
+            <h1>🤖 <span>SMT</span> Bot</h1>
+            <button class="logout-btn" id="logoutBtn">Выйти</button>
+        </div>
+
+        <!-- Приветствие -->
+        <div class="card">
+            <h2>👋 Привет, <span id="userName">пользователь</span></h2>
+            <p style="color: #94a3b8;">Добро пожаловать в личный кабинет. Ниже — последние сигналы и статистика.</p>
+        </div>
+
+        <!-- Статистика -->
+        <div class="card">
+            <h2>📊 Статистика</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <h3 id="totalSignals">0</h3>
+                    <p>Всего сигналов</p>
+                </div>
+                <div class="stat-item">
+                    <h3 id="todaySignals">0</h3>
+                    <p>За сегодня</p>
+                </div>
             </div>
         </div>
 
+        <!-- Последние сигналы -->
         <div class="card">
-            <h2>📊 Настройки бота</h2>
-            <div class="settings-row">
-                <label>
-                    Монеты (через запятую)
-                    <input type="text" id="symbolsInput" placeholder="BONK-USDT, DOGS-USDT, PEPE-USDT" />
-                </label>
-                <label>
-                    Риск на сделку (%)
-                    <input type="number" id="riskInput" placeholder="2" step="0.5" min="0.5" max="10" />
-                </label>
+            <h2>📈 Последние сигналы</h2>
+            <div id="signalsList">
+                <p class="empty">Загрузка...</p>
             </div>
-            <div class="settings-row">
-                <label>
-                    Дневной лимит
-                    <input type="number" id="dailyLimitInput" placeholder="5" min="1" max="20" />
-                </label>
-                <label>
-                    Плечо
-                    <input type="number" id="leverageInput" placeholder="10" min="1" max="20" />
-                </label>
-            </div>
-            <button class="save-btn" id="saveBtn">Сохранить настройки</button>
-            <div id="message"></div>
         </div>
 
-        <div class="card">
-            <h2>📈 Текущие настройки</h2>
-            <p><strong>Монеты:</strong> <span id="displaySymbols">—</span></p>
-            <p><strong>Риск:</strong> <span id="displayRisk">—</span>%</p>
-            <p><strong>Дневной лимит:</strong> <span id="displayDailyLimit">—</span></p>
-            <p><strong>Плечо:</strong> <span id="displayLeverage">—</span>x</p>
-        </div>
-
-        <div class="card">
-            <h2>🔔 Уведомления</h2>
-            <div id="notificationsList">
-                <p>Загрузка...</p>
-            </div>
-        </div>
+        <a href="/" class="back-link">← На главную</a>
     </div>
 
     <script>
-        const API_URL = 'http://localhost:5000';
-        const user = JSON.parse(localStorage.getItem('alphaBotUser'));
-
+        // ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
+        const user = JSON.parse(localStorage.getItem('smtUser'));
         if (!user) {
+            window.location.href = '/login.html';
+        }
+
+        // ===== ОТОБРАЖЕНИЕ ИМЕНИ =====
+        document.getElementById('userName').textContent = user.email || 'пользователь';
+
+        // ===== ВЫХОД =====
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('smtUser');
             window.location.href = '/';
-        }
-
-        // --- ЭЛЕМЕНТЫ ---
-        const userEmail = document.getElementById('userEmail');
-        const symbolsInput = document.getElementById('symbolsInput');
-        const riskInput = document.getElementById('riskInput');
-        const dailyLimitInput = document.getElementById('dailyLimitInput');
-        const leverageInput = document.getElementById('leverageInput');
-        const saveBtn = document.getElementById('saveBtn');
-        const message = document.getElementById('message');
-        const displaySymbols = document.getElementById('displaySymbols');
-        const displayRisk = document.getElementById('displayRisk');
-        const displayDailyLimit = document.getElementById('displayDailyLimit');
-        const displayLeverage = document.getElementById('displayLeverage');
-        const notificationsList = document.getElementById('notificationsList');
-
-        userEmail.textContent = user.email;
-
-        // --- ЗАГРУЗКА НАСТРОЕК ---
-        async function loadSettings() {
-            try {
-                const res = await fetch(`${API_URL}/api/user/${user.email}`);
-                const data = await res.json();
-                if (res.ok && data.user) {
-                    const settings = data.user.settings || {};
-                    symbolsInput.value = (settings.symbols || []).join(', ');
-                    riskInput.value = settings.risk_per_trade || 2;
-                    dailyLimitInput.value = settings.max_daily_trades || 5;
-                    leverageInput.value = settings.leverage || 10;
-                    updateDisplay(settings);
-                }
-            } catch (err) {
-                console.error('Ошибка загрузки настроек:', err);
-            }
-        }
-
-        function updateDisplay(settings) {
-            displaySymbols.textContent = (settings.symbols || []).join(', ') || '—';
-            displayRisk.textContent = settings.risk_per_trade || '—';
-            displayDailyLimit.textContent = settings.max_daily_trades || '—';
-            displayLeverage.textContent = settings.leverage || '—';
-        }
-
-        // --- СОХРАНЕНИЕ НАСТРОЕК ---
-        saveBtn.addEventListener('click', async () => {
-            const symbols = symbolsInput.value.split(',').map(s => s.trim()).filter(Boolean);
-            const settings = {
-                symbols,
-                risk_per_trade: parseFloat(riskInput.value) || 2,
-                max_daily_trades: parseInt(dailyLimitInput.value) || 5,
-                leverage: parseInt(leverageInput.value) || 10,
-            };
-
-            try {
-                const res = await fetch(`${API_URL}/api/user/${user.email}/settings`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ settings }),
-                });
-                const data = await res.json();
-
-                if (res.ok) {
-                    message.textContent = '✅ Настройки сохранены!';
-                    message.className = 'success';
-                    updateDisplay(settings);
-                } else {
-                    message.textContent = '❌ ' + (data.error || 'Ошибка сохранения');
-                    message.className = 'error';
-                }
-            } catch (err) {
-                message.textContent = '❌ Ошибка соединения с сервером';
-                message.className = 'error';
-            }
         });
 
-        // --- УВЕДОМЛЕНИЯ ---
-        async function loadNotifications() {
+        // ===== ЗАГРУЗКА ДАННЫХ =====
+        async function loadDashboard() {
             try {
-                const res = await fetch(`${API_URL}/api/notifications/${user.email}`);
+                const res = await fetch('/api/user/' + user.email);
                 const data = await res.json();
-                if (res.ok && data.notifications) {
-                    renderNotifications(data.notifications);
-                } else {
-                    notificationsList.innerHTML = '<p style="color: #94a3b8;">Нет уведомлений</p>';
+                if (res.ok && data.user) {
+                    // Статистика (заглушка, позже сделаем полноценную)
+                    document.getElementById('totalSignals').textContent = '12';
+                    document.getElementById('todaySignals').textContent = '3';
                 }
             } catch (err) {
-                console.error('Ошибка загрузки уведомлений:', err);
-                notificationsList.innerHTML = '<p style="color: #f87171;">❌ Ошибка загрузки</p>';
+                console.error('Ошибка загрузки:', err);
             }
-        }
 
-        function renderNotifications(notifications) {
-            if (!notifications || notifications.length === 0) {
-                notificationsList.innerHTML = '<p style="color: #94a3b8;">Нет уведомлений</p>';
+            // Заглушка сигналов (позже — из БД)
+            const signals = [
+                { symbol: 'BONK-USDT', side: 'LONG', entry: 0.00000452, confidence: 'high' },
+                { symbol: 'DOGS-USDT', side: 'SHORT', entry: 0.0000402, confidence: 'medium' },
+                { symbol: 'SOL-USDT', side: 'LONG', entry: 69.8, confidence: 'high' },
+            ];
+
+            const container = document.getElementById('signalsList');
+            if (signals.length === 0) {
+                container.innerHTML = '<p class="empty">Нет сигналов</p>';
                 return;
             }
 
-            let html = '';
-            notifications.forEach(n => {
-                const date = new Date(n.created_at).toLocaleString();
-                const statusText = n.is_read ? '✅ Прочитано' : '🆕 Новое';
-                html += `
-                    <div class="notification-item">
-                        <div class="header">
-                            <strong>${n.title}</strong>
-                            <span class="date">${date}</span>
-                        </div>
-                        <p>${n.message}</p>
-                        <div class="footer">
-                            <span class="status">${statusText}</span>
-                            ${!n.is_read ? `<button class="read-btn" onclick="markAsRead(${n.id})">Прочитано</button>` : ''}
-                        </div>
+            container.innerHTML = signals.map(s => `
+                <div class="signal-item">
+                    <div class="symbol">${s.symbol}</div>
+                    <div class="side ${s.side.toLowerCase()}">${s.side}</div>
+                    <div class="meta">
+                        <span>💰 ${s.entry}</span>
+                        <span>🎯 ${s.confidence}</span>
                     </div>
-                `;
-            });
-            notificationsList.innerHTML = html;
+                </div>
+            `).join('');
         }
 
-        async function markAsRead(id) {
-            try {
-                const res = await fetch(`${API_URL}/api/notifications/${id}/read`, {
-                    method: 'PUT'
-                });
-                if (res.ok) {
-                    loadNotifications();
-                }
-            } catch (err) {
-                console.error('Ошибка:', err);
-            }
-        }
-
-        // --- ВЫХОД ---
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('alphaBotUser');
-            window.location.href = '/';
-        });
-
-        // --- ЗАГРУЗКА ---
-        loadSettings();
-        loadNotifications();
-
-        // --- ОБНОВЛЕНИЕ УВЕДОМЛЕНИЙ КАЖДЫЕ 30 СЕКУНД ---
-        setInterval(loadNotifications, 30000);
+        loadDashboard();
     </script>
 </body>
 </html>
