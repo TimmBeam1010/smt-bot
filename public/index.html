@@ -15,75 +15,118 @@
             background: #0a0e17;
             color: #fff;
             line-height: 1.6;
+            padding: 0 16px;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px;
         }
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 0;
+            padding: 16px 0;
             border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 12px;
         }
         .logo {
-            font-size: 24px;
+            font-size: clamp(20px, 4vw, 28px);
             font-weight: 700;
             color: #4f46e5;
+        }
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
         .nav a {
             color: #94a3b8;
             text-decoration: none;
-            margin-left: 24px;
-            font-size: 16px;
+            font-size: clamp(14px, 1.5vw, 16px);
             transition: 0.2s;
         }
         .nav a:hover {
             color: #fff;
         }
+        .btn-primary, .btn-outline {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.2s;
+            font-size: clamp(14px, 1.5vw, 16px);
+            display: inline-block;
+            text-align: center;
+        }
         .btn-primary {
             background: #4f46e5;
             color: #fff;
-            padding: 10px 24px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: 0.2s;
         }
         .btn-primary:hover {
             background: #4338ca;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #4f46e5;
+            color: #fff;
+        }
+        .btn-outline:hover {
+            background: #4f46e5;
         }
         .hero {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 60px 0;
-            gap: 40px;
+            padding: 40px 0;
+            gap: 30px;
+            flex-wrap: wrap;
         }
-        .hero h1 {
-            font-size: 48px;
+        .hero-text {
+            flex: 1 1 300px;
+        }
+        .hero-text h1 {
+            font-size: clamp(28px, 5vw, 48px);
             font-weight: 700;
             line-height: 1.2;
         }
-        .hero h1 span {
+        .hero-text h1 span {
             color: #4f46e5;
         }
-        .hero p {
-            font-size: 18px;
+        .hero-text p {
+            font-size: clamp(16px, 1.8vw, 20px);
             color: #94a3b8;
-            margin: 20px 0;
+            margin: 16px 0;
+        }
+        .hero-card {
+            flex: 1 1 280px;
+            background: #1a1f2e;
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid #2d3748;
+            text-align: center;
+        }
+        .hero-card .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .hero-card .signal-example {
+            background: #2d3748;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: left;
+            font-size: clamp(12px, 1.2vw, 14px);
         }
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
             padding: 40px 0;
         }
         .feature-card {
             background: #1a1f2e;
-            padding: 24px;
+            padding: 20px;
             border-radius: 12px;
             border: 1px solid #2d3748;
             transition: 0.3s;
@@ -92,36 +135,95 @@
             border-color: #4f46e5;
         }
         .feature-card h3 {
-            margin-bottom: 8px;
+            font-size: clamp(16px, 1.5vw, 20px);
         }
         .feature-card p {
             color: #94a3b8;
-            font-size: 14px;
+            font-size: clamp(13px, 1.2vw, 15px);
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+            padding: 30px 0;
+        }
+        .pricing-card {
+            background: #1a1f2e;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid #2d3748;
+            text-align: center;
+        }
+        .pricing-card.highlight {
+            border: 2px solid #4f46e5;
+        }
+        .pricing-card h3 {
+            font-size: clamp(18px, 1.8vw, 22px);
+        }
+        .pricing-card .price {
+            font-size: clamp(24px, 3vw, 32px);
+            font-weight: 700;
+            margin: 12px 0;
+        }
+        .pricing-card ul {
+            list-style: none;
+            color: #94a3b8;
+            font-size: clamp(13px, 1.2vw, 15px);
+            text-align: left;
+        }
+        .pricing-card ul li {
+            margin: 6px 0;
         }
         .footer {
             border-top: 1px solid #1a1f2e;
-            padding: 24px 0;
+            padding: 20px 0;
             text-align: center;
             color: #94a3b8;
-            font-size: 14px;
-        }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #4f46e5;
-            color: #fff;
-            padding: 10px 24px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-        .btn-outline:hover {
-            background: #4f46e5;
+            font-size: clamp(12px, 1.2vw, 14px);
         }
         .nav-actions {
             display: flex;
-            gap: 12px;
-            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* Адаптив для планшетов и телефонов */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .nav {
+                justify-content: center;
+            }
+            .hero {
+                flex-direction: column;
+                text-align: center;
+            }
+            .hero-card {
+                width: 100%;
+            }
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            .nav-actions {
+                justify-content: center;
+            }
+            .btn-primary, .btn-outline {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .features {
+                grid-template-columns: 1fr;
+            }
+            .btn-primary, .btn-outline {
+                width: 100%;
+                max-width: none;
+            }
         }
     </style>
 </head>
@@ -141,15 +243,15 @@
         </header>
 
         <section class="hero">
-            <div>
+            <div class="hero-text">
                 <h1>Торгуй <span>умнее</span> с SMT Bot</h1>
-                <p>Автоматический помощник для криптотрейдинга на основе RSI, MACD, Smart Money и маркет-мейкер анализа.</p>
+                <p>Автоматический помощник для криптотрейдинга на основе RSI, MACD, Smart Money и анализа маркет-мейкера.</p>
                 <a href="/login.html" class="btn-primary">Начать бесплатно</a>
             </div>
-            <div style="background: #1a1f2e; padding: 30px; border-radius: 16px; border: 1px solid #2d3748; text-align: center; min-width: 280px;">
-                <div style="font-size: 48px; margin-bottom: 12px;">📈</div>
+            <div class="hero-card">
+                <div class="icon">📈</div>
                 <h3>Пример сигнала</h3>
-                <div style="background: #2d3748; padding: 16px; border-radius: 8px; margin-top: 12px; text-align: left; font-size: 14px;">
+                <div class="signal-example">
                     🟢 <strong>BONK-USDT</strong> LONG<br>
                     💰 Вход: 0.00000452<br>
                     🎯 Уверенность: high<br>
@@ -177,41 +279,41 @@
             </div>
         </section>
 
-        <section id="pricing" style="padding: 40px 0;">
-            <h2 style="text-align: center; font-size: 32px; margin-bottom: 32px;">💰 Выбери тариф</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
-                <div style="background: #1a1f2e; padding: 24px; border-radius: 12px; border: 1px solid #2d3748; text-align: center;">
+        <section id="pricing">
+            <h2 style="text-align: center; font-size: clamp(24px, 3vw, 36px); margin-bottom: 24px;">💰 Выбери тариф</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
                     <h3>🛡️ Базовый</h3>
-                    <p style="font-size: 28px; font-weight: 700; margin: 12px 0;">1 500 ₽</p>
-                    <ul style="list-style: none; color: #94a3b8; font-size: 14px; text-align: left;">
+                    <div class="price">1 500 ₽</div>
+                    <ul>
                         <li>✅ 10 сигналов/день</li>
                         <li>✅ 10 монет</li>
                         <li>✅ 2 стратегии</li>
                     </ul>
-                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px;">Выбрать</a>
+                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px; width: 100%;">Выбрать</a>
                 </div>
-                <div style="background: #1a1f2e; padding: 24px; border-radius: 12px; border: 2px solid #4f46e5; text-align: center;">
+                <div class="pricing-card highlight">
                     <h3>⚖️ Стандарт</h3>
-                    <p style="font-size: 28px; font-weight: 700; margin: 12px 0;">3 500 ₽</p>
-                    <ul style="list-style: none; color: #94a3b8; font-size: 14px; text-align: left;">
+                    <div class="price">3 500 ₽</div>
+                    <ul>
                         <li>✅ 30 сигналов/день</li>
                         <li>✅ 30 монет</li>
                         <li>✅ 4 стратегии</li>
                         <li>✅ Smart Money</li>
                     </ul>
-                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px;">Выбрать</a>
+                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px; width: 100%;">Выбрать</a>
                 </div>
-                <div style="background: #1a1f2e; padding: 24px; border-radius: 12px; border: 1px solid #2d3748; text-align: center;">
+                <div class="pricing-card">
                     <h3>⚡ Про</h3>
-                    <p style="font-size: 28px; font-weight: 700; margin: 12px 0;">7 000 ₽</p>
-                    <ul style="list-style: none; color: #94a3b8; font-size: 14px; text-align: left;">
+                    <div class="price">7 000 ₽</div>
+                    <ul>
                         <li>✅ ∞ сигналы</li>
                         <li>✅ ∞ монеты</li>
                         <li>✅ Все стратегии</li>
                         <li>✅ Smart Money</li>
                         <li>✅ Автоторговля</li>
                     </ul>
-                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px;">Выбрать</a>
+                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px; width: 100%;">Выбрать</a>
                 </div>
             </div>
         </section>
