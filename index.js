@@ -6,8 +6,12 @@ const cron = require('node-cron');
 const axios = require('axios');
 const trading = require('./trading');
 require('dotenv').config();
+
+// === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
 const WebSocket = require('ws');
 global.WebSocket = WebSocket;
+// =============================================
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -31,23 +35,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("✅ Подключение к Supabase установлено");
 
 // ============================================
-//  МАРШРУТЫ API
+//  МАРШРУТЫ АВТОРИЗАЦИИ И ВЕРИФИКАЦИИ
 // ============================================
 
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'SMT Bot API работает!' });
-});
-
-app.get('/api/test-price/:symbol', async (req, res) => {
-    const { symbol } = req.params;
-    const price = await trading.getPrice(symbol);
-    if (price !== null) {
-        res.json({ symbol, price });
-    } else {
-        res.status(500).json({ error: 'Не удалось получить цену' });
-    }
-});
-
+// --- РЕГИСТРАЦИЯ ---
 app.post('/api/register', async (req, res) => {
     const { email, password, username } = req.body;
     if (!email || !password) {
@@ -63,18 +54,21 @@ app.post('/api/register', async (req, res) => {
             .select('*')
             .eq('email', email)
             .maybeSingle();
+
         if (existingUser) {
             return res.status(400).json({ error: 'Этот email уже зарегистрирован' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+
         const { data: newUser, error: createError } = await supabase
             .from('users')
             .insert({
                 email,
                 password: hashedPassword,
                 telegram_username: username || null,
-                auth_provider: 'email'
+                auth_provider: 'email',
+                is_verified: false
             })
             .select()
             .single();
@@ -84,8 +78,20 @@ app.post('/api/register', async (req, res) => {
             return res.status(500).json({ error: 'Ошибка создания пользователя' });
         }
 
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        await supabase
+            .from('verification_codes')
+            .insert({
+                email,
+                code: verificationCode,
+                expires_at: new Date(Date.now() + 15 * 60 * 1000)
+            });
+
+        console.log(`📧 Код верификации для ${email}: ${verificationCode}`);
+
         delete newUser.password;
-        res.status(201).json({ user: newUser });
+        res.status(201).json({ user: newUser, needVerification: true });
 
     } catch (err) {
         console.error('Непредвиденная ошибка:', err);
@@ -93,6 +99,83 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+// --- ВЕРИФИКАЦИЯ ПОЧТЫ ---
+app.post('/api/verify', async (req, res) => {
+    const { email, code } = req.body;
+    if (!email || !code) {
+        return res.status(400).json({ error: 'Email и код обязательны' });
+    }
+
+    try {
+        const { data: record, error } = await supabase
+            .from('verification_codes')
+            .select('*')
+            .eq('email', email)
+            .eq('code', code)
+            .single();
+
+        if (error || !record) {
+            return res.status(400).json({ error: 'Неверный код или истёк срок действия' });
+        }
+
+        if (new Date(record.expires_at) < new Date()) {
+            return res.status(400).json({ error: 'Код истёк. Запросите новый' });
+        }
+
+        const { data: user, updateError } = await supabase
+            .from('users')
+            .update({ is_verified: true })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) {
+            console.error('Ошибка обновления:', updateError);
+            return res.status(500).json({ error: 'Ошибка верификации' });
+        }
+
+        await supabase
+            .from('verification_codes')
+            .delete()
+            .eq('email', email);
+
+        delete user.password;
+        res.json({ user, verified: true });
+
+    } catch (err) {
+        console.error('Непредвиденная ошибка:', err);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+// --- ПОВТОРНАЯ ОТПРАВКА КОДА ---
+app.post('/api/resend-code', async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: 'Email обязателен' });
+    }
+
+    try {
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        await supabase
+            .from('verification_codes')
+            .upsert({
+                email,
+                code: verificationCode,
+                expires_at: new Date(Date.now() + 15 * 60 * 1000)
+            });
+
+        console.log(`📧 Новый код для ${email}: ${verificationCode}`);
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).json({ error: 'Ошибка отправки кода' });
+    }
+});
+
+// --- ВХОД ---
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -115,12 +198,38 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
 
+        if (!user.is_verified) {
+            return res.status(403).json({
+                error: 'Почта не подтверждена. Проверьте почту или запросите код повторно.',
+                needVerification: true,
+                email: user.email
+            });
+        }
+
         delete user.password;
         res.json({ user });
 
     } catch (err) {
         console.error('Непредвиденная ошибка:', err);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+// ============================================
+//  ОСТАЛЬНЫЕ МАРШРУТЫ API
+// ============================================
+
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'SMT Bot API работает!' });
+});
+
+app.get('/api/test-price/:symbol', async (req, res) => {
+    const { symbol } = req.params;
+    const price = await trading.getPrice(symbol);
+    if (price !== null) {
+        res.json({ symbol, price });
+    } else {
+        res.status(500).json({ error: 'Не удалось получить цену' });
     }
 });
 
@@ -385,38 +494,6 @@ cron.schedule('*/1 * * * *', async () => {
 });
 
 console.log('⏰ Планировщик запущен (каждую минуту)');
-
-
-// === ПРОКСИ ДЛЯ DEEPSEEK API ===
-app.post('/api/deepseek', async (req, res) => {
-    const { message } = req.body;
-    if (!message) {
-        return res.status(400).json({ error: 'Сообщение обязательно' });
-    }
-
-    try {
-        const response = await axios.post(
-            'https://api.deepseek.com/v1/chat/completions',
-            {
-                model: 'deepseek-chat',
-                messages: [{ role: 'user', content: message }]
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-
-        const reply = response.data.choices[0].message.content;
-        res.json({ reply });
-
-    } catch (error) {
-        console.error('❌ Ошибка DeepSeek API:', error.message);
-        res.status(500).json({ error: 'Ошибка получения ответа от DeepSeek' });
-    }
-});
 
 // ============================================
 //  ЗАПУСК СЕРВЕРА
