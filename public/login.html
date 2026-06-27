@@ -93,10 +93,13 @@
             text-decoration: underline;
         }
         #message {
-            margin-top: 16px;
+            margin-top: 12px;
             text-align: center;
             font-size: clamp(14px, 1.5vw, 16px);
             min-height: 22px;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
         }
         .success {
             color: #34d399;
@@ -128,22 +131,44 @@
         .back-link:hover {
             color: #fff;
         }
-        .code-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .code-row input {
-            flex: 1;
-        }
-        .code-row button {
-            flex: 0 0 auto;
-            padding: 12px 16px;
-            font-size: 14px;
+
+        /* Блок верификации — исправленный */
+        .code-block {
+            margin: 12px 0 8px 0;
+            padding: 16px;
             background: #2d3748;
-            color: #94a3b8;
+            border-radius: 12px;
+            border: 1px solid #4f46e5;
         }
-        .code-row button:hover {
+        .code-block input {
+            width: 100%;
+            padding: 14px;
+            background: #1a1f2e;
+            border: 2px solid #4f46e5;
+            border-radius: 10px;
+            color: #fff;
+            font-size: clamp(18px, 2vw, 22px);
+            text-align: center;
+            letter-spacing: 6px;
+            margin: 0 0 12px 0;
+        }
+        .code-block input:focus {
+            outline: none;
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+        }
+        .code-block .resend-btn {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            border: 1px solid #4f46e5;
+            color: #94a3b8;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: clamp(14px, 1.5vw, 16px);
+            transition: 0.2s;
+        }
+        .code-block .resend-btn:hover {
             background: #4f46e5;
             color: #fff;
         }
@@ -162,11 +187,10 @@
             <input type="password" id="password" placeholder="Пароль (мин. 6 символов)" required>
             <input type="text" id="username" placeholder="Имя (опционально)" style="display: none;">
 
-            <div id="codeBlock" class="hidden">
-                <div class="code-row">
-                    <input type="text" id="verificationCode" placeholder="Код из письма" maxlength="6">
-                    <button type="button" id="resendCodeBtn">Отправить снова</button>
-                </div>
+            <!-- Улучшенный блок верификации -->
+            <div id="codeBlock" class="code-block hidden">
+                <input type="text" id="verificationCode" placeholder="Введите код" maxlength="6" inputmode="numeric">
+                <button type="button" id="resendCodeBtn" class="resend-btn">Отправить код повторно</button>
             </div>
 
             <button type="submit" id="submitBtn">Войти</button>
@@ -230,8 +254,7 @@
         resendCodeBtn.addEventListener('click', async () => {
             const emailValue = email.value.trim();
             if (!emailValue) {
-                message.textContent = '❌ Введите email для отправки кода';
-                message.className = 'error';
+                setMessage('Введите email для отправки кода', 'error');
                 return;
             }
             try {
@@ -242,17 +265,24 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    message.textContent = '✅ Новый код отправлен на почту';
-                    message.className = 'success';
+                    setMessage('✅ Новый код отправлен на почту', 'success');
                 } else {
-                    message.textContent = '❌ ' + (data.error || 'Ошибка отправки');
-                    message.className = 'error';
+                    setMessage('❌ ' + (data.error || 'Ошибка отправки'), 'error');
                 }
             } catch (err) {
-                message.textContent = '❌ Ошибка соединения';
-                message.className = 'error';
+                setMessage('❌ Ошибка соединения', 'error');
             }
         });
+
+        function setMessage(text, type) {
+            message.textContent = text;
+            message.className = type;
+            clearTimeout(window.messageTimeout);
+            window.messageTimeout = setTimeout(() => {
+                message.textContent = '';
+                message.className = '';
+            }, 5000);
+        }
 
         // ===== ОТПРАВКА ФОРМЫ =====
         form.addEventListener('submit', async (e) => {
@@ -264,10 +294,9 @@
             const codeValue = verificationCode.value.trim();
 
             // ===== РЕЖИМ ВЕРИФИКАЦИИ (код) =====
-            if (!isLogin && codeBlock.classList.contains('hidden') === false) {
+            if (!isLogin && !codeBlock.classList.contains('hidden')) {
                 if (!codeValue) {
-                    message.textContent = '❌ Введите код из письма';
-                    message.className = 'error';
+                    setMessage('Введите код из письма', 'error');
                     return;
                 }
                 try {
@@ -278,19 +307,16 @@
                     });
                     const data = await res.json();
                     if (res.ok) {
-                        message.textContent = '✅ Почта подтверждена! Вход выполнен.';
-                        message.className = 'success';
+                        setMessage('✅ Почта подтверждена! Вход выполнен.', 'success');
                         localStorage.setItem('smtUser', JSON.stringify(data.user));
                         setTimeout(() => {
                             window.location.href = '/dashboard.html';
                         }, 500);
                     } else {
-                        message.textContent = '❌ ' + (data.error || 'Неверный код');
-                        message.className = 'error';
+                        setMessage('❌ ' + (data.error || 'Неверный код'), 'error');
                     }
                 } catch (err) {
-                    message.textContent = '❌ Ошибка соединения';
-                    message.className = 'error';
+                    setMessage('❌ Ошибка соединения', 'error');
                 }
                 return;
             }
@@ -298,20 +324,16 @@
             // ===== РЕГИСТРАЦИЯ =====
             if (!isLogin) {
                 if (!emailValue || !passwordValue) {
-                    message.textContent = '❌ Заполните все обязательные поля';
-                    message.className = 'error';
+                    setMessage('Заполните все обязательные поля', 'error');
                     return;
                 }
                 if (passwordValue.length < 6) {
-                    message.textContent = '❌ Пароль должен быть минимум 6 символов';
-                    message.className = 'error';
+                    setMessage('Пароль должен быть минимум 6 символов', 'error');
                     return;
                 }
 
                 submitBtn.disabled = true;
                 loader.style.display = 'block';
-                message.textContent = '';
-                message.className = '';
 
                 try {
                     const res = await fetch('/api/register', {
@@ -327,14 +349,12 @@
                     if (res.ok && data.needVerification) {
                         codeBlock.classList.remove('hidden');
                         submitBtn.textContent = 'Подтвердить код';
-                        message.textContent = '✅ Код отправлен на почту. Введите его ниже.';
-                        message.className = 'success';
+                        setMessage('✅ Код отправлен на почту. Введите его ниже.', 'success');
                         pendingEmail = emailValue;
                         formTitle.textContent = 'Подтверждение почты';
                         document.querySelector('.sub').textContent = 'Введите код из письма';
                     } else if (res.ok) {
-                        message.textContent = '✅ Регистрация успешна! Войдите.';
-                        message.className = 'success';
+                        setMessage('✅ Регистрация успешна! Войдите.', 'success');
                         isLogin = true;
                         submitBtn.textContent = 'Войти';
                         toggleText.textContent = 'Нет аккаунта? ';
@@ -344,12 +364,10 @@
                         document.querySelector('.sub').textContent = 'Войдите или создайте аккаунт';
                         codeBlock.classList.add('hidden');
                     } else {
-                        message.textContent = '❌ ' + (data.error || 'Ошибка регистрации');
-                        message.className = 'error';
+                        setMessage('❌ ' + (data.error || 'Ошибка регистрации'), 'error');
                     }
                 } catch (err) {
-                    message.textContent = '❌ Ошибка соединения';
-                    message.className = 'error';
+                    setMessage('❌ Ошибка соединения', 'error');
                 } finally {
                     submitBtn.disabled = false;
                     loader.style.display = 'none';
@@ -357,25 +375,20 @@
                 return;
             }
 
-            // ===== ВХОД (новая логика) =====
+            // ===== ВХОД =====
             if (!emailValue || !passwordValue) {
-                message.textContent = '❌ Заполните все обязательные поля';
-                message.className = 'error';
+                setMessage('Заполните все обязательные поля', 'error');
                 return;
             }
 
             submitBtn.disabled = true;
             loader.style.display = 'block';
-            message.textContent = '';
-            message.className = '';
 
             try {
-                // 1. Проверяем, существует ли пользователь
                 const checkRes = await fetch('/api/user/' + encodeURIComponent(emailValue));
                 const userData = await checkRes.json();
 
                 if (!checkRes.ok || !userData.user) {
-                    // Пользователь не найден → переключаем на регистрацию
                     message.textContent = '🔍 Пользователь не найден. Переключаем на регистрацию...';
                     message.className = 'success';
                     isLogin = false;
@@ -385,11 +398,9 @@
                     username.style.display = 'block';
                     formTitle.textContent = 'Создайте аккаунт';
                     document.querySelector('.sub').textContent = 'Зарегистрируйтесь, чтобы начать';
-                    // email уже заполнен
                     password.value = '';
                     username.value = '';
                     codeBlock.classList.add('hidden');
-                    // Сбрасываем сообщение через 1 секунду
                     setTimeout(() => {
                         message.textContent = '';
                         message.className = '';
@@ -397,7 +408,6 @@
                     return;
                 }
 
-                // 2. Пользователь существует → проверяем пароль
                 const loginRes = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -406,31 +416,25 @@
                 const loginData = await loginRes.json();
 
                 if (loginRes.ok) {
-                    message.textContent = '✅ Вход выполнен!';
-                    message.className = 'success';
+                    setMessage('✅ Вход выполнен!', 'success');
                     localStorage.setItem('smtUser', JSON.stringify(loginData.user));
                     setTimeout(() => {
                         window.location.href = '/dashboard.html';
                     }, 500);
                 } else if (loginRes.status === 403 && loginData.needVerification) {
-                    // Не верифицирован
                     codeBlock.classList.remove('hidden');
                     submitBtn.textContent = 'Подтвердить код';
-                    message.textContent = '⚠️ ' + loginData.error;
-                    message.className = 'error';
+                    setMessage('⚠️ ' + loginData.error, 'error');
                     pendingEmail = loginData.email || emailValue;
                     formTitle.textContent = 'Подтверждение почты';
                     document.querySelector('.sub').textContent = 'Введите код из письма';
                 } else {
-                    // Неверный пароль
-                    message.textContent = '❌ Неверный пароль. Попробуйте снова.';
-                    message.className = 'error';
-                    password.value = ''; // Сбрасываем только пароль
+                    setMessage('❌ Неверный пароль. Попробуйте снова.', 'error');
+                    password.value = '';
                     password.focus();
                 }
             } catch (err) {
-                message.textContent = '❌ Ошибка соединения';
-                message.className = 'error';
+                setMessage('❌ Ошибка соединения', 'error');
             } finally {
                 submitBtn.disabled = false;
                 loader.style.display = 'none';
