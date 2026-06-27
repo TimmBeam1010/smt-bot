@@ -131,8 +131,6 @@
         .back-link:hover {
             color: #fff;
         }
-
-        /* Блок верификации — исправленный */
         .code-block {
             margin: 12px 0 8px 0;
             padding: 16px;
@@ -187,7 +185,6 @@
             <input type="password" id="password" placeholder="Пароль (мин. 6 символов)" required>
             <input type="text" id="username" placeholder="Имя (опционально)" style="display: none;">
 
-            <!-- Улучшенный блок верификации -->
             <div id="codeBlock" class="code-block hidden">
                 <input type="text" id="verificationCode" placeholder="Введите код" maxlength="6" inputmode="numeric">
                 <button type="button" id="resendCodeBtn" class="resend-btn">Отправить код повторно</button>
@@ -375,7 +372,7 @@
                 return;
             }
 
-            // ===== ВХОД =====
+            // ===== ВХОД (без верификации) =====
             if (!emailValue || !passwordValue) {
                 setMessage('Заполните все обязательные поля', 'error');
                 return;
@@ -389,8 +386,8 @@
                 const userData = await checkRes.json();
 
                 if (!checkRes.ok || !userData.user) {
-                    message.textContent = '🔍 Пользователь не найден. Переключаем на регистрацию...';
-                    message.className = 'success';
+                    // Пользователь не найден → переключаем на регистрацию
+                    setMessage('🔍 Пользователь не найден. Переключаем на регистрацию...', 'success');
                     isLogin = false;
                     submitBtn.textContent = 'Зарегистрироваться';
                     toggleText.textContent = 'Уже есть аккаунт? ';
@@ -408,6 +405,7 @@
                     return;
                 }
 
+                // Пользователь существует → проверяем пароль
                 const loginRes = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -422,12 +420,8 @@
                         window.location.href = '/dashboard.html';
                     }, 500);
                 } else if (loginRes.status === 403 && loginData.needVerification) {
-                    codeBlock.classList.remove('hidden');
-                    submitBtn.textContent = 'Подтвердить код';
-                    setMessage('⚠️ ' + loginData.error, 'error');
-                    pendingEmail = loginData.email || emailValue;
-                    formTitle.textContent = 'Подтверждение почты';
-                    document.querySelector('.sub').textContent = 'Введите код из письма';
+                    // Пользователь не верифицирован → сообщение, но поле для кода НЕ ПОКАЗЫВАЕМ
+                    setMessage('⚠️ ' + loginData.error + '. Обратитесь к администратору или завершите регистрацию.', 'error');
                 } else {
                     setMessage('❌ Неверный пароль. Попробуйте снова.', 'error');
                     password.value = '';
