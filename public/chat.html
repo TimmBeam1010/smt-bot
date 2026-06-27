@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📦 SMT Bot — Кеш чата</title>
+    <title>📦 SMT Bot — Чат с памятью</title>
     <style>
         body {
             background: #0a0e17;
@@ -77,7 +77,7 @@
         <textarea id="userInput" rows="2" placeholder="Напишите сообщение..." style="flex:1;"></textarea>
         <button id="sendBtn">➤</button>
     </div>
-    <div class="loader" id="loader">⏳ Сохранение...</div>
+    <div class="loader" id="loader">⏳ DeepSeek думает...</div>
 
     <script>
         const API_URL = 'http://72.56.249.109:5000';
@@ -107,16 +107,31 @@
             await saveMessage('user', text);
             userInput.value = '';
 
-            // Имитация ответа ассистента (здесь ты можешь вставить ответ DeepSeek)
-            // Пока просто сохраняем заглушку
-            const assistantReply = '📨 Сообщение сохранено. Ответ будет позже.';
-            await saveMessage('assistant', assistantReply);
+            // Получаем ответ от DeepSeek
+            loader.style.display = 'block';
+            try {
+                const res = await fetch(`${API_URL}/api/deepseek`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await res.json();
+                if (data.reply) {
+                    await saveMessage('assistant', data.reply);
+                } else {
+                    await saveMessage('assistant', '❌ Не удалось получить ответ от DeepSeek.');
+                }
+            } catch (e) {
+                console.error('Ошибка:', e);
+                await saveMessage('assistant', '❌ Ошибка соединения с сервером.');
+            } finally {
+                loader.style.display = 'none';
+            }
 
             loadHistory();
         }
 
         async function saveMessage(role, content) {
-            loader.style.display = 'block';
             try {
                 await fetch(`${API_URL}/api/chat/save`, {
                     method: 'POST',
@@ -125,8 +140,6 @@
                 });
             } catch (e) {
                 console.error('Ошибка сохранения:', e);
-            } finally {
-                loader.style.display = 'none';
             }
         }
 
