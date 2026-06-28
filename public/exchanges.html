@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏦 SMT Bot — Биржи</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #2d3748;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        .logo span {
+            color: #fff;
+        }
+        .nav {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav a:hover {
+            color: #fff;
+            background: #1a1f2e;
+        }
+        .nav .user-email {
+            color: #4f46e5;
+            font-size: 14px;
+        }
+        .logout-btn {
+            background: #1a1f2e;
+            color: #94a3b8;
+            border: 1px solid #2d3748;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover {
+            background: #2d3748;
+            color: #fff;
+        }
+        .card {
+            background: #1a1f2e;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #2d3748;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .card-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .back-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-connected {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .badge-disconnected {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        .badge-pending {
+            background: #92400e;
+            color: #fbbf24;
+        }
+        .empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 24px;
+            font-size: 14px;
+        }
+        .exchange-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .exchange-item:hover {
+            background: #0a0e17;
+            border-radius: 8px;
+        }
+        .exchange-item .left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .exchange-item .right {
+            text-align: right;
+        }
+        .exchange-logo {
+            font-size: 28px;
+        }
+        .exchange-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .exchange-status {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .exchange-arrow {
+            color: #4f46e5;
+            font-size: 18px;
+        }
+        .exchanges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .exchange-card {
+            background: #0a0e17;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #1a1f2e;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .exchange-card:hover {
+            border-color: #4f46e5;
+            transform: translateY(-2px);
+        }
+        .exchange-card .logo {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+        .exchange-card .name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .exchange-card .status {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .nav {
+                justify-content: center;
+            }
+            .exchange-item {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .exchange-item .right {
+                text-align: center;
+            }
+            .exchange-item .left {
+                justify-content: center;
+            }
+            .exchanges-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">SMT <span>Bot</span></div>
+        <div class="nav">
+            <span class="user-email" id="userEmail"></span>
+            <a href="/dashboard.html">📊 ЛК</a>
+            <a href="/index.html">Главная</a>
+            <button class="logout-btn" onclick="logout()">Выйти</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>🏦 Мои биржи</h2>
+            <a href="/dashboard.html" class="back-link">← Назад в ЛК</a>
+        </div>
+        <div id="myExchangesContainer">
+            <div class="empty">Загрузка...</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>📋 Доступные биржи</h2>
+        </div>
+        <div class="exchanges-grid" id="availableExchanges"></div>
+    </div>
+
+    <script>
+        (function() {
+            const userEmail = localStorage.getItem('smt_user_email');
+            if (!userEmail) {
+                window.location.replace('/login.html');
+                return;
+            }
+
+            document.getElementById('userEmail').textContent = userEmail;
+
+            // Список всех доступных бирж с логотипами
+            const ALL_EXCHANGES = [
+                { id: 'binance', name: 'Binance', logo: '🟡', url: 'https://binance.com', docs: 'https://binance-docs.github.io/apidocs/' },
+                { id: 'bybit', name: 'Bybit', logo: '🔵', url: 'https://bybit.com', docs: 'https://bybit-exchange.github.io/docs/' },
+                { id: 'okx', name: 'OKX', logo: '🔴', url: 'https://okx.com', docs: 'https://www.okx.com/docs/' },
+                { id: 'gateio', name: 'Gate.io', logo: '🟣', url: 'https://gate.io', docs: 'https://gate.io/docs' },
+                { id: 'kucoin', name: 'KuCoin', logo: '🟢', url: 'https://kucoin.com', docs: 'https://docs.kucoin.com/' },
+                { id: 'kraken', name: 'Kraken', logo: '🟠', url: 'https://kraken.com', docs: 'https://docs.kraken.com/' },
+                { id: 'bitget', name: 'Bitget', logo: '🟡', url: 'https://bitget.com', docs: 'https://bitget-docs.github.io/' },
+                { id: 'htx', name: 'HTX (Huobi)', logo: '🔵', url: 'https://htx.com', docs: 'https://www.htx.com/docs/' },
+                { id: 'mexc', name: 'MEXC', logo: '🔴', url: 'https://mexc.com', docs: 'https://mexc-docs.github.io/' },
+                { id: 'bingx', name: 'BingX', logo: '🟣', url: 'https://bingx.com', docs: 'https://bingx-api.github.io/docs/' },
+                { id: 'coinex', name: 'CoinEx', logo: '🟢', url: 'https://coinex.com', docs: 'https://coinex-docs.github.io/' },
+                { id: 'bitmex', name: 'BitMEX', logo: '🔵', url: 'https://bitmex.com', docs: 'https://www.bitmex.com/api/' },
+                { id: 'crypto_com', name: 'Crypto.com', logo: '🔴', url: 'https://crypto.com', docs: 'https://exchange-docs.crypto.com/' },
+                { id: 'upbit', name: 'Upbit', logo: '🟣', url: 'https://upbit.com', docs: 'https://docs.upbit.com/' },
+                { id: 'whitebit', name: 'WhiteBit', logo: '🟢', url: 'https://whitebit.com', docs: 'https://whitebit-exchange.github.io/api/' },
+                { id: 'exmo', name: 'EXMO', logo: '🟠', url: 'https://exmo.com', docs: 'https://exmo.com/en/api' },
+                { id: 'bitfinex', name: 'Bitfinex', logo: '🟡', url: 'https://bitfinex.com', docs: 'https://docs.bitfinex.com/' },
+                { id: 'phemex', name: 'Phemex', logo: '🔵', url: 'https://phemex.com', docs: 'https://phemex-docs.github.io/' }
+            ];
+
+            let userExchanges = [];
+
+            async function loadUserExchanges() {
+                try {
+                    const resp = await fetch(`/api/user/${userEmail}`);
+                    const data = await resp.json();
+                    if (data.user && data.user.exchanges) {
+                        userExchanges = data.user.exchanges;
+                    } else {
+                        userExchanges = [];
+                    }
+                    renderMyExchanges();
+                    renderAvailableExchanges();
+                } catch (e) {
+                    console.error('Ошибка загрузки бирж:', e);
+                    userExchanges = [];
+                    renderMyExchanges();
+                    renderAvailableExchanges();
+                }
+            }
+
+            function renderMyExchanges() {
+                const container = document.getElementById('myExchangesContainer');
+                
+                if (!userExchanges || userExchanges.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty">
+                            Нет подключённых бирж.<br>
+                            <span style="color:#94a3b8;font-size:13px;">Выберите биржу из списка ниже для подключения</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = userExchanges.map(ex => `
+                    <div class="exchange-item" onclick="openExchangeSettings('${ex.id}')">
+                        <div class="left">
+                            <span class="exchange-logo">${ex.logo || '🏦'}</span>
+                            <span class="exchange-name">${ex.name || 'Биржа'}</span>
+                            <span class="badge ${ex.connected ? 'badge-connected' : 'badge-disconnected'}">
+                                ${ex.connected ? '✅ Подключена' : '❌ Не подключена'}
+                            </span>
+                            ${ex.api_key ? '<span style="color:#94a3b8;font-size:12px;">🔑 API установлен</span>' : '<span style="color:#94a3b8;font-size:12px;">🔑 API не установлен</span>'}
+                        </div>
+                        <div class="right">
+                            <button onclick="event.stopPropagation();disconnectExchange('${ex.id}')" style="background:#7f1d1d;color:#fca5a5;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;margin-right:8px;">
+                                Отключить
+                            </button>
+                            <span class="exchange-arrow">›</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            function renderAvailableExchanges() {
+                const container = document.getElementById('availableExchanges');
+                const connectedIds = userExchanges.map(ex => ex.id);
+
+                const available = ALL_EXCHANGES.filter(ex => !connectedIds.includes(ex.id));
+
+                if (available.length === 0) {
+                    container.innerHTML = `
+                        <div style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:24px;">
+                            Все доступные биржи уже подключены
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = available.map(ex => `
+                    <div class="exchange-card" onclick="openExchangeSettings('${ex.id}')">
+                        <div class="logo">${ex.logo}</div>
+                        <div class="name">${ex.name}</div>
+                        <div class="status">Нажмите для подключения</div>
+                    </div>
+                `).join('');
+            }
+
+            window.openExchangeSettings = function(exchangeId) {
+                // Проверяем, есть ли уже эта биржа в списке пользователя
+                const existing = userExchanges.find(ex => ex.id === exchangeId);
+                
+                if (existing) {
+                    // Если уже подключена - открываем настройки
+                    window.location.href = `/exchange-settings.html?id=${exchangeId}`;
+                } else {
+                    // Если новая - добавляем и открываем настройки
+                    const exchangeData = ALL_EXCHANGES.find(ex => ex.id === exchangeId);
+                    if (exchangeData) {
+                        userExchanges.push({
+                            id: exchangeData.id,
+                            name: exchangeData.name,
+                            logo: exchangeData.logo,
+                            connected: false,
+                            api_key: '',
+                            secret_key: ''
+                        });
+                        
+                        // Сохраняем на сервере
+                        saveExchangesToServer(() => {
+                            window.location.href = `/exchange-settings.html?id=${exchangeId}`;
+                        });
+                    }
+                }
+            };
+
+            async function saveExchangesToServer(callback) {
+                try {
+                    const resp = await fetch(`/api/user/${userEmail}/exchanges`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ exchanges: userExchanges })
+                    });
+                    if (resp.ok) {
+                        if (callback) callback();
+                    } else {
+                        alert('❌ Ошибка сохранения бирж');
+                    }
+                } catch (e) {
+                    console.error('Ошибка сохранения:', e);
+                    alert('❌ Ошибка при сохранении');
+                }
+            }
+
+            window.disconnectExchange = function(exchangeId) {
+                if (!confirm(`Отключить биржу ${exchangeId}?`)) return;
+                
+                userExchanges = userExchanges.filter(ex => ex.id !== exchangeId);
+                saveExchangesToServer(() => {
+                    loadUserExchanges();
+                });
+            };
+
+            window.logout = function() {
+                localStorage.removeItem('smt_user_email');
+                window.location.replace('/login.html');
+            };
+
+            loadUserExchanges();
+
+        })();
+    </script>
+
+</body>
+</html>
