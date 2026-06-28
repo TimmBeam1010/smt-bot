@@ -1,423 +1,416 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMT Bot — Сигналы</title>
+    <title>📡 SMT Bot — Сигналы</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-        body { background: #0a0e17; color: #fff; padding: 16px; }
-        .container { max-width: 1100px; margin: 0 auto; }
-        header {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0 16px;
-            border-bottom: 1px solid #1a1f2e;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #2d3748;
             flex-wrap: wrap;
             gap: 12px;
         }
-        .logo { font-size: clamp(22px, 4vw, 28px); font-weight: 700; color: #4f46e5; cursor: pointer; text-decoration: none; }
-        .back-link { color: #94a3b8; text-decoration: none; font-size: 16px; transition: 0.2s; }
-        .back-link:hover { color: #fff; }
-        .filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin: 20px 0;
-            background: #1a1f2e;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #2d3748;
-            align-items: center;
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4f46e5;
         }
-        .filters label { color: #94a3b8; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
-        .filters select { background: #2d3748; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 14px; }
-        .signal-item {
-            padding: 14px 18px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            border-left: 4px solid #4f46e5;
-            background: #1a1f2e;
-            transition: 0.2s;
+        .logo span {
+            color: #fff;
+        }
+        .nav {
             display: flex;
-            justify-content: space-between;
+            gap: 16px;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
         }
-        .signal-item.unread { background: #2d3748; }
-        .signal-item .symbol { font-weight: 600; font-size: clamp(15px, 1.4vw, 17px); }
-        .signal-item .side { font-weight: 600; }
-        .signal-item .side.long { color: #34d399; }
-        .signal-item .side.short { color: #f87171; }
-        .signal-item .meta {
+        .nav a {
             color: #94a3b8;
-            font-size: clamp(12px, 1.2vw, 14px);
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav a:hover {
+            color: #fff;
+            background: #1a1f2e;
+        }
+        .nav .user-email {
+            color: #4f46e5;
+            font-size: 14px;
+        }
+        .logout-btn {
+            background: #1a1f2e;
+            color: #94a3b8;
+            border: 1px solid #2d3748;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover {
+            background: #2d3748;
+            color: #fff;
+        }
+        .card {
+            background: #1a1f2e;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #2d3748;
+        }
+        .card-header {
             display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
             flex-wrap: wrap;
             gap: 12px;
-            align-items: center;
         }
-        .signal-item .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-        .btn-check { background: #4f46e5; color: #fff; border: none; padding: 4px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-        .btn-check:hover { background: #4338ca; }
-        .btn-open { background: #34d399; color: #0a0e17; border: none; padding: 4px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
-        .btn-open:hover { background: #2bcc8a; }
-        .btn-open:disabled { opacity: 0.4; cursor: not-allowed; }
-        .result-box { font-size: 13px; padding: 4px 12px; border-radius: 6px; background: #2d3748; display: inline-block; }
-        .result-box.profit { color: #34d399; }
-        .result-box.loss { color: #f87171; }
-        .result-box.active { color: #fbbf24; }
-        .result-box.inactive { color: #94a3b8; }
-        footer {
-            border-top: 1px solid #1a1f2e;
-            padding: 20px 0;
-            margin-top: 30px;
-            text-align: center;
+        .card-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .filter-group label {
             color: #94a3b8;
             font-size: 14px;
         }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 16px;
-        }
-        .modal-overlay.open { display: flex; }
-        .modal {
-            background: #1a1f2e;
-            padding: 32px;
-            border-radius: 16px;
-            max-width: 420px;
-            width: 100%;
+        .filter-group select {
+            padding: 8px 16px;
+            background: #0a0e17;
+            color: #fff;
             border: 1px solid #2d3748;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
         }
-        .modal h3 { font-size: 20px; margin-bottom: 16px; }
-        .modal .bot-option {
+        .filter-group select:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        .apply-btn {
+            padding: 8px 24px;
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .apply-btn:hover {
+            background: #4338ca;
+        }
+        .signal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .signal-item:last-child {
+            border-bottom: none;
+        }
+        .signal-item .left {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 12px;
-            background: #2d3748;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: 0.2s;
+            flex-wrap: wrap;
         }
-        .modal .bot-option:hover { background: #4f46e5; }
-        .modal .bot-option input[type="checkbox"] { accent-color: #4f46e5; width: 18px; height: 18px; cursor: pointer; }
-        .modal .bot-option label { cursor: pointer; flex: 1; }
-        .modal .bot-option .bot-tag { font-size: 12px; color: #94a3b8; }
-        .modal-actions { display: flex; gap: 12px; margin-top: 16px; }
-        .modal-actions button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn-confirm-open { background: #34d399; color: #0a0e17; }
-        .btn-confirm-open:hover { background: #2bcc8a; }
-        .btn-cancel { background: #2d3748; color: #fff; }
-        .btn-cancel:hover { background: #4a5568; }
+        .signal-item .right {
+            text-align: right;
+        }
+        .side-long { color: #10b981; }
+        .side-short { color: #ef4444; }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-active {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .badge-checked {
+            background: #1e293b;
+            color: #94a3b8;
+        }
+        .badge-profit {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .badge-loss {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        .positive { color: #10b981; }
+        .negative { color: #ef4444; }
+        .neutral { color: #f59e0b; }
+        .empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 40px;
+            font-size: 16px;
+        }
+        .signal-time {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        .back-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .stats-row .stat {
+            background: #0a0e17;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stats-row .stat .value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .stats-row .stat .label {
+            color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
         @media (max-width: 600px) {
-            .filters { flex-direction: column; align-items: stretch; }
-            .signal-item { flex-direction: column; align-items: flex-start; }
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .nav {
+                justify-content: center;
+            }
+            .signal-item {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .signal-item .right {
+                text-align: center;
+            }
+            .signal-item .left {
+                justify-content: center;
+            }
+            .filter-group {
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <a href="/" class="logo">🤖 SMT Bot</a>
-            <a href="/dashboard.html" class="back-link">← Назад в кабинет</a>
-        </header>
 
-        <div class="filters">
-            <label>Тип
-                <select id="filterType">
-                    <option value="all">Все</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                </select>
-            </label>
-            <label>Период
-                <select id="filterPeriod">
-                    <option value="1h">1 час</option>
-                    <option value="6h">6 часов</option>
-                    <option value="24h">24 часа</option>
-                    <option value="7d">7 дней</option>
-                    <option value="all">За весь период</option>
-                </select>
-            </label>
-            <label>Статус
-                <select id="filterStatus">
-                    <option value="all">Все</option>
-                    <option value="unread">Непрочитанные</option>
-                    <option value="read">Прочитанные</option>
-                </select>
-            </label>
+    <div class="header">
+        <div class="logo">SMT <span>Bot</span></div>
+        <div class="nav">
+            <span class="user-email" id="userEmail"></span>
+            <a href="/dashboard.html">📊 ЛК</a>
+            <a href="/index.html">Главная</a>
+            <button class="logout-btn" onclick="logout()">Выйти</button>
         </div>
-
-        <div id="signalsList"><p style="color:#94a3b8;">Загрузка...</p></div>
-        <footer>© 2026 SMT Bot</footer>
     </div>
 
-    <div class="modal-overlay" id="botSelectModal">
-        <div class="modal">
-            <h3>🤖 Выберите бота</h3>
-            <div id="botList"></div>
-            <div class="modal-actions">
-                <button class="btn-cancel" id="cancelOpenBtn">Отмена</button>
-                <button class="btn-confirm-open" id="confirmOpenBtn">✅ Открыть</button>
+    <div class="card">
+        <div class="card-header">
+            <h2>📡 Все сигналы</h2>
+            <a href="/dashboard.html" class="back-link">← Назад в ЛК</a>
+        </div>
+
+        <div class="stats-row" id="statsRow">
+            <div class="stat">
+                <div class="value" id="statTotal">0</div>
+                <div class="label">Всего</div>
             </div>
+            <div class="stat">
+                <div class="value positive" id="statProfit">0</div>
+                <div class="label">Прибыль</div>
+            </div>
+            <div class="stat">
+                <div class="value negative" id="statLoss">0</div>
+                <div class="label">Убыток</div>
+            </div>
+            <div class="stat">
+                <div class="value" id="statActive">0</div>
+                <div class="label">Активные</div>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <label for="periodFilter">Период:</label>
+            <select id="periodFilter">
+                <option value="all">За весь период</option>
+                <option value="today">Сегодня</option>
+                <option value="week">За неделю</option>
+                <option value="month">За месяц</option>
+            </select>
+            <button class="apply-btn" onclick="applyFilter()">Применить</button>
+        </div>
+
+        <div id="signalsContainer">
+            <div class="empty">Загрузка...</div>
         </div>
     </div>
 
     <script>
-        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
-        if (!user || !user.email) {
-            window.location.href = '/login.html';
-        }
-
-        let allSignals = [];
-        let selectedSignalId = null;
-        let userBots = [];
-
-        async function loadBots() {
-            try {
-                const res = await fetch(`/api/user/${user.email}`);
-                const data = await res.json();
-                if (res.ok && data.user) {
-                    userBots = data.user.bots || [];
-                    if (!userBots.some(b => b.exchange === 'demo')) {
-                        userBots.unshift({
-                            exchange: 'demo',
-                            tariff: 'Демо-бот',
-                            services: ['Сигналы', 'Автоторговля'],
-                            active: true,
-                            paused: false,
-                            isDemo: true
-                        });
-                    }
-                }
-            } catch (err) {
-                console.error('Ошибка загрузки ботов:', err);
-            }
-        }
-
-        async function loadSignals() {
-            try {
-                const res = await fetch(`/api/signals/user/${user.email}`);
-                const data = await res.json();
-                allSignals = data.signals || [];
-                applyFilters();
-            } catch (err) {
-                document.getElementById('signalsList').innerHTML = '<p style="color:#f87171;">Ошибка загрузки</p>';
-            }
-        }
-
-        function applyFilters() {
-            const type = document.getElementById('filterType').value;
-            const period = document.getElementById('filterPeriod').value;
-            const status = document.getElementById('filterStatus').value;
-
-            let filtered = allSignals;
-
-            if (type !== 'all') {
-                filtered = filtered.filter(s => s.confidence === type);
-            }
-            if (status === 'unread') {
-                filtered = filtered.filter(s => !s.read);
-            } else if (status === 'read') {
-                filtered = filtered.filter(s => s.read);
-            }
-            if (period !== 'all') {
-                const now = new Date();
-                const limit = {
-                    '1h': 3600000,
-                    '6h': 21600000,
-                    '24h': 86400000,
-                    '7d': 604800000
-                } [period];
-                if (limit) {
-                    filtered = filtered.filter(s => now - new Date(s.created_at) < limit);
-                }
-            }
-
-            renderSignals(filtered);
-        }
-
-        function renderSignals(signals) {
-            const container = document.getElementById('signalsList');
-            if (!signals.length) {
-                container.innerHTML = '<p style="color:#94a3b8;">Нет сигналов по выбранным фильтрам</p>';
+        (function() {
+            const userEmail = localStorage.getItem('smt_user_email');
+            if (!userEmail) {
+                window.location.replace('/login.html');
                 return;
             }
 
-            container.innerHTML = signals.map(s => {
-                const sideClass = s.side.toLowerCase();
-                const unreadClass = s.read ? '' : 'unread';
-                const isActive = s.check_result === 'active';
-                return `
-                    <div class="signal-item ${unreadClass}" data-id="${s.id}">
-                        <div>
-                            <span class="symbol">${s.symbol}</span>
-                            <span class="side ${sideClass}">${s.side}</span>
-                            <span style="font-size:13px;color:#94a3b8;">(${s.confidence})</span>
-                        </div>
-                        <div class="meta">
-                            <span>💰 ${s.entry_price}</span>
-                            <span>📅 ${new Date(s.created_at).toLocaleDateString()}</span>
-                            <div class="actions">
-                                <button class="btn-check" data-id="${s.id}">Проверить</button>
-                                <span id="result-${s.id}"></span>
-                                ${isActive ? `<button class="btn-open" data-id="${s.id}">📈 Открыть</button>` : ''}
+            document.getElementById('userEmail').textContent = userEmail;
+
+            let allSignals = [];
+
+            async function loadSignals() {
+                try {
+                    const resp = await fetch(`/api/signals/user/${userEmail}`);
+                    const data = await resp.json();
+                    allSignals = data.signals || [];
+                    applyFilter();
+                } catch (e) {
+                    console.error('Ошибка загрузки сигналов:', e);
+                    allSignals = [];
+                    applyFilter();
+                }
+            }
+
+            window.applyFilter = function() {
+                const period = document.getElementById('periodFilter').value;
+                let filtered = [...allSignals];
+
+                const now = new Date();
+                if (period === 'today') {
+                    const start = new Date(now);
+                    start.setHours(0, 0, 0, 0);
+                    filtered = filtered.filter(s => new Date(s.created_at) >= start);
+                } else if (period === 'week') {
+                    const start = new Date(now);
+                    start.setDate(start.getDate() - 7);
+                    filtered = filtered.filter(s => new Date(s.created_at) >= start);
+                } else if (period === 'month') {
+                    const start = new Date(now);
+                    start.setMonth(start.getMonth() - 1);
+                    filtered = filtered.filter(s => new Date(s.created_at) >= start);
+                }
+
+                renderSignals(filtered);
+            };
+
+            function renderSignals(signals) {
+                const container = document.getElementById('signalsContainer');
+                
+                // Статистика
+                const total = signals.length;
+                const profit = signals.filter(s => s.check_result === 'profit').length;
+                const loss = signals.filter(s => s.check_result === 'loss').length;
+                const active = signals.filter(s => !s.checked).length;
+
+                document.getElementById('statTotal').textContent = total;
+                document.getElementById('statProfit').textContent = profit;
+                document.getElementById('statLoss').textContent = loss;
+                document.getElementById('statActive').textContent = active;
+
+                if (!signals || signals.length === 0) {
+                    container.innerHTML = '<div class="empty">Нет сигналов за выбранный период</div>';
+                    return;
+                }
+
+                container.innerHTML = signals.map(s => {
+                    let statusBadge = '';
+                    let statusClass = '';
+                    
+                    if (!s.checked) {
+                        statusBadge = '<span class="badge badge-active">активен</span>';
+                    } else if (s.check_result === 'profit') {
+                        statusBadge = '<span class="badge badge-profit">✅ прибыль</span>';
+                    } else if (s.check_result === 'loss') {
+                        statusBadge = '<span class="badge badge-loss">❌ убыток</span>';
+                    } else {
+                        statusBadge = '<span class="badge badge-checked">проверен</span>';
+                    }
+
+                    const rsi = s.rsi ? `RSI: ${s.rsi}` : '';
+                    const macd = s.macd ? `MACD: ${s.macd}` : '';
+
+                    return `
+                        <div class="signal-item">
+                            <div class="left">
+                                <strong>${s.symbol || '--'}</strong>
+                                <span class="${s.side === 'LONG' ? 'side-long' : 'side-short'}">${s.side || '--'}</span>
+                                <span style="color:#94a3b8;font-size:12px;">${rsi} ${macd}</span>
+                                ${statusBadge}
+                            </div>
+                            <div class="right">
+                                <div>Entry: $${(s.entry_price || 0).toFixed(4)}</div>
+                                <div class="signal-time">${s.created_at ? new Date(s.created_at).toLocaleString() : '--'}</div>
+                                <div style="font-size:12px;color:#94a3b8;margin-top:4px;">
+                                    ${s.reasons ? s.reasons.join(' | ') : ''}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-            }).join('');
-
-            document.querySelectorAll('.btn-check').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const id = btn.dataset.id;
-                    await checkSignal(id);
-                });
-            });
-
-            document.querySelectorAll('.btn-open').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const id = btn.dataset.id;
-                    selectedSignalId = id;
-                    showBotSelector();
-                });
-            });
-        }
-
-        async function checkSignal(id) {
-            const resultSpan = document.getElementById(`result-${id}`);
-            resultSpan.textContent = '⏳ ...';
-
-            try {
-                const res = await fetch(`/api/signals/check/${id}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.email })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    const cls = data.status === 'profit' ? 'profit' :
-                               data.status === 'loss' ? 'loss' :
-                               data.status === 'active' ? 'active' : 'inactive';
-                    resultSpan.innerHTML = `<span class="result-box ${cls}">${data.message}</span>`;
-                    const signalItem = document.querySelector(`.signal-item[data-id="${id}"]`);
-                    const actionsDiv = signalItem?.querySelector('.actions');
-                    if (actionsDiv && data.status === 'active') {
-                        const existingBtn = actionsDiv.querySelector('.btn-open');
-                        if (!existingBtn) {
-                            const openBtn = document.createElement('button');
-                            openBtn.className = 'btn-open';
-                            openBtn.dataset.id = id;
-                            openBtn.textContent = '📈 Открыть';
-                            openBtn.addEventListener('click', () => {
-                                selectedSignalId = id;
-                                showBotSelector();
-                            });
-                            actionsDiv.appendChild(openBtn);
-                        }
-                    }
-                } else {
-                    resultSpan.textContent = '❌ Ошибка';
-                }
-            } catch (err) {
-                resultSpan.textContent = '❌ Ошибка';
-            }
-        }
-
-        function showBotSelector() {
-            const modal = document.getElementById('botSelectModal');
-            const list = document.getElementById('botList');
-
-            if (userBots.length === 0) {
-                list.innerHTML = '<p style="color:#94a3b8;">Нет активных ботов</p>';
-                modal.classList.add('open');
-                return;
+                    `;
+                }).join('');
             }
 
-            list.innerHTML = userBots.map((bot, index) => {
-                const isActive = bot.active !== false && bot.paused !== true;
-                const name = bot.exchange === 'demo' ? '🎯 Демо-бот' : `🤖 Бот #${index + 1} (${bot.exchange})`;
-                return `
-                    <div class="bot-option">
-                        <input type="checkbox" id="bot_${index}" value="${index}" ${isActive ? '' : 'disabled'}>
-                        <label for="bot_${index}">
-                            ${name}
-                            ${!isActive ? ' <span class="bot-tag">(неактивен)</span>' : ''}
-                        </label>
-                    </div>
-                `;
-            }).join('');
+            window.logout = function() {
+                localStorage.removeItem('smt_user_email');
+                window.location.replace('/login.html');
+            };
 
-            modal.classList.add('open');
-        }
+            loadSignals();
 
-        document.getElementById('cancelOpenBtn').addEventListener('click', () => {
-            document.getElementById('botSelectModal').classList.remove('open');
-            selectedSignalId = null;
-        });
+            // Автообновление каждые 30 секунд
+            setInterval(loadSignals, 30000);
 
-        document.getElementById('confirmOpenBtn').addEventListener('click', async () => {
-            const checked = document.querySelectorAll('#botList input[type="checkbox"]:checked');
-            if (checked.length === 0) {
-                alert('Выберите хотя бы одного бота');
-                return;
-            }
-
-            const botIndexes = Array.from(checked).map(el => parseInt(el.value));
-            const selectedBots = botIndexes.map(i => userBots[i]);
-
-            try {
-                const res = await fetch('/api/trade/open-manual', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: user.email,
-                        signalId: selectedSignalId,
-                        bots: selectedBots
-                    })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    alert('✅ Позиции открыты!');
-                    document.getElementById('botSelectModal').classList.remove('open');
-                    selectedSignalId = null;
-                    loadSignals(); // Перезагружаем сигналы
-                    // Обновляем демо-данные в ЛК (если страница открыта)
-                    if (window.opener && !window.opener.closed) {
-                        window.opener.location.reload();
-                    }
-                    // Если страница открыта в той же вкладке — просто обновляем
-                    if (window.parent && window.parent.location) {
-                        window.parent.location.reload();
-                    }
-                } else {
-                    alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-                }
-            } catch (err) {
-                alert('❌ Ошибка соединения');
-            }
-        });
-
-        document.getElementById('filterType').addEventListener('change', applyFilters);
-        document.getElementById('filterPeriod').addEventListener('change', applyFilters);
-        document.getElementById('filterStatus').addEventListener('change', applyFilters);
-
-        loadBots();
-        loadSignals();
+        })();
     </script>
+
 </body>
 </html>
