@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Bot — Настройки бота</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            padding: 16px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            font-size: clamp(22px, 4vw, 28px);
+            font-weight: 700;
+            color: #4f46e5;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .back-link {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+        .card {
+            background: #1a1f2e;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid #2d3748;
+            margin-top: 20px;
+        }
+        .card h2 {
+            font-size: clamp(18px, 2vw, 22px);
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #2d3748;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-row .label {
+            color: #94a3b8;
+        }
+        .info-row .value {
+            color: #fff;
+            font-weight: 500;
+        }
+        .deposit-input {
+            width: 100%;
+            padding: 12px;
+            background: #2d3748;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+        .deposit-input:focus {
+            outline: 2px solid #4f46e5;
+        }
+        .btn-save {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+            margin-top: 12px;
+        }
+        .btn-save:hover {
+            background: #4338ca;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="logo">🤖 SMT Bot</a>
+            <a href="/dashboard.html" class="back-link">← Назад</a>
+        </header>
+
+        <div class="card">
+            <h2>⚙️ Настройки бота</h2>
+            <div id="botInfo">
+                <div class="info-row"><span class="label">ID бота</span><span class="value" id="botId">--</span></div>
+                <div class="info-row"><span class="label">Биржа</span><span class="value" id="botExchange">--</span></div>
+                <div class="info-row"><span class="label">Тариф</span><span class="value" id="botTariff">--</span></div>
+                <div class="info-row"><span class="label">Услуги</span><span class="value" id="botServices">--</span></div>
+                <div class="info-row"><span class="label">Текущий депозит</span><span class="value" id="botDeposit">--</span></div>
+            </div>
+            <div style="margin-top:16px;">
+                <label style="color:#94a3b8;font-size:14px;">Установить депозит (USDT)</label>
+                <input type="number" class="deposit-input" id="depositInput" placeholder="Введите сумму депозита" min="1" step="1">
+                <button class="btn-save" id="saveDepositBtn">💾 Сохранить депозит</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
+        if (!user || !user.email) {
+            window.location.href = '/login.html';
+        }
+
+        const settings = JSON.parse(localStorage.getItem('botSettings') || '{}');
+        if (!settings.botId) {
+            window.location.href = '/dashboard.html';
+        }
+
+        document.getElementById('botId').textContent = settings.botId;
+        document.getElementById('botExchange').textContent = settings.exchange || 'Не указана';
+        document.getElementById('botTariff').textContent = settings.tariff || 'Не указан';
+        document.getElementById('botServices').textContent = settings.services || 'Не указаны';
+        document.getElementById('botDeposit').textContent = settings.deposit ? '$' + settings.deposit : 'Не установлен';
+
+        document.getElementById('saveDepositBtn').addEventListener('click', async () => {
+            const deposit = parseFloat(document.getElementById('depositInput').value);
+            if (!deposit || deposit < 1) {
+                alert('Введите корректную сумму депозита (минимум 1 USDT)');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/user/${user.email}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.user) throw new Error('Пользователь не найден');
+
+                const bots = data.user.bots || [];
+                const botIndex = bots.findIndex(b => b.id === settings.botId || b.exchange === settings.exchange);
+                if (botIndex === -1) {
+                    alert('Бот не найден');
+                    return;
+                }
+
+                bots[botIndex].deposit = deposit;
+                const updateRes = await fetch(`/api/user/${user.email}/bots`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bots })
+                });
+
+                if (updateRes.ok) {
+                    alert('✅ Депозит обновлён!');
+                    window.location.href = '/dashboard.html';
+                } else {
+                    alert('❌ Ошибка обновления');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('❌ Ошибка соединения');
+            }
+        });
+    </script>
+</body>
+</html>
