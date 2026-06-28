@@ -63,8 +63,7 @@
             flex-direction: column;
             gap: 4px;
         }
-        .filters select,
-        .filters input {
+        .filters select {
             background: #2d3748;
             color: #fff;
             border: none;
@@ -109,7 +108,13 @@
             gap: 12px;
             align-items: center;
         }
-        .check-btn {
+        .signal-item .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .btn-check {
             background: #4f46e5;
             color: #fff;
             border: none;
@@ -119,13 +124,30 @@
             font-size: 13px;
             transition: 0.2s;
         }
-        .check-btn:hover {
+        .btn-check:hover {
             background: #4338ca;
         }
-        .result-box {
-            margin-top: 6px;
+        .btn-open {
+            background: #34d399;
+            color: #0a0e17;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 6px;
+            cursor: pointer;
             font-size: 13px;
-            padding: 6px 12px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .btn-open:hover {
+            background: #2bcc8a;
+        }
+        .btn-open:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .result-box {
+            font-size: 13px;
+            padding: 4px 12px;
             border-radius: 6px;
             background: #2d3748;
             display: inline-block;
@@ -149,6 +171,93 @@
             text-align: center;
             color: #94a3b8;
             font-size: 14px;
+        }
+
+        /* Модалка выбора бота */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal {
+            background: #1a1f2e;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 420px;
+            width: 100%;
+            border: 1px solid #2d3748;
+        }
+        .modal h3 {
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        .modal .bot-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: #2d3748;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .modal .bot-option:hover {
+            background: #4f46e5;
+        }
+        .modal .bot-option input[type="checkbox"] {
+            accent-color: #4f46e5;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .modal .bot-option label {
+            cursor: pointer;
+            flex: 1;
+        }
+        .modal .bot-option .bot-tag {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .modal-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-confirm-open {
+            background: #34d399;
+            color: #0a0e17;
+        }
+        .btn-confirm-open:hover {
+            background: #2bcc8a;
+        }
+        .btn-cancel {
+            background: #2d3748;
+            color: #fff;
+        }
+        .btn-cancel:hover {
+            background: #4a5568;
         }
         @media (max-width: 600px) {
             .filters {
@@ -200,6 +309,18 @@
         <footer>© 2026 SMT Bot</footer>
     </div>
 
+    <!-- Модалка выбора бота -->
+    <div class="modal-overlay" id="botSelectModal">
+        <div class="modal">
+            <h3>🤖 Выберите бота</h3>
+            <div id="botList"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="cancelOpenBtn">Отмена</button>
+                <button class="btn-confirm-open" id="confirmOpenBtn">✅ Открыть</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
         if (!user || !user.email) {
@@ -207,6 +328,32 @@
         }
 
         let allSignals = [];
+        let selectedSignalId = null;
+        let userBots = [];
+
+        // Загружаем ботов
+        async function loadBots() {
+            try {
+                const res = await fetch(`/api/user/${user.email}`);
+                const data = await res.json();
+                if (res.ok && data.user) {
+                    userBots = data.user.bots || [];
+                    // Добавляем демо-бота, если его нет
+                    if (!userBots.some(b => b.exchange === 'demo')) {
+                        userBots.unshift({
+                            exchange: 'demo',
+                            tariff: 'Демо-бот',
+                            services: ['Сигналы', 'Автоторговля'],
+                            active: true,
+                            paused: false,
+                            isDemo: true
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('Ошибка загрузки ботов:', err);
+            }
+        }
 
         async function loadSignals() {
             try {
@@ -256,9 +403,11 @@
                 container.innerHTML = '<p style="color:#94a3b8;">Нет сигналов по выбранным фильтрам</p>';
                 return;
             }
+
             container.innerHTML = signals.map(s => {
                 const sideClass = s.side.toLowerCase();
                 const unreadClass = s.read ? '' : 'unread';
+                const isActive = s.check_result === 'active';
                 return `
                     <div class="signal-item ${unreadClass}" data-id="${s.id}">
                         <div>
@@ -269,17 +418,30 @@
                         <div class="meta">
                             <span>💰 ${s.entry_price}</span>
                             <span>📅 ${new Date(s.created_at).toLocaleDateString()}</span>
-                            <button class="check-btn" data-id="${s.id}">Проверить</button>
-                            <span id="result-${s.id}"></span>
+                            <div class="actions">
+                                <button class="btn-check" data-id="${s.id}">Проверить</button>
+                                <span id="result-${s.id}"></span>
+                                ${isActive ? `<button class="btn-open" data-id="${s.id}">📈 Открыть</button>` : ''}
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            document.querySelectorAll('.check-btn').forEach(btn => {
+            // Обработчики кнопок "Проверить"
+            document.querySelectorAll('.btn-check').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const id = btn.dataset.id;
                     await checkSignal(id);
+                });
+            });
+
+            // Обработчики кнопок "Открыть"
+            document.querySelectorAll('.btn-open').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = btn.dataset.id;
+                    selectedSignalId = id;
+                    showBotSelector();
                 });
             });
         }
@@ -300,6 +462,23 @@
                                data.status === 'loss' ? 'loss' :
                                data.status === 'active' ? 'active' : 'inactive';
                     resultSpan.innerHTML = `<span class="result-box ${cls}">${data.message}</span>`;
+                    // Обновляем кнопку "Открыть", если статус стал активным
+                    const signalItem = document.querySelector(`.signal-item[data-id="${id}"]`);
+                    const actionsDiv = signalItem?.querySelector('.actions');
+                    if (actionsDiv && data.status === 'active') {
+                        const existingBtn = actionsDiv.querySelector('.btn-open');
+                        if (!existingBtn) {
+                            const openBtn = document.createElement('button');
+                            openBtn.className = 'btn-open';
+                            openBtn.dataset.id = id;
+                            openBtn.textContent = '📈 Открыть';
+                            openBtn.addEventListener('click', () => {
+                                selectedSignalId = id;
+                                showBotSelector();
+                            });
+                            actionsDiv.appendChild(openBtn);
+                        }
+                    }
                 } else {
                     resultSpan.textContent = '❌ Ошибка';
                 }
@@ -308,10 +487,77 @@
             }
         }
 
+        function showBotSelector() {
+            const modal = document.getElementById('botSelectModal');
+            const list = document.getElementById('botList');
+
+            if (userBots.length === 0) {
+                list.innerHTML = '<p style="color:#94a3b8;">Нет активных ботов</p>';
+                modal.classList.add('open');
+                return;
+            }
+
+            list.innerHTML = userBots.map((bot, index) => {
+                const isActive = bot.active !== false && bot.paused !== true;
+                const name = bot.exchange === 'demo' ? '🎯 Демо-бот' : `🤖 Бот #${index + 1} (${bot.exchange})`;
+                return `
+                    <div class="bot-option">
+                        <input type="checkbox" id="bot_${index}" value="${index}" ${isActive ? '' : 'disabled'}>
+                        <label for="bot_${index}">
+                            ${name}
+                            ${!isActive ? ' <span class="bot-tag">(неактивен)</span>' : ''}
+                        </label>
+                    </div>
+                `;
+            }).join('');
+
+            modal.classList.add('open');
+        }
+
+        document.getElementById('cancelOpenBtn').addEventListener('click', () => {
+            document.getElementById('botSelectModal').classList.remove('open');
+            selectedSignalId = null;
+        });
+
+        document.getElementById('confirmOpenBtn').addEventListener('click', async () => {
+            const checked = document.querySelectorAll('#botList input[type="checkbox"]:checked');
+            if (checked.length === 0) {
+                alert('Выберите хотя бы одного бота');
+                return;
+            }
+
+            const botIndexes = Array.from(checked).map(el => parseInt(el.value));
+            const selectedBots = botIndexes.map(i => userBots[i]);
+
+            try {
+                const res = await fetch('/api/trade/open-manual', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: user.email,
+                        signalId: selectedSignalId,
+                        bots: selectedBots
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('✅ Позиции открыты!');
+                    document.getElementById('botSelectModal').classList.remove('open');
+                    selectedSignalId = null;
+                    loadSignals();
+                } else {
+                    alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            } catch (err) {
+                alert('❌ Ошибка соединения');
+            }
+        });
+
         document.getElementById('filterType').addEventListener('change', applyFilters);
         document.getElementById('filterPeriod').addEventListener('change', applyFilters);
         document.getElementById('filterStatus').addEventListener('change', applyFilters);
 
+        await loadBots();
         loadSignals();
     </script>
 </body>
