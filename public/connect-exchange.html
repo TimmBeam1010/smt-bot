@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Bot — Подключение биржи</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            padding: 16px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            font-size: clamp(22px, 4vw, 28px);
+            font-weight: 700;
+            color: #4f46e5;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .back-link {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+        .page-title {
+            font-size: clamp(24px, 3vw, 32px);
+            font-weight: 700;
+            margin: 20px 0 8px;
+        }
+        .page-sub {
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+        .step {
+            background: #1a1f2e;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid #2d3748;
+            margin-bottom: 16px;
+        }
+        .step h3 {
+            color: #4f46e5;
+            margin-bottom: 8px;
+        }
+        .step p,
+        .step li {
+            color: #94a3b8;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .step ol {
+            padding-left: 20px;
+        }
+        .step ol li {
+            margin-bottom: 6px;
+        }
+        .step .note {
+            background: #2d3748;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 14px;
+            border-left: 3px solid #fbbf24;
+        }
+        .form-group {
+            margin-top: 12px;
+        }
+        .form-group label {
+            display: block;
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: #2d3748;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+        }
+        .form-group input:focus {
+            outline: 2px solid #4f46e5;
+        }
+        .btn-connect {
+            background: #34d399;
+            color: #0a0e17;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 16px;
+            width: 100%;
+        }
+        .btn-connect:hover {
+            background: #2bcc8a;
+        }
+        .btn-connect:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .status-msg {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        .status-msg.success {
+            display: block;
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+        }
+        .status-msg.error {
+            display: block;
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="logo">🤖 SMT Bot</a>
+            <a href="/configure-bot.html" class="back-link">← Назад</a>
+        </header>
+
+        <h1 class="page-title">🔗 Подключение биржи</h1>
+        <p class="page-sub" id="exchangeLabel">Подключите ваш аккаунт на BingX</p>
+
+        <div class="step">
+            <h3>📋 Пошаговая инструкция</h3>
+            <ol id="instructions">
+                <li>Зайдите в настройки API на бирже</li>
+                <li>Создайте новый API-ключ с правами <strong>«Чтение»</strong> и <strong>«Торговля»</strong></li>
+                <li>Скопируйте <strong>API Key</strong> и <strong>Secret Key</strong></li>
+                <li>Вставьте их в поля ниже</li>
+            </ol>
+            <div class="note">⚠️ Никогда не передавайте Secret Key третьим лицам. Храните его в безопасности.</div>
+        </div>
+
+        <div class="step">
+            <h3>🔑 Введите API-ключи</h3>
+            <div class="form-group">
+                <label>API Key</label>
+                <input type="text" id="apiKey" placeholder="Введите API Key">
+            </div>
+            <div class="form-group">
+                <label>Secret Key</label>
+                <input type="password" id="secretKey" placeholder="Введите Secret Key">
+            </div>
+            <button class="btn-connect" id="connectBtn">✅ Подключить биржу</button>
+            <div class="status-msg" id="statusMsg"></div>
+        </div>
+    </div>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
+        if (!user || !user.email) {
+            window.location.href = '/login.html';
+        }
+
+        const config = JSON.parse(localStorage.getItem('botConfig') || '{}');
+        const exchange = config.exchange || 'bingx';
+        const exchangeNames = {
+            bingx: 'BingX',
+            bybit: 'Bybit',
+            binance: 'Binance',
+            okx: 'OKX'
+        };
+
+        document.getElementById('exchangeLabel').textContent = `Подключите ваш аккаунт на ${exchangeNames[exchange] || 'бирже'}`;
+
+        // Инструкции для разных бирж
+        const instructions = {
+            bingx: [
+                'Зайдите на BingX → «Аккаунт» → «Управление API»',
+                'Нажмите «Создать API»',
+                'Выберите разрешения: «Чтение» и «Торговля»',
+                'Скопируйте API Key и Secret Key'
+            ],
+            bybit: [
+                'Зайдите на Bybit → «Аккаунт» → «API Management»',
+                'Нажмите «Create New API Key»',
+                'Выберите разрешения: «Read» и «Trade»',
+                'Скопируйте API Key и Secret Key'
+            ],
+            binance: [
+                'Зайдите на Binance → «API Management»',
+                'Нажмите «Create API»',
+                'Выберите «Enable Reading» и «Enable Trading»',
+                'Скопируйте API Key и Secret Key'
+            ],
+            okx: [
+                'Зайдите на OKX → «Аккаунт» → «API»',
+                'Нажмите «Create API Key»',
+                'Выберите разрешения: «Read» и «Trade»',
+                'Скопируйте API Key и Secret Key'
+            ]
+        };
+
+        const instList = document.getElementById('instructions');
+        instList.innerHTML = (instructions[exchange] || instructions.bingx).map((t, i) =>
+            `<li>${t}</li>`
+        ).join('');
+
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const secretKey = document.getElementById('secretKey').value.trim();
+            const msg = document.getElementById('statusMsg');
+
+            if (!apiKey || !secretKey) {
+                msg.textContent = '❌ Заполните оба поля';
+                msg.className = 'status-msg error';
+                return;
+            }
+
+            msg.textContent = '⏳ Проверка ключей...';
+            msg.className = 'status-msg';
+
+            try {
+                const res = await fetch('/api/exchange/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: user.email, exchange, apiKey, secretKey })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    msg.textContent = '✅ Биржа успешно подключена! Бот активирован.';
+                    msg.className = 'status-msg success';
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 2000);
+                } else {
+                    msg.textContent = '❌ Ошибка: ' + (data.error || 'Неверные ключи');
+                    msg.className = 'status-msg error';
+                }
+            } catch (err) {
+                msg.textContent = '❌ Ошибка соединения с сервером';
+                msg.className = 'status-msg error';
+            }
+        });
+    </script>
+</body>
+</html>
