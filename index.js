@@ -38,7 +38,6 @@ console.log("✅ Подключение к Supabase установлено");
 //  МАРШРУТЫ АВТОРИЗАЦИИ (БЕЗ ВЕРИФИКАЦИИ)
 // ============================================
 
-// --- РЕГИСТРАЦИЯ ---
 app.post('/api/register', async (req, res) => {
     const { email, password, username } = req.body;
     if (!email || !password) {
@@ -88,7 +87,6 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// --- ВХОД ---
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -229,6 +227,50 @@ app.put('/api/admin/users/:id', async (req, res) => {
     } catch (err) {
         console.error('Непредвиденная ошибка:', err);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+// ============================================
+//  НОВОСТИ
+// ============================================
+
+app.get('/api/news', async (req, res) => {
+    try {
+        const apiKey = process.env.NEWS_API_KEY || 'demo';
+        const url = `https://newsapi.org/v2/everything?q=crypto OR bitcoin OR trading&language=en&sortBy=publishedAt&apiKey=${apiKey}`;
+        const response = await axios.get(url, { timeout: 10000 });
+        const articles = response.data.articles?.slice(0, 6) || [];
+        res.json({ news: articles });
+    } catch (error) {
+        console.error('❌ Ошибка получения новостей:', error.message);
+        res.json({ news: [] });
+    }
+});
+
+// ============================================
+//  РЫНОЧНЫЕ ДАННЫЕ (ДАШБОРД)
+// ============================================
+
+app.get('/api/market-data', async (req, res) => {
+    try {
+        const fgRes = await axios.get('https://api.alternative.me/fng/?limit=1', { timeout: 8000 });
+        const fearGreed = parseInt(fgRes.data.data[0].value) || 50;
+
+        const btcRes = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', { timeout: 8000 });
+        const btcPrice = btcRes.data.bitcoin?.usd || null;
+
+        const capRes = await axios.get('https://api.coingecko.com/api/v3/global', { timeout: 8000 });
+        const totalCap = capRes.data.data?.total_market_cap?.usd || null;
+        const totalCapStr = totalCap ? '$' + (totalCap / 1e12).toFixed(2) + 'T' : '--';
+
+        res.json({
+            fearGreed,
+            btcPrice: btcPrice ? btcPrice.toLocaleString() : '--',
+            totalCap: totalCapStr
+        });
+    } catch (error) {
+        console.error('❌ Ошибка получения рыночных данных:', error.message);
+        res.json({ fearGreed: 50, btcPrice: '--', totalCap: '--' });
     }
 });
 
