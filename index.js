@@ -379,6 +379,10 @@ app.put('/api/user/:email/bots', async (req, res) => {
     const { email } = req.params;
     const { bots } = req.body;
 
+    if (!bots || !Array.isArray(bots)) {
+        return res.status(400).json({ error: 'bots должен быть массивом' });
+    }
+
     try {
         const { data: user, error } = await supabase
             .from('users')
@@ -387,14 +391,21 @@ app.put('/api/user/:email/bots', async (req, res) => {
             .select()
             .single();
 
-        if (error) throw error;
-        if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+        if (error) {
+            console.error('Ошибка обновления ботов:', error);
+            return res.status(500).json({ error: 'Ошибка обновления ботов' });
+        }
+
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
 
         delete user.password;
         res.json({ user });
+
     } catch (err) {
-        console.error('Ошибка обновления ботов:', err);
-        res.status(500).json({ error: err.message });
+        console.error('Непредвиденная ошибка:', err);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
     }
 });
 
