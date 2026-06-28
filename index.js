@@ -470,6 +470,52 @@ app.post('/api/exchange/connect', async (req, res) => {
 });
 
 // ============================================
+//  ДЕМО-БОТ
+// ============================================
+
+const demoSessions = {};
+
+function getDemoSession(userId) {
+    if (!demoSessions[userId]) {
+        demoSessions[userId] = {
+            balance: 1000,
+            equity: 1000,
+            positions: [],
+            trades: [],
+            totalPnl: 0,
+            paused: false,
+            active: true
+        };
+    }
+    return demoSessions[userId];
+}
+
+app.get('/api/demo/:userId', (req, res) => {
+    const { userId } = req.params;
+    const session = getDemoSession(userId);
+    res.json({
+        ok: true,
+        data: {
+            balance: session.balance,
+            equity: session.equity,
+            totalPnl: session.totalPnl,
+            positions: session.positions.filter(p => p.status === 'open'),
+            trades: session.trades.slice(-20)
+        }
+    });
+});
+
+app.post('/api/demo/action', (req, res) => {
+    const { userId, action } = req.body;
+    const session = getDemoSession(userId);
+    if (action === 'pause') session.paused = true;
+    if (action === 'resume') session.paused = false;
+    if (action === 'stop') { session.active = false; session.positions = []; }
+    if (action === 'start') { session.active = true; session.paused = false; }
+    res.json({ ok: true });
+});
+
+// ============================================
 //  ОСТАЛЬНЫЕ МАРШРУТЫ API
 // ============================================
 
@@ -654,7 +700,6 @@ cron.schedule('*/1 * * * *', async () => {
                     if (!userError && users && users.length > 0) {
                         const user = users[0];
                         const bots = user.bots || [];
-                        // Проверяем, есть ли хотя бы один активный бот (не на паузе)
                         const hasActiveBot = bots.some(b => b.active === true && b.paused !== true);
                         if (!hasActiveBot) {
                             console.log('⏸ Сигнал не отправлен: все боты на паузе или отключены');
