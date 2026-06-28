@@ -490,6 +490,24 @@ function getDemoSession(userId) {
     return demoSessions[userId];
 }
 
+function openDemoPosition(userId, symbol, side, entry, stopLoss, takeProfit, size) {
+    const account = getDemoSession(userId);
+    const position = {
+        id: Date.now(),
+        symbol,
+        side,
+        entry,
+        stopLoss,
+        takeProfit,
+        size,
+        openTime: new Date(),
+        status: 'open'
+    };
+    account.positions.push(position);
+    account.balance -= size;
+    return position;
+}
+
 app.get('/api/demo/:userId', (req, res) => {
     const { userId } = req.params;
     const session = getDemoSession(userId);
@@ -662,7 +680,7 @@ app.get('/api/chat/export', async (req, res) => {
 });
 
 // ============================================
-//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА
+//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА (С ТЕСТОВЫМ СИГНАЛОМ)
 // ============================================
 
 const SYMBOLS = ['BONK-USDT', 'DOGS-USDT', 'PEPE-USDT', 'SOL-USDT', 'XRP-USDT'];
@@ -739,8 +757,79 @@ cron.schedule('*/1 * * * *', async () => {
                     } catch (dbError) {
                         console.error('❌ Ошибка БД:', dbError.message);
                     }
+
+                    // === ДЕМО-ТОРГОВЛЯ ПО СИГНАЛУ ===
+                    try {
+                        const { data: user } = await supabase
+                            .from('users')
+                            .select('id, bots')
+                            .eq('email', 'trnabiev@gmail.com')
+                            .single();
+
+                        if (user) {
+                            const userId = user.id;
+                            const bots = user.bots || [];
+                            const hasDemoBot = bots.some(b => b.exchange === 'demo' && b.active === true && b.paused !== true);
+
+                            if (hasDemoBot) {
+                                const account = getDemoSession(userId);
+                                // Проверяем, нет ли уже открытой позиции по этой монете
+                                const existing = account.positions.find(p => p.symbol === signal.symbol && p.status === 'open');
+                                if (!existing) {
+                                    const size = Math.min(account.balance * 0.05, 100);
+                                    openDemoPosition(
+                                        userId,
+                                        signal.symbol,
+                                        signal.side,
+                                        signal.entry,
+                                        signal.stopLoss,
+                                        signal.takeProfit,
+                                        size
+                                    );
+                                    console.log(`📊 ДЕМО: Открыта позиция ${signal.symbol} ${signal.side} (размер ${size} USDT)`);
+                                }
+                            }
+                        }
+                    } catch (demoError) {
+                        console.error('❌ Ошибка демо-торговли:', demoError.message);
+                    }
                 }
             }
+        }
+
+        // === ПРИНУДИТЕЛЬНЫЙ ТЕСТОВЫЙ СИГНАЛ (если нет реальных) ===
+        try {
+            const { data: user } = await supabase
+                .from('users')
+                .select('id, bots')
+                .eq('email', 'trnabiev@gmail.com')
+                .single();
+
+            if (user) {
+                const userId = user.id;
+                const account = getDemoSession(userId);
+                const hasOpen = account.positions.some(p => p.status === 'open');
+
+                if (!hasOpen && account.active && !account.paused) {
+                    const testPrice = 0.00000420;
+                    const testStop = 0.00000410;
+                    const testProfit = 0.00000440;
+                    const testSize = 50;
+
+                    openDemoPosition(
+                        userId,
+                        'BONK-USDT',
+                        'LONG',
+                        testPrice,
+                        testStop,
+                        testProfit,
+                        testSize
+                    );
+                    console.log('🧪 ДЕМО: Тестовая позиция BONK-USDT LONG открыта (принудительно)');
+                }
+            }
+        } catch (testError) {
+            console.error('❌ Ошибка тестового сигнала:', testError.message);
         }
 
     } catch (error) {
