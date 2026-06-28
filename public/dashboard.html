@@ -73,7 +73,6 @@
         .burger-menu a:hover {
             color: #fff;
         }
-        /* PNL в хедере */
         .pnl-header {
             display: none;
             align-items: center;
@@ -100,7 +99,6 @@
         .pnl-header .pnl-value.red {
             color: #991b1b;
         }
-        /* Рычаг */
         .toggle-container {
             display: flex;
             align-items: center;
@@ -133,7 +131,6 @@
         .toggle-switch.on .knob {
             left: 20px;
         }
-
         .card {
             background: #1a1f2e;
             padding: 20px;
@@ -282,6 +279,12 @@
             align-items: center;
             gap: 12px;
             margin-bottom: 8px;
+            justify-content: space-between;
+        }
+        .bot-card .bot-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         .bot-card .exchange-logo {
             width: 32px;
@@ -303,6 +306,18 @@
         .bot-card .exchange-name {
             font-size: 14px;
             color: #94a3b8;
+        }
+        .bot-card .settings-icon {
+            font-size: 20px;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: 0.2s;
+            padding: 4px;
+            border-radius: 6px;
+        }
+        .bot-card .settings-icon:hover {
+            color: #fff;
+            background: #4f46e5;
         }
         .bot-card .bot-detail {
             color: #94a3b8;
@@ -443,7 +458,6 @@
             background: #dc2626;
             color: #fff;
         }
-
         footer {
             border-top: 1px solid #1a1f2e;
             padding: 20px 0;
@@ -529,7 +543,6 @@
             <a href="#" id="settingsLink">⚙️ Настройки</a>
         </div>
 
-        <!-- PNL -->
         <div class="card">
             <h2>📊 Ваш PNL</h2>
             <div class="grid-2">
@@ -556,7 +569,6 @@
             </div>
         </div>
 
-        <!-- БОТЫ -->
         <div class="card">
             <h2>
                 🤖 Мои боты
@@ -567,7 +579,6 @@
             </div>
         </div>
 
-        <!-- СИГНАЛЫ -->
         <div class="card">
             <h2>
                 📈 Сигналы
@@ -615,7 +626,6 @@
         let showPnl = true;
         let demoBotData = null;
 
-        // ===== Toggle PNL =====
         const pnlToggle = document.getElementById('pnlToggle');
         const pnlHeader = document.getElementById('pnlHeader');
 
@@ -633,7 +643,6 @@
             pnlHeader.classList.toggle('visible', showPnl);
         }
 
-        // ===== БУРГЕР =====
         document.getElementById('burgerBtn').addEventListener('click', () => {
             document.getElementById('burgerMenu').classList.toggle('open');
         });
@@ -647,7 +656,6 @@
             window.location.href = '/signals.html';
         });
 
-        // ===== ЗАГРУЗКА =====
         async function loadDashboard() {
             try {
                 const res = await fetch(`/api/user/${user.email}`);
@@ -665,7 +673,6 @@
                     document.getElementById('depositPnl').textContent = '$' + (deposit + pnlUsdt).toFixed(2);
                     document.getElementById('openTrades').textContent = u.openTrades || 0;
 
-                    // Демо-бот
                     const demoRes = await fetch(`/api/demo/${user.email}`);
                     const demoData = await demoRes.json();
                     if (demoData.ok) {
@@ -688,7 +695,6 @@
             const grid = document.getElementById('botGrid');
             const countBadge = document.getElementById('botCount');
 
-            // Демо-бот всегда первый
             const demoBot = {
                 id: 'demo',
                 exchange: 'demo',
@@ -741,11 +747,14 @@
 
                 let details = `
                     <div class="bot-header">
-                        <div class="exchange-logo">${logoChar}</div>
-                        <div>
-                            <div class="bot-name">${isDemo ? '🎯 Демо-бот' : '🤖 Бот #' + (index)}</div>
-                            <div class="exchange-name">${isDemo ? 'Виртуальная биржа' : exchange.charAt(0).toUpperCase() + exchange.slice(1)}</div>
+                        <div class="bot-left">
+                            <div class="exchange-logo">${logoChar}</div>
+                            <div>
+                                <div class="bot-name">${isDemo ? '🎯 Демо-бот' : '🤖 Бот #' + (index)}</div>
+                                <div class="exchange-name">${isDemo ? 'Виртуальная биржа' : exchange.charAt(0).toUpperCase() + exchange.slice(1)}</div>
+                            </div>
                         </div>
+                        <div class="settings-icon" data-bot-id="${isDemo ? 'demo' : index - 1}" data-bot-exchange="${exchange}" data-bot-tariff="${bot.tariff || 'Стандарт'}" data-bot-deposit="${bot.deposit || 0}" data-bot-services="${(bot.services || ['Сигналы']).join(', ')}">⚙️</div>
                     </div>
                     <div class="bot-detail">
                         <span class="bot-status">
@@ -768,7 +777,6 @@
                         <div class="bot-detail"><strong>Открыто:</strong> ${bot.openTrades || 0} | <strong>Закрыто:</strong> ${bot.closedTrades || 0}</div>`;
                 }
 
-                // Кнопки (только иконки)
                 let actions = '';
                 if (isDemo) {
                     if (isActive && !isPaused) {
@@ -780,7 +788,6 @@
                     } else {
                         actions += `<button class="btn-start active" data-id="demo" data-action="start">▶️</button>`;
                     }
-                    // Удаление для демо-бота недоступно
                 } else {
                     if (isActive && !isPaused) {
                         actions += `<button class="btn-pause" data-id="${index - 1}" data-action="pause">⏸</button>`;
@@ -799,6 +806,27 @@
                 grid.insertBefore(card, addBtn);
             });
 
+            // Обработчик для иконки настроек
+            document.querySelectorAll('.settings-icon').forEach(icon => {
+                icon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const botId = icon.dataset.botId;
+                    const exchange = icon.dataset.botExchange;
+                    const tariff = icon.dataset.botTariff;
+                    const deposit = icon.dataset.botDeposit;
+                    const services = icon.dataset.botServices;
+                    // Сохраняем данные в localStorage для страницы настроек
+                    localStorage.setItem('botSettings', JSON.stringify({
+                        botId,
+                        exchange,
+                        tariff,
+                        deposit,
+                        services
+                    }));
+                    window.location.href = '/bot-settings.html';
+                });
+            });
+
             document.querySelectorAll('.bot-actions button').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.dataset.id;
@@ -812,7 +840,6 @@
             });
         }
 
-        // ===== ДЕМО-БОТ =====
         async function handleDemoAction(action) {
             try {
                 const res = await fetch(`/api/demo/action`, {
@@ -828,7 +855,6 @@
             }
         }
 
-        // ===== БОТЫ =====
         async function handleBotAction(index, action) {
             const bot = botsData[index];
             if (!bot) return;
