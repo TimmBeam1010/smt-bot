@@ -93,13 +93,10 @@
             text-decoration: underline;
         }
         #message {
-            margin-top: 12px;
+            margin-top: 16px;
             text-align: center;
             font-size: clamp(14px, 1.5vw, 16px);
             min-height: 22px;
-            padding: 8px;
-            border-radius: 8px;
-            background: rgba(0,0,0,0.3);
         }
         .success {
             color: #34d399;
@@ -131,45 +128,6 @@
         .back-link:hover {
             color: #fff;
         }
-        .code-block {
-            margin: 12px 0 8px 0;
-            padding: 16px;
-            background: #2d3748;
-            border-radius: 12px;
-            border: 1px solid #4f46e5;
-        }
-        .code-block input {
-            width: 100%;
-            padding: 14px;
-            background: #1a1f2e;
-            border: 2px solid #4f46e5;
-            border-radius: 10px;
-            color: #fff;
-            font-size: clamp(18px, 2vw, 22px);
-            text-align: center;
-            letter-spacing: 6px;
-            margin: 0 0 12px 0;
-        }
-        .code-block input:focus {
-            outline: none;
-            border-color: #818cf8;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
-        }
-        .code-block .resend-btn {
-            width: 100%;
-            padding: 10px;
-            background: transparent;
-            border: 1px solid #4f46e5;
-            color: #94a3b8;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: clamp(14px, 1.5vw, 16px);
-            transition: 0.2s;
-        }
-        .code-block .resend-btn:hover {
-            background: #4f46e5;
-            color: #fff;
-        }
         .hidden {
             display: none !important;
         }
@@ -178,18 +136,12 @@
 <body>
     <div class="login-card">
         <h1>🤖 <span>SMT</span> Bot</h1>
-        <p class="sub" id="formTitle">Войдите в аккаунт</p>
+        <p class="sub">Войдите или создайте аккаунт</p>
 
         <form id="authForm">
             <input type="email" id="email" placeholder="Email" required autofocus>
             <input type="password" id="password" placeholder="Пароль (мин. 6 символов)" required>
             <input type="text" id="username" placeholder="Имя (опционально)" style="display: none;">
-
-            <div id="codeBlock" class="code-block hidden">
-                <input type="text" id="verificationCode" placeholder="Введите код" maxlength="6" inputmode="numeric">
-                <button type="button" id="resendCodeBtn" class="resend-btn">Отправить код повторно</button>
-            </div>
-
             <button type="submit" id="submitBtn">Войти</button>
         </form>
 
@@ -205,237 +157,95 @@
     </div>
 
     <script>
-        // ===== ЭЛЕМЕНТЫ =====
         const form = document.getElementById('authForm');
         const email = document.getElementById('email');
         const password = document.getElementById('password');
         const username = document.getElementById('username');
-        const verificationCode = document.getElementById('verificationCode');
-        const codeBlock = document.getElementById('codeBlock');
         const submitBtn = document.getElementById('submitBtn');
         const toggleLink = document.getElementById('toggleLink');
         const toggleText = document.getElementById('toggleText');
-        const resendCodeBtn = document.getElementById('resendCodeBtn');
         const message = document.getElementById('message');
         const loader = document.getElementById('loader');
-        const formTitle = document.getElementById('formTitle');
 
         let isLogin = true;
-        let pendingEmail = '';
 
-        // ===== ПЕРЕКЛЮЧЕНИЕ МЕЖДУ ВХОДОМ И РЕГИСТРАЦИЕЙ =====
         toggleLink.addEventListener('click', () => {
             isLogin = !isLogin;
-            codeBlock.classList.add('hidden');
-            verificationCode.value = '';
             if (isLogin) {
                 submitBtn.textContent = 'Войти';
                 toggleText.textContent = 'Нет аккаунта? ';
                 toggleLink.textContent = 'Зарегистрироваться';
                 username.style.display = 'none';
-                formTitle.textContent = 'Войдите в аккаунт';
-                document.querySelector('.sub').textContent = 'Войдите или создайте аккаунт';
             } else {
                 submitBtn.textContent = 'Зарегистрироваться';
                 toggleText.textContent = 'Уже есть аккаунт? ';
                 toggleLink.textContent = 'Войти';
                 username.style.display = 'block';
-                formTitle.textContent = 'Создайте аккаунт';
-                document.querySelector('.sub').textContent = 'Зарегистрируйтесь, чтобы начать';
             }
             message.textContent = '';
             message.className = '';
         });
 
-        // ===== ПОВТОРНАЯ ОТПРАВКА КОДА =====
-        resendCodeBtn.addEventListener('click', async () => {
-            const emailValue = email.value.trim();
-            if (!emailValue) {
-                setMessage('Введите email для отправки кода', 'error');
-                return;
-            }
-            try {
-                const res = await fetch('/api/resend-code', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: emailValue })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    setMessage('✅ Новый код отправлен на почту', 'success');
-                } else {
-                    setMessage('❌ ' + (data.error || 'Ошибка отправки'), 'error');
-                }
-            } catch (err) {
-                setMessage('❌ Ошибка соединения', 'error');
-            }
-        });
-
-        function setMessage(text, type) {
-            message.textContent = text;
-            message.className = type;
-            clearTimeout(window.messageTimeout);
-            window.messageTimeout = setTimeout(() => {
-                message.textContent = '';
-                message.className = '';
-            }, 5000);
-        }
-
-        // ===== ОТПРАВКА ФОРМЫ =====
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const emailValue = email.value.trim();
-            const passwordValue = password.value;
-            const usernameValue = username.value.trim() || null;
-            const codeValue = verificationCode.value.trim();
+            const endpoint = isLogin ? '/api/login' : '/api/register';
+            const body = isLogin ? {
+                email: email.value.trim(),
+                password: password.value
+            } : {
+                email: email.value.trim(),
+                password: password.value,
+                username: username.value.trim() || null
+            };
 
-            // ===== РЕЖИМ ВЕРИФИКАЦИИ (код) =====
-            if (!isLogin && !codeBlock.classList.contains('hidden')) {
-                if (!codeValue) {
-                    setMessage('Введите код из письма', 'error');
-                    return;
-                }
-                try {
-                    const res = await fetch('/api/verify', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: emailValue, code: codeValue })
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                        setMessage('✅ Почта подтверждена! Вход выполнен.', 'success');
-                        localStorage.setItem('smtUser', JSON.stringify(data.user));
-                        setTimeout(() => {
-                            window.location.href = '/dashboard.html';
-                        }, 500);
-                    } else {
-                        setMessage('❌ ' + (data.error || 'Неверный код'), 'error');
-                    }
-                } catch (err) {
-                    setMessage('❌ Ошибка соединения', 'error');
-                }
+            if (!body.email || !body.password) {
+                message.textContent = '❌ Заполните все обязательные поля';
+                message.className = 'error';
                 return;
             }
-
-            // ===== РЕГИСТРАЦИЯ =====
-            if (!isLogin) {
-                if (!emailValue || !passwordValue) {
-                    setMessage('Заполните все обязательные поля', 'error');
-                    return;
-                }
-                if (passwordValue.length < 6) {
-                    setMessage('Пароль должен быть минимум 6 символов', 'error');
-                    return;
-                }
-
-                submitBtn.disabled = true;
-                loader.style.display = 'block';
-
-                try {
-                    const res = await fetch('/api/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: emailValue,
-                            password: passwordValue,
-                            username: usernameValue
-                        })
-                    });
-                    const data = await res.json();
-                    if (res.ok && data.needVerification) {
-                        codeBlock.classList.remove('hidden');
-                        submitBtn.textContent = 'Подтвердить код';
-                        setMessage('✅ Код отправлен на почту. Введите его ниже.', 'success');
-                        pendingEmail = emailValue;
-                        formTitle.textContent = 'Подтверждение почты';
-                        document.querySelector('.sub').textContent = 'Введите код из письма';
-                    } else if (res.ok) {
-                        setMessage('✅ Регистрация успешна! Войдите.', 'success');
-                        isLogin = true;
-                        submitBtn.textContent = 'Войти';
-                        toggleText.textContent = 'Нет аккаунта? ';
-                        toggleLink.textContent = 'Зарегистрироваться';
-                        username.style.display = 'none';
-                        formTitle.textContent = 'Войдите в аккаунт';
-                        document.querySelector('.sub').textContent = 'Войдите или создайте аккаунт';
-                        codeBlock.classList.add('hidden');
-                    } else {
-                        setMessage('❌ ' + (data.error || 'Ошибка регистрации'), 'error');
-                    }
-                } catch (err) {
-                    setMessage('❌ Ошибка соединения', 'error');
-                } finally {
-                    submitBtn.disabled = false;
-                    loader.style.display = 'none';
-                }
-                return;
-            }
-
-            // ===== ВХОД (без верификации) =====
-            if (!emailValue || !passwordValue) {
-                setMessage('Заполните все обязательные поля', 'error');
+            if (!isLogin && body.password.length < 6) {
+                message.textContent = '❌ Пароль должен быть минимум 6 символов';
+                message.className = 'error';
                 return;
             }
 
             submitBtn.disabled = true;
             loader.style.display = 'block';
+            message.textContent = '';
+            message.className = '';
 
             try {
-                const checkRes = await fetch('/api/user/' + encodeURIComponent(emailValue));
-                const userData = await checkRes.json();
-
-                if (!checkRes.ok || !userData.user) {
-                    // Пользователь не найден → переключаем на регистрацию
-                    setMessage('🔍 Пользователь не найден. Переключаем на регистрацию...', 'success');
-                    isLogin = false;
-                    submitBtn.textContent = 'Зарегистрироваться';
-                    toggleText.textContent = 'Уже есть аккаунт? ';
-                    toggleLink.textContent = 'Войти';
-                    username.style.display = 'block';
-                    formTitle.textContent = 'Создайте аккаунт';
-                    document.querySelector('.sub').textContent = 'Зарегистрируйтесь, чтобы начать';
-                    password.value = '';
-                    username.value = '';
-                    codeBlock.classList.add('hidden');
-                    setTimeout(() => {
-                        message.textContent = '';
-                        message.className = '';
-                    }, 1500);
-                    return;
-                }
-
-                // Пользователь существует → проверяем пароль
-                const loginRes = await fetch('/api/login', {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: emailValue, password: passwordValue })
+                    body: JSON.stringify(body),
                 });
-                const loginData = await loginRes.json();
 
-                if (loginRes.ok) {
-                    setMessage('✅ Вход выполнен!', 'success');
-                    localStorage.setItem('smtUser', JSON.stringify(loginData.user));
+                const data = await res.json();
+
+                if (res.ok) {
+                    message.textContent = isLogin ? '✅ Вход выполнен!' : '✅ Регистрация успешна!';
+                    message.className = 'success';
+                    localStorage.setItem('smtUser', JSON.stringify(data.user));
                     setTimeout(() => {
                         window.location.href = '/dashboard.html';
                     }, 500);
-                } else if (loginRes.status === 403 && loginData.needVerification) {
-                    // Пользователь не верифицирован → сообщение, но поле для кода НЕ ПОКАЗЫВАЕМ
-                    setMessage('⚠️ ' + loginData.error + '. Обратитесь к администратору или завершите регистрацию.', 'error');
                 } else {
-                    setMessage('❌ Неверный пароль. Попробуйте снова.', 'error');
-                    password.value = '';
-                    password.focus();
+                    message.textContent = '❌ ' + (data.error || 'Неизвестная ошибка');
+                    message.className = 'error';
                 }
             } catch (err) {
-                setMessage('❌ Ошибка соединения', 'error');
+                console.error(err);
+                message.textContent = '❌ Ошибка соединения с сервером';
+                message.className = 'error';
             } finally {
                 submitBtn.disabled = false;
                 loader.style.display = 'none';
             }
         });
 
-        // ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
+        // Если пользователь уже залогинен
         if (localStorage.getItem('smtUser')) {
             window.location.href = '/dashboard.html';
         }
