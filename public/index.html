@@ -50,6 +50,39 @@
         .nav a:hover {
             color: #fff;
         }
+        /* --- PNL в шапке --- */
+        .pnl-header {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: clamp(14px, 1.5vw, 18px);
+            padding: 4px 12px;
+            border-radius: 8px;
+            background: #1a1f2e;
+            border: 1px solid #2d3748;
+            transition: 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: #fff;
+        }
+        .pnl-header:hover {
+            border-color: #4f46e5;
+            background: #2d3748;
+        }
+        .pnl-header .pnl-value {
+            font-weight: 700;
+        }
+        .pnl-header .pnl-value.green {
+            color: #34d399;
+        }
+        .pnl-header .pnl-value.red {
+            color: #f87171;
+        }
+        .pnl-header.visible {
+            display: flex;
+        }
+        /* --- --- */
         .btn-primary,
         .btn-outline {
             padding: 8px 16px;
@@ -134,14 +167,6 @@
             transition: 0.3s;
             cursor: default;
         }
-        .dash-card.clickable {
-            cursor: pointer;
-            border-color: #4f46e5;
-        }
-        .dash-card.clickable:hover {
-            border-color: #818cf8;
-            box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
-        }
         .dash-card .label {
             color: #94a3b8;
             font-size: clamp(12px, 1.2vw, 14px);
@@ -150,12 +175,6 @@
             font-size: clamp(18px, 2vw, 24px);
             font-weight: 700;
             margin-top: 4px;
-        }
-        .dash-card .value.green {
-            color: #34d399;
-        }
-        .dash-card .value.red {
-            color: #f87171;
         }
         .fear-gauge {
             display: flex;
@@ -271,13 +290,6 @@
             text-decoration: none;
         }
 
-        #pnlBlock {
-            display: none;
-        }
-        #pnlBlock.visible {
-            display: block;
-        }
-
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
@@ -305,6 +317,9 @@
                 width: 100%;
                 max-width: 200px;
             }
+            .pnl-header {
+                justify-content: center;
+            }
         }
         @media (max-width: 480px) {
             .features {
@@ -327,23 +342,16 @@
                 <a href="#features">Функции</a>
                 <a href="#pricing">Тарифы</a>
                 <div class="nav-actions">
+                    <!-- PNL в шапке (скрыт по умолчанию) -->
+                    <a href="/dashboard.html" class="pnl-header" id="pnlHeader">
+                        <span>📊</span>
+                        <span class="pnl-value" id="pnlHeaderValue">--</span>
+                    </a>
                     <a href="/login.html" class="btn-outline" id="loginBtn">Войти</a>
                     <a href="/login.html" class="btn-primary" id="startBtn">Начать</a>
                 </div>
             </div>
         </header>
-
-        <!-- Блок PNL (показывается только авторизованным) -->
-        <div id="pnlBlock">
-            <div class="dashboard-grid">
-                <a href="/dashboard.html" style="text-decoration: none; display: block;" id="pnlLink">
-                    <div class="dash-card clickable">
-                        <div class="label">📊 Ваш PNL</div>
-                        <div class="value" id="pnlValue">--</div>
-                    </div>
-                </a>
-            </div>
-        </div>
 
         <!-- Hero -->
         <section class="hero">
@@ -460,17 +468,17 @@
     <script>
         // ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
         const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
-        const pnlBlock = document.getElementById('pnlBlock');
-        const pnlValue = document.getElementById('pnlValue');
+        const pnlHeader = document.getElementById('pnlHeader');
+        const pnlHeaderValue = document.getElementById('pnlHeaderValue');
         const loginBtn = document.getElementById('loginBtn');
         const startBtn = document.getElementById('startBtn');
         const heroStartBtn = document.getElementById('heroStartBtn');
 
         if (user && user.email) {
-            // Показываем PNL-блок
-            pnlBlock.classList.add('visible');
+            // Показываем PNL в шапке
+            pnlHeader.classList.add('visible');
 
-            // Меняем кнопки "Войти" и "Начать" на "Личный кабинет"
+            // Меняем кнопки "Войти" и "Начать" на "Кабинет"
             loginBtn.textContent = '👤 Кабинет';
             loginBtn.href = '/dashboard.html';
             startBtn.textContent = '👤 Кабинет';
@@ -484,18 +492,18 @@
                 .then(data => {
                     if (data.user && data.user.pnl !== undefined) {
                         const pnl = data.user.pnl;
-                        pnlValue.textContent = (pnl >= 0 ? '+' : '') + pnl + '%';
-                        pnlValue.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
+                        pnlHeaderValue.textContent = (pnl >= 0 ? '+' : '') + pnl + '%';
+                        pnlHeaderValue.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
                     } else {
-                        pnlValue.textContent = '0%';
-                        pnlValue.className = 'value';
+                        pnlHeaderValue.textContent = '0%';
+                        pnlHeaderValue.className = 'pnl-value';
                     }
                 })
                 .catch(() => {
-                    pnlValue.textContent = '--';
+                    pnlHeaderValue.textContent = '--';
                 });
         } else {
-            pnlBlock.classList.remove('visible');
+            pnlHeader.classList.remove('visible');
         }
 
         // ===== НОВОСТИ =====
