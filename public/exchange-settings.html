@@ -15,34 +15,27 @@
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             padding: 20px;
-            max-width: 600px;
+            max-width: 700px;
             margin: 0 auto;
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            background: #1a1f2e;
-            border-radius: 16px;
-            padding: 32px;
-            border: 1px solid #2d3748;
-            width: 100%;
         }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
-        }
-        .header h1 {
-            font-size: 24px;
-            display: flex;
-            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #2d3748;
+            flex-wrap: wrap;
             gap: 12px;
         }
-        .header h1 .logo {
-            font-size: 32px;
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        .logo span {
+            color: #fff;
         }
         .back-link {
             color: #4f46e5;
@@ -51,6 +44,45 @@
         }
         .back-link:hover {
             text-decoration: underline;
+        }
+        .card {
+            background: #1a1f2e;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #2d3748;
+        }
+        .exchange-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .exchange-header .logo-big {
+            font-size: 48px;
+        }
+        .exchange-header .name {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .exchange-header .status {
+            font-size: 14px;
+            margin-left: auto;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-connected {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .badge-disconnected {
+            background: #7f1d1d;
+            color: #fca5a5;
         }
         .form-group {
             margin-bottom: 20px;
@@ -123,25 +155,47 @@
             background: #10b981;
             color: #fff;
         }
-        .status {
+        .status-msg {
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 16px;
             display: none;
         }
-        .status.success {
+        .status-msg.success {
             display: block;
             background: #065f46;
             color: #6ee7b7;
         }
-        .status.error {
+        .status-msg.error {
             display: block;
             background: #7f1d1d;
             color: #fca5a5;
         }
-        .status.info {
+        .status-msg.info {
             display: block;
             background: #92400e;
+            color: #fbbf24;
+        }
+        .instructions {
+            background: #0a0e17;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .instructions h4 {
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .instructions ol {
+            padding-left: 20px;
+            color: #94a3b8;
+        }
+        .instructions ol li {
+            margin-bottom: 4px;
+        }
+        .instructions .step-highlight {
             color: #fbbf24;
         }
         .permissions {
@@ -171,33 +225,78 @@
             left: 0;
             color: #10b981;
         }
+        .btn-disconnect {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 12px;
+        }
+        .btn-disconnect:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+        .security-note {
+            background: #0a0e17;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid #f59e0b;
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 16px;
+        }
+        .security-note strong {
+            color: #fbbf24;
+        }
         @media (max-width: 600px) {
             body {
                 padding: 12px;
             }
-            .container {
-                padding: 20px;
+            .card {
+                padding: 16px;
             }
-            .header {
-                flex-direction: column;
-                gap: 12px;
-                text-align: center;
+            .exchange-header {
+                flex-wrap: wrap;
+            }
+            .exchange-header .status {
+                margin-left: 0;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="header">
-            <h1>
-                <span class="logo" id="exchangeLogo">🏦</span>
-                <span id="exchangeName">Биржа</span>
-            </h1>
-            <a href="/exchanges.html" class="back-link">← Назад</a>
+    <div class="header">
+        <div class="logo">SMT <span>Bot</span></div>
+        <a href="/exchanges.html" class="back-link">← Назад к биржам</a>
+    </div>
+
+    <div class="card">
+        <div class="exchange-header">
+            <span class="logo-big" id="exchangeLogo">🏦</span>
+            <span class="name" id="exchangeName">Биржа</span>
+            <span class="status">
+                <span class="badge badge-disconnected" id="statusBadge">❌ Не подключена</span>
+            </span>
         </div>
 
-        <div class="status" id="statusMessage"></div>
+        <div class="status-msg" id="statusMessage"></div>
+
+        <div class="instructions" id="instructionsBlock">
+            <h4>📖 Как получить API ключи на бирже</h4>
+            <ol id="instructionsList">
+                <li>Войдите в свой аккаунт на бирже</li>
+                <li>Перейдите в раздел <span class="step-highlight">API Management</span> или <span class="step-highlight">API Keys</span></li>
+                <li>Создайте новый API ключ с правами:</li>
+                <li>Скопируйте <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span></li>
+                <li>Вставьте их в поля ниже и нажмите <span class="step-highlight">Сохранить</span></li>
+            </ol>
+        </div>
 
         <div class="permissions">
             <strong>🔑 Какие права нужны:</strong>
@@ -223,6 +322,13 @@
 
         <button class="btn-save" id="saveBtn" onclick="saveSettings()">💾 Сохранить настройки</button>
         <button class="btn-test" onclick="testConnection()">🔌 Проверить подключение</button>
+        <button class="btn-disconnect" id="disconnectBtn" onclick="disconnectExchange()" style="display:none;">🗑 Отключить биржу</button>
+
+        <div class="security-note">
+            <strong>🔒 Безопасность:</strong>
+            Ваши ключи шифруются на сервере. Мы никогда не передаём их третьим лицам.
+            Рекомендуем привязать IP-адрес вашего сервера к API ключу.
+        </div>
     </div>
 
     <script>
@@ -244,6 +350,209 @@
 
             let exchangeData = null;
             let allExchanges = [];
+            let isConnected = false;
+
+            // Инструкции для каждой биржи
+            const EXCHANGE_INSTRUCTIONS = {
+                'binance': {
+                    steps: [
+                        'Войдите в аккаунт Binance и перейдите в раздел <span class="step-highlight">API Management</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите тип <span class="step-highlight">System generated</span>',
+                        'Дайте права: <span class="step-highlight">Enable Reading</span> и <span class="step-highlight">Enable Spot & Margin Trading</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Enable Withdrawals</span>',
+                        'Сохраните <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://binance-docs.github.io/apidocs/'
+                },
+                'bybit': {
+                    steps: [
+                        'Войдите в аккаунт Bybit и перейдите в <span class="step-highlight">Account & Security → API Management</span>',
+                        'Нажмите <span class="step-highlight">Create New API Key</span>',
+                        'Выберите <span class="step-highlight">System API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read-Write</span> для Spot и Derivatives',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Transfer</span>',
+                        'Скопируйте <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret</span>'
+                    ],
+                    docs: 'https://bybit-exchange.github.io/docs/'
+                },
+                'okx': {
+                    steps: [
+                        'Войдите в аккаунт OKX и перейдите в <span class="step-highlight">API</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Запишите <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://www.okx.com/docs/'
+                },
+                'gateio': {
+                    steps: [
+                        'Войдите в аккаунт Gate.io и перейдите в <span class="step-highlight">API Management</span>',
+                        'Нажмите <span class="step-highlight">Create New API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Сохраните <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://gate.io/docs'
+                },
+                'kucoin': {
+                    steps: [
+                        'Войдите в аккаунт KuCoin и перейдите в <span class="step-highlight">API Management</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">General</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Запишите <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://docs.kucoin.com/'
+                },
+                'kraken': {
+                    steps: [
+                        'Войдите в аккаунт Kraken и перейдите в <span class="step-highlight">Security → API</span>',
+                        'Нажмите <span class="step-highlight">Add API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Query Funds</span> и <span class="step-highlight">Create/Modify Orders</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw Funds</span>',
+                        'Сохраните <span class="step-highlight">API Key</span> и <span class="step-highlight">Private Key</span>'
+                    ],
+                    docs: 'https://docs.kraken.com/'
+                },
+                'bitget': {
+                    steps: [
+                        'Войдите в аккаунт Bitget и перейдите в <span class="step-highlight">API Management</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Запишите <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://bitget-docs.github.io/'
+                },
+                'htx': {
+                    steps: [
+                        'Войдите в аккаунт HTX и перейдите в <span class="step-highlight">API Management</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Сохраните <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://www.htx.com/docs/'
+                },
+                'mexc': {
+                    steps: [
+                        'Войдите в аккаунт MEXC и перейдите в <span class="step-highlight">API Management</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Запишите <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://mexc-docs.github.io/'
+                },
+                'bingx': {
+                    steps: [
+                        'Войдите в аккаунт BingX и перейдите в <span class="step-highlight">API Management</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Сохраните <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://bingx-api.github.io/docs/'
+                },
+                'coinex': {
+                    steps: [
+                        'Войдите в аккаунт CoinEx и перейдите в <span class="step-highlight">API Management</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Запишите <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://coinex-docs.github.io/'
+                },
+                'bitmex': {
+                    steps: [
+                        'Войдите в аккаунт BitMEX и перейдите в <span class="step-highlight">API Keys</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Сохраните <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://www.bitmex.com/api/'
+                },
+                'crypto_com': {
+                    steps: [
+                        'Войдите в аккаунт Crypto.com Exchange и перейдите в <span class="step-highlight">API</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Запишите <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://exchange-docs.crypto.com/'
+                },
+                'upbit': {
+                    steps: [
+                        'Войдите в аккаунт Upbit и перейдите в <span class="step-highlight">API Management</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Сохраните <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://docs.upbit.com/'
+                },
+                'whitebit': {
+                    steps: [
+                        'Войдите в аккаунт WhiteBit и перейдите в <span class="step-highlight">API</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Запишите <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://whitebit-exchange.github.io/api/'
+                },
+                'exmo': {
+                    steps: [
+                        'Войдите в аккаунт EXMO и перейдите в <span class="step-highlight">API</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Сохраните <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://exmo.com/en/api'
+                },
+                'bitfinex': {
+                    steps: [
+                        'Войдите в аккаунт Bitfinex и перейдите в <span class="step-highlight">API Keys</span>',
+                        'Нажмите <span class="step-highlight">Create New Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Write</span> для Trading',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Запишите <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://docs.bitfinex.com/'
+                },
+                'phemex': {
+                    steps: [
+                        'Войдите в аккаунт Phemex и перейдите в <span class="step-highlight">API Management</span>',
+                        'Нажмите <span class="step-highlight">Create API Key</span>',
+                        'Выберите <span class="step-highlight">API Key</span>',
+                        'Дайте права: <span class="step-highlight">Read</span> и <span class="step-highlight">Trade</span>',
+                        '⚠️ <span style="color:#fbbf24;">НЕ включайте Withdraw</span>',
+                        'Сохраните <span class="step-highlight">API Key</span> и <span class="step-highlight">Secret Key</span>'
+                    ],
+                    docs: 'https://phemex-docs.github.io/'
+                }
+            };
 
             async function loadExchangeData() {
                 try {
@@ -258,32 +567,40 @@
                     
                     if (userData.user && userData.user.exchanges) {
                         exchangeData = userData.user.exchanges.find(ex => ex.id === exchangeId);
+                        isConnected = exchangeData && exchangeData.api_key && exchangeData.secret_key;
                     }
 
-                    if (!exchangeData) {
-                        // Если биржа не найдена в пользовательских, но есть в общем списке
-                        const defaultEx = allExchanges.find(ex => ex.id === exchangeId);
-                        if (defaultEx) {
-                            exchangeData = {
-                                id: defaultEx.id,
-                                name: defaultEx.name,
-                                logo: defaultEx.logo,
-                                connected: false,
-                                api_key: '',
-                                secret_key: ''
-                            };
-                        }
-                    }
-
-                    if (exchangeData) {
-                        document.getElementById('exchangeName').textContent = exchangeData.name || 'Биржа';
-                        document.getElementById('exchangeLogo').textContent = exchangeData.logo || '🏦';
-                        document.getElementById('apiKey').value = exchangeData.api_key || '';
-                        document.getElementById('secretKey').value = exchangeData.secret_key || '';
+                    // Находим информацию о бирже в общем списке
+                    const exchangeInfo = allExchanges.find(ex => ex.id === exchangeId);
+                    
+                    if (exchangeData || exchangeInfo) {
+                        const name = exchangeData?.name || exchangeInfo?.name || 'Биржа';
+                        const logo = exchangeData?.logo || exchangeInfo?.logo || '🏦';
                         
-                        // Ссылка на документацию
-                        const docLink = allExchanges.find(ex => ex.id === exchangeId)?.docs || '#';
-                        document.getElementById('docsLink').href = docLink;
+                        document.getElementById('exchangeName').textContent = name;
+                        document.getElementById('exchangeLogo').textContent = logo;
+                        
+                        if (isConnected) {
+                            document.getElementById('statusBadge').textContent = '✅ Подключена';
+                            document.getElementById('statusBadge').className = 'badge badge-connected';
+                            document.getElementById('apiKey').value = exchangeData.api_key || '';
+                            document.getElementById('secretKey').value = '••••••••••••••••';
+                            document.getElementById('disconnectBtn').style.display = 'block';
+                        } else {
+                            document.getElementById('statusBadge').textContent = '❌ Не подключена';
+                            document.getElementById('statusBadge').className = 'badge badge-disconnected';
+                            document.getElementById('disconnectBtn').style.display = 'none';
+                        }
+
+                        // Инструкции
+                        const instructions = EXCHANGE_INSTRUCTIONS[exchangeId];
+                        if (instructions) {
+                            const list = document.getElementById('instructionsList');
+                            list.innerHTML = instructions.steps.map(step => `<li>${step}</li>`).join('');
+                            document.getElementById('docsLink').href = instructions.docs;
+                        } else {
+                            document.getElementById('instructionsBlock').style.display = 'none';
+                        }
                     } else {
                         alert('Биржа не найдена');
                         window.location.href = '/exchanges.html';
@@ -296,12 +613,12 @@
 
             function showStatus(type, message) {
                 const el = document.getElementById('statusMessage');
-                el.className = 'status ' + type;
+                el.className = 'status-msg ' + type;
                 el.textContent = message;
                 el.style.display = 'block';
                 setTimeout(() => {
                     el.style.display = 'none';
-                }, 5000);
+                }, 8000);
             }
 
             window.saveSettings = async function() {
@@ -317,7 +634,6 @@
                 document.getElementById('saveBtn').textContent = '⏳ Сохранение...';
 
                 try {
-                    // Обновляем данные пользователя
                     const userResp = await fetch(`/api/user/${userEmail}`);
                     const userData = await userResp.json();
                     
@@ -326,12 +642,13 @@
                     }
 
                     let exchanges = userData.user.exchanges || [];
+                    const exchangeInfo = allExchanges.find(ex => ex.id === exchangeId);
                     
                     const existingIndex = exchanges.findIndex(ex => ex.id === exchangeId);
                     const newExchange = {
                         id: exchangeId,
-                        name: exchangeData.name,
-                        logo: exchangeData.logo,
+                        name: exchangeInfo?.name || 'Биржа',
+                        logo: exchangeInfo?.logo || '🏦',
                         connected: true,
                         api_key: apiKey,
                         secret_key: secretKey,
@@ -353,8 +670,13 @@
                     if (saveResp.ok) {
                         showStatus('success', '✅ Настройки сохранены успешно!');
                         exchangeData = newExchange;
+                        isConnected = true;
+                        document.getElementById('statusBadge').textContent = '✅ Подключена';
+                        document.getElementById('statusBadge').className = 'badge badge-connected';
+                        document.getElementById('disconnectBtn').style.display = 'block';
                     } else {
-                        showStatus('error', '❌ Ошибка сохранения настроек');
+                        const errorData = await saveResp.json();
+                        showStatus('error', '❌ Ошибка сохранения: ' + (errorData.error || 'Неизвестная ошибка'));
                     }
                 } catch (e) {
                     console.error('Ошибка:', e);
@@ -390,13 +712,48 @@
                     const data = await resp.json();
 
                     if (data.success) {
-                        showStatus('success', '✅ Подключение успешно! Баланс: $' + (data.balance || '--'));
+                        showStatus('success', `✅ Подключение успешно! Баланс: $${data.total?.toFixed(2) || '--'} | Активов: ${data.assets?.length || 0}`);
                     } else {
                         showStatus('error', '❌ Ошибка подключения: ' + (data.error || 'Неизвестная ошибка'));
                     }
                 } catch (e) {
                     console.error('Ошибка теста:', e);
                     showStatus('error', '❌ Ошибка при проверке: ' + e.message);
+                }
+            };
+
+            window.disconnectExchange = async function() {
+                if (!confirm(`Отключить биржу ${exchangeId}? Все API ключи будут удалены.`)) return;
+
+                try {
+                    const userResp = await fetch(`/api/user/${userEmail}`);
+                    const userData = await userResp.json();
+                    
+                    if (!userData.user) return;
+
+                    let exchanges = userData.user.exchanges || [];
+                    exchanges = exchanges.filter(ex => ex.id !== exchangeId);
+
+                    const saveResp = await fetch(`/api/user/${userEmail}/exchanges`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ exchanges })
+                    });
+
+                    if (saveResp.ok) {
+                        showStatus('success', '✅ Биржа отключена');
+                        isConnected = false;
+                        document.getElementById('statusBadge').textContent = '❌ Не подключена';
+                        document.getElementById('statusBadge').className = 'badge badge-disconnected';
+                        document.getElementById('disconnectBtn').style.display = 'none';
+                        document.getElementById('apiKey').value = '';
+                        document.getElementById('secretKey').value = '';
+                    } else {
+                        showStatus('error', '❌ Ошибка отключения');
+                    }
+                } catch (e) {
+                    console.error('Ошибка:', e);
+                    showStatus('error', '❌ Ошибка: ' + e.message);
                 }
             };
 
