@@ -496,6 +496,12 @@
         .logout-btn:hover {
             background: #ef4444;
         }
+        .pnl-update {
+            font-size: 11px;
+            color: #4a5568;
+            text-align: right;
+            margin-top: 4px;
+        }
         @media (max-width: 600px) {
             .grid-2 {
                 grid-template-columns: 1fr 1fr;
@@ -543,6 +549,7 @@
             <a href="#" id="settingsLink">⚙️ Настройки</a>
         </div>
 
+        <!-- PNL -->
         <div class="card">
             <h2>📊 Ваш PNL</h2>
             <div class="grid-2">
@@ -567,8 +574,10 @@
                     <div class="value white" id="openTrades">0</div>
                 </div>
             </div>
+            <div class="pnl-update" id="pnlUpdateTime">Обновлено: только что</div>
         </div>
 
+        <!-- БОТЫ -->
         <div class="card">
             <h2>
                 🤖 Мои боты
@@ -579,6 +588,7 @@
             </div>
         </div>
 
+        <!-- СИГНАЛЫ -->
         <div class="card">
             <h2>
                 📈 Сигналы
@@ -602,6 +612,7 @@
 
     </div>
 
+    <!-- МОДАЛКА УДАЛЕНИЯ -->
     <div class="modal-overlay" id="deleteModal">
         <div class="modal">
             <h3>⚠️ Удаление бота</h3>
@@ -625,7 +636,9 @@
         let deleteTargetId = null;
         let showPnl = true;
         let demoBotData = null;
+        let pnlUpdateInterval = null;
 
+        // ===== Toggle PNL =====
         const pnlToggle = document.getElementById('pnlToggle');
         const pnlHeader = document.getElementById('pnlHeader');
 
@@ -643,19 +656,67 @@
             pnlHeader.classList.toggle('visible', showPnl);
         }
 
+        // ===== БУРГЕР =====
         document.getElementById('burgerBtn').addEventListener('click', () => {
             document.getElementById('burgerMenu').classList.toggle('open');
         });
 
+        // ===== ВЫХОД =====
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('smtUser');
             window.location.href = '/';
         });
 
+        // ===== ПЕРЕХОД НА СТРАНИЦУ СИГНАЛОВ =====
         document.getElementById('expandSignalsBtn').addEventListener('click', () => {
             window.location.href = '/signals.html';
         });
 
+        // ===== ОБНОВЛЕНИЕ PNL =====
+        async function updatePNL() {
+            try {
+                const res = await fetch(`/api/pnl/${user.email}`);
+                const data = await res.json();
+                if (res.ok) {
+                    // Обновляем PNL в блоке
+                    const pnlUsdt = document.getElementById('pnlUsdt');
+                    const openTrades = document.getElementById('openTrades');
+                    const pnlPercent = document.getElementById('pnlPercent');
+
+                    if (data.totalPnl !== undefined) {
+                        const pnlValue = data.totalPnl;
+                        pnlUsdt.textContent = (pnlValue >= 0 ? '+' : '') + pnlValue.toFixed(2);
+                        pnlUsdt.className = 'value ' + (pnlValue >= 0 ? 'green' : 'red');
+
+                        // PNL в процентах (относительно депозита)
+                        const deposit = 1000;
+                        const pnlPercentValue = (pnlValue / deposit) * 100;
+                        pnlPercent.textContent = (pnlPercentValue >= 0 ? '+' : '') + pnlPercentValue.toFixed(2) + '%';
+                        pnlPercent.className = 'value ' + (pnlPercentValue >= 0 ? 'green' : 'red');
+
+                        // Обновляем демо-PNL в хедере
+                        const pnlHeaderValue = document.getElementById('pnlHeaderValue');
+                        pnlHeaderValue.textContent = (pnlPercentValue >= 0 ? '+' : '') + pnlPercentValue.toFixed(2) + '%';
+                        pnlHeaderValue.className = 'pnl-value ' + (pnlPercentValue >= 0 ? 'green' : 'red');
+
+                        // Депозит + PNL
+                        const depositPnl = document.getElementById('depositPnl');
+                        depositPnl.textContent = '$' + (deposit + pnlValue).toFixed(2);
+                    }
+
+                    if (data.openPositions !== undefined) {
+                        openTrades.textContent = data.openPositions;
+                    }
+
+                    // Обновляем время
+                    document.getElementById('pnlUpdateTime').textContent = 'Обновлено: ' + new Date().toLocaleTimeString();
+                }
+            } catch (err) {
+                console.error('Ошибка обновления PNL:', err);
+            }
+        }
+
+        // ===== ЗАГРУЗКА ДАННЫХ =====
         async function loadDashboard() {
             try {
                 const res = await fetch(`/api/user/${user.email}`);
@@ -673,24 +734,21 @@
                     document.getElementById('depositPnl').textContent = '$' + (deposit + pnlUsdt).toFixed(2);
                     document.getElementById('openTrades').textContent = u.openTrades || 0;
 
-                    const demoRes = await fetch(`/api/demo/${user.email}`);
-                    const demoData = await demoRes.json();
-                    if (demoData.ok) {
-                        demoBotData = demoData.data;
-                        const demoPnl = demoData.data.totalPnl || 0;
-                        document.getElementById('pnlHeaderValue').textContent = (demoPnl >= 0 ? '+' : '') + demoPnl.toFixed(2) + '%';
-                        document.getElementById('pnlHeaderValue').className = 'pnl-value ' + (demoPnl >= 0 ? 'green' : 'red');
-                    }
-
                     botsData = u.bots || [];
                     loadBots(botsData);
                     loadSignals();
+
+                    // Запускаем обновление PNL
+                    await updatePNL();
+                    if (pnlUpdateInterval) clearInterval(pnlUpdateInterval);
+                    pnlUpdateInterval = setInterval(updatePNL, 10000);
                 }
             } catch (err) {
                 console.error('Ошибка загрузки:', err);
             }
         }
 
+        // ===== БОТЫ =====
         function loadBots(bots) {
             const grid = document.getElementById('botGrid');
             const countBadge = document.getElementById('botCount');
@@ -704,9 +762,9 @@
                 paused: false,
                 tariffEnd: '∞',
                 deposit: 1000,
-                pnl: demoBotData?.totalPnl || 0,
-                openTrades: demoBotData?.positions?.filter(p => p.status === 'open').length || 0,
-                closedTrades: demoBotData?.trades?.length || 0,
+                pnl: 0,
+                openTrades: 0,
+                closedTrades: 0,
                 isDemo: true
             };
 
@@ -806,7 +864,6 @@
                 grid.insertBefore(card, addBtn);
             });
 
-            // Обработчик для иконки настроек
             document.querySelectorAll('.settings-icon').forEach(icon => {
                 icon.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -815,7 +872,6 @@
                     const tariff = icon.dataset.botTariff;
                     const deposit = icon.dataset.botDeposit;
                     const services = icon.dataset.botServices;
-                    // Сохраняем данные в localStorage для страницы настроек
                     localStorage.setItem('botSettings', JSON.stringify({
                         botId,
                         exchange,
@@ -840,6 +896,7 @@
             });
         }
 
+        // ===== ДЕМО-БОТ =====
         async function handleDemoAction(action) {
             try {
                 const res = await fetch(`/api/demo/action`, {
@@ -855,6 +912,7 @@
             }
         }
 
+        // ===== БОТЫ =====
         async function handleBotAction(index, action) {
             const bot = botsData[index];
             if (!bot) return;
@@ -910,6 +968,7 @@
             deleteTargetId = null;
         });
 
+        // ===== СИГНАЛЫ =====
         async function loadSignals() {
             try {
                 const res = await fetch(`/api/signals/user/${user.email}`);
@@ -948,6 +1007,7 @@
             `;
         }
 
+        // ===== ЗАГЛУШКИ =====
         document.getElementById('profileLink').addEventListener('click', (e) => {
             e.preventDefault();
             alert('Личная информация (будет реализовано позже)');
@@ -957,7 +1017,13 @@
             alert('Настройки (будет реализовано позже)');
         });
 
+        // ===== ЗАПУСК =====
         loadDashboard();
+
+        // Останавливаем обновление при уходе со страницы
+        window.addEventListener('beforeunload', () => {
+            if (pnlUpdateInterval) clearInterval(pnlUpdateInterval);
+        });
     </script>
 </body>
 </html>
