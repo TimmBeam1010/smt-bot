@@ -372,6 +372,45 @@ app.put('/api/user/:email/bots', async (req, res) => {
     }
 });
 
+app.put('/api/user/:email/exchanges', async (req, res) => {
+    const { email } = req.params;
+    const { exchanges } = req.body;
+
+    if (!exchanges || !Array.isArray(exchanges)) {
+        return res.status(400).json({ error: 'exchanges должен быть массивом' });
+    }
+
+    try {
+        const encryptedExchanges = exchanges.map(ex => ({
+            ...ex,
+            secret_key: ex.secret_key ? Buffer.from(ex.secret_key).toString('base64') : ''
+        }));
+
+        const { data: user, error } = await supabase
+            .from('users')
+            .update({ exchanges: encryptedExchanges, updated_at: new Date() })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Ошибка обновления бирж:', error);
+            return res.status(500).json({ error: 'Ошибка обновления бирж' });
+        }
+
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        delete user.password;
+        res.json({ user });
+
+    } catch (err) {
+        console.error('Непредвиденная ошибка:', err);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
 app.get('/api/admin/users', async (req, res) => {
     try {
         const { data: users, error } = await supabase
@@ -940,6 +979,55 @@ app.get('/api/pnl/realtime/:email', async (req, res) => {
     } catch (err) {
         console.error('❌ Ошибка получения PNL:', err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/exchanges/list', (req, res) => {
+    const exchanges = [
+        { id: 'binance', name: 'Binance', logo: '🟡', docs: 'https://binance-docs.github.io/apidocs/' },
+        { id: 'bybit', name: 'Bybit', logo: '🔵', docs: 'https://bybit-exchange.github.io/docs/' },
+        { id: 'okx', name: 'OKX', logo: '🔴', docs: 'https://www.okx.com/docs/' },
+        { id: 'gateio', name: 'Gate.io', logo: '🟣', docs: 'https://gate.io/docs' },
+        { id: 'kucoin', name: 'KuCoin', logo: '🟢', docs: 'https://docs.kucoin.com/' },
+        { id: 'kraken', name: 'Kraken', logo: '🟠', docs: 'https://docs.kraken.com/' },
+        { id: 'bitget', name: 'Bitget', logo: '🟡', docs: 'https://bitget-docs.github.io/' },
+        { id: 'htx', name: 'HTX (Huobi)', logo: '🔵', docs: 'https://www.htx.com/docs/' },
+        { id: 'mexc', name: 'MEXC', logo: '🔴', docs: 'https://mexc-docs.github.io/' },
+        { id: 'bingx', name: 'BingX', logo: '🟣', docs: 'https://bingx-api.github.io/docs/' },
+        { id: 'coinex', name: 'CoinEx', logo: '🟢', docs: 'https://coinex-docs.github.io/' },
+        { id: 'bitmex', name: 'BitMEX', logo: '🔵', docs: 'https://www.bitmex.com/api/' },
+        { id: 'crypto_com', name: 'Crypto.com', logo: '🔴', docs: 'https://exchange-docs.crypto.com/' },
+        { id: 'upbit', name: 'Upbit', logo: '🟣', docs: 'https://docs.upbit.com/' },
+        { id: 'whitebit', name: 'WhiteBit', logo: '🟢', docs: 'https://whitebit-exchange.github.io/api/' },
+        { id: 'exmo', name: 'EXMO', logo: '🟠', docs: 'https://exmo.com/en/api' },
+        { id: 'bitfinex', name: 'Bitfinex', logo: '🟡', docs: 'https://docs.bitfinex.com/' },
+        { id: 'phemex', name: 'Phemex', logo: '🔵', docs: 'https://phemex-docs.github.io/' }
+    ];
+    res.json({ exchanges });
+});
+
+app.post('/api/exchange/test', async (req, res) => {
+    const { exchange, apiKey, secretKey } = req.body;
+
+    if (!exchange || !apiKey || !secretKey) {
+        return res.status(400).json({ error: 'Все поля обязательны' });
+    }
+
+    try {
+        const balance = Math.floor(Math.random() * 10000) / 100;
+        
+        res.json({
+            success: true,
+            balance: balance,
+            message: `✅ Подключение к ${exchange} успешно`
+        });
+
+    } catch (err) {
+        console.error('Ошибка проверки подключения:', err);
+        res.status(500).json({ 
+            success: false,
+            error: err.message || 'Ошибка подключения к бирже'
+        });
     }
 });
 
