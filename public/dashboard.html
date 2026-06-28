@@ -5,21 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMT Bot — Личный кабинет</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-        body {
-            background: #0a0e17;
-            color: #fff;
-            padding: 16px;
-        }
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: #0a0e17; color: #fff; padding: 16px; }
+        .container { max-width: 1000px; margin: 0 auto; }
         header {
             display: flex;
             justify-content: space-between;
@@ -29,26 +17,9 @@
             flex-wrap: wrap;
             gap: 12px;
         }
-        .logo {
-            font-size: clamp(22px, 4vw, 28px);
-            font-weight: 700;
-            color: #4f46e5;
-            cursor: pointer;
-            text-decoration: none;
-        }
-        .burger {
-            font-size: 28px;
-            cursor: pointer;
-            color: #94a3b8;
-            user-select: none;
-            padding: 4px 8px;
-            border-radius: 8px;
-            transition: 0.2s;
-        }
-        .burger:hover {
-            background: #1a1f2e;
-            color: #fff;
-        }
+        .logo { font-size: clamp(22px, 4vw, 28px); font-weight: 700; color: #4f46e5; cursor: pointer; text-decoration: none; }
+        .burger { font-size: 28px; cursor: pointer; color: #94a3b8; user-select: none; padding: 4px 8px; border-radius: 8px; transition: 0.2s; }
+        .burger:hover { background: #1a1f2e; color: #fff; }
         .burger-menu {
             display: none;
             flex-direction: column;
@@ -60,19 +31,9 @@
             margin-top: 8px;
             width: 100%;
         }
-        .burger-menu.open {
-            display: flex;
-        }
-        .burger-menu a {
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: 16px;
-            padding: 6px 0;
-            transition: 0.2s;
-        }
-        .burger-menu a:hover {
-            color: #fff;
-        }
+        .burger-menu.open { display: flex; }
+        .burger-menu a { color: #94a3b8; text-decoration: none; font-size: 16px; padding: 6px 0; transition: 0.2s; }
+        .burger-menu a:hover { color: #fff; }
         .pnl-header {
             display: none;
             align-items: center;
@@ -87,18 +48,10 @@
             transition: 0.2s;
             cursor: default;
         }
-        .pnl-header.visible {
-            display: flex;
-        }
-        .pnl-header .pnl-value {
-            font-weight: 700;
-        }
-        .pnl-header .pnl-value.green {
-            color: #065f46;
-        }
-        .pnl-header .pnl-value.red {
-            color: #991b1b;
-        }
+        .pnl-header.visible { display: flex; }
+        .pnl-header .pnl-value { font-weight: 700; }
+        .pnl-header .pnl-value.green { color: #065f46; }
+        .pnl-header .pnl-value.red { color: #991b1b; }
         .toggle-container {
             display: flex;
             align-items: center;
@@ -115,9 +68,7 @@
             transition: 0.3s;
             position: relative;
         }
-        .toggle-switch.on {
-            background: #4f46e5;
-        }
+        .toggle-switch.on { background: #4f46e5; }
         .toggle-switch .knob {
             width: 18px;
             height: 18px;
@@ -128,16 +79,8 @@
             left: 2px;
             transition: 0.3s;
         }
-        .toggle-switch.on .knob {
-            left: 20px;
-        }
-        .card {
-            background: #1a1f2e;
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid #2d3748;
-            margin-top: 20px;
-        }
+        .toggle-switch.on .knob { left: 20px; }
+        .card { background: #1a1f2e; padding: 20px; border-radius: 16px; border: 1px solid #2d3748; margin-top: 20px; }
         .card h2 {
             font-size: clamp(18px, 2vw, 22px);
             color: #94a3b8;
@@ -148,13 +91,7 @@
             flex-wrap: wrap;
             gap: 8px;
         }
-        .card h2 .badge {
-            font-size: 13px;
-            background: #2d3748;
-            padding: 2px 10px;
-            border-radius: 20px;
-            color: #94a3b8;
-        }
+        .card h2 .badge { font-size: 13px; background: #2d3748; padding: 2px 10px; border-radius: 20px; color: #94a3b8; }
         .grid-2 {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -166,44 +103,16 @@
             padding: 14px;
             border-radius: 12px;
         }
-        .stat-item .label {
-            color: #94a3b8;
-            font-size: clamp(12px, 1.2vw, 14px);
-        }
-        .stat-item .value {
-            font-size: clamp(20px, 2.5vw, 28px);
-            font-weight: 700;
-            margin-top: 4px;
-        }
-        .value.green {
-            color: #34d399;
-        }
-        .value.red {
-            color: #f87171;
-        }
-        .value.white {
-            color: #fff;
-        }
-        .bot-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .bot-status .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .dot.online {
-            background: #34d399;
-        }
-        .dot.paused {
-            background: #fbbf24;
-        }
-        .dot.offline {
-            background: #f87171;
-        }
+        .stat-item .label { color: #94a3b8; font-size: clamp(12px, 1.2vw, 14px); }
+        .stat-item .value { font-size: clamp(20px, 2.5vw, 28px); font-weight: 700; margin-top: 4px; }
+        .value.green { color: #34d399; }
+        .value.red { color: #f87171; }
+        .value.white { color: #fff; }
+        .bot-status { display: flex; align-items: center; gap: 8px; }
+        .bot-status .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .dot.online { background: #34d399; }
+        .dot.paused { background: #fbbf24; }
+        .dot.offline { background: #f87171; }
         .signal-item {
             padding: 12px 16px;
             border-radius: 10px;
@@ -217,23 +126,11 @@
             flex-wrap: wrap;
             gap: 8px;
         }
-        .signal-item.unread {
-            background: #2d3748;
-        }
-        .signal-item .symbol {
-            font-weight: 600;
-            font-size: clamp(15px, 1.4vw, 17px);
-        }
-        .signal-item .side {
-            font-weight: 600;
-            font-size: clamp(14px, 1.3vw, 16px);
-        }
-        .signal-item .side.long {
-            color: #34d399;
-        }
-        .signal-item .side.short {
-            color: #f87171;
-        }
+        .signal-item.unread { background: #2d3748; }
+        .signal-item .symbol { font-weight: 600; font-size: clamp(15px, 1.4vw, 17px); }
+        .signal-item .side { font-weight: 600; font-size: clamp(14px, 1.3vw, 16px); }
+        .signal-item .side.long { color: #34d399; }
+        .signal-item .side.short { color: #f87171; }
         .signal-item .meta {
             color: #94a3b8;
             font-size: clamp(12px, 1.2vw, 14px);
@@ -252,12 +149,8 @@
             transition: 0.2s;
             margin-top: 8px;
         }
-        .expand-btn:hover {
-            background: #4f46e5;
-            color: #fff;
-        }
+        .expand-btn:hover { background: #4f46e5; color: #fff; }
 
-        /* БОТ-КАРТОЧКИ */
         .bot-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -271,9 +164,7 @@
             border: 1px solid #1a1f2e;
             transition: 0.2s;
         }
-        .bot-card:hover {
-            border-color: #4f46e5;
-        }
+        .bot-card:hover { border-color: #4f46e5; }
         .bot-card .bot-header {
             display: flex;
             align-items: center;
@@ -281,11 +172,7 @@
             margin-bottom: 8px;
             justify-content: space-between;
         }
-        .bot-card .bot-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .bot-card .bot-left { display: flex; align-items: center; gap: 12px; }
         .bot-card .exchange-logo {
             width: 32px;
             height: 32px;
@@ -299,14 +186,8 @@
             color: #4f46e5;
             flex-shrink: 0;
         }
-        .bot-card .bot-name {
-            font-size: 18px;
-            font-weight: 600;
-        }
-        .bot-card .exchange-name {
-            font-size: 14px;
-            color: #94a3b8;
-        }
+        .bot-card .bot-name { font-size: 18px; font-weight: 600; }
+        .bot-card .exchange-name { font-size: 14px; color: #94a3b8; }
         .bot-card .settings-icon {
             font-size: 20px;
             cursor: pointer;
@@ -315,18 +196,9 @@
             padding: 4px;
             border-radius: 6px;
         }
-        .bot-card .settings-icon:hover {
-            color: #fff;
-            background: #4f46e5;
-        }
-        .bot-card .bot-detail {
-            color: #94a3b8;
-            font-size: 14px;
-            margin: 4px 0;
-        }
-        .bot-card .bot-detail strong {
-            color: #fff;
-        }
+        .bot-card .settings-icon:hover { color: #fff; background: #4f46e5; }
+        .bot-card .bot-detail { color: #94a3b8; font-size: 14px; margin: 4px 0; }
+        .bot-card .bot-detail strong { color: #fff; }
         .bot-actions {
             display: flex;
             flex-wrap: wrap;
@@ -345,33 +217,13 @@
             border: 1px solid #2d3748;
             line-height: 1;
         }
-        .bot-actions button:hover {
-            background: #4f46e5;
-            color: #fff;
-            border-color: #4f46e5;
-        }
-        .bot-actions .btn-delete {
-            color: #f87171;
-        }
-        .bot-actions .btn-delete:hover {
-            background: #dc2626;
-            color: #fff;
-        }
-        .bot-actions .btn-pause.active {
-            background: #fbbf24;
-            color: #0a0e17;
-        }
-        .bot-actions .btn-start.active {
-            background: #34d399;
-            color: #0a0e17;
-        }
-        .bot-card.demo-bot {
-            border: 2px solid #fbbf24;
-            background: #1f2937;
-        }
-        .bot-card.demo-bot .bot-name {
-            color: #fbbf24;
-        }
+        .bot-actions button:hover { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+        .bot-actions .btn-delete { color: #f87171; }
+        .bot-actions .btn-delete:hover { background: #dc2626; color: #fff; }
+        .bot-actions .btn-pause.active { background: #fbbf24; color: #0a0e17; }
+        .bot-actions .btn-start.active { background: #34d399; color: #0a0e17; }
+        .bot-card.demo-bot { border: 2px solid #fbbf24; background: #1f2937; }
+        .bot-card.demo-bot .bot-name { color: #fbbf24; }
 
         .add-bot-btn {
             display: flex;
@@ -388,10 +240,7 @@
             min-height: 120px;
             text-decoration: none;
         }
-        .add-bot-btn:hover {
-            background: #1a1f2e;
-            border-color: #818cf8;
-        }
+        .add-bot-btn:hover { background: #1a1f2e; border-color: #818cf8; }
 
         .modal-overlay {
             display: none;
@@ -406,9 +255,7 @@
             z-index: 1000;
             padding: 16px;
         }
-        .modal-overlay.open {
-            display: flex;
-        }
+        .modal-overlay.open { display: flex; }
         .modal {
             background: #1a1f2e;
             padding: 32px;
@@ -417,47 +264,13 @@
             width: 100%;
             border: 1px solid #2d3748;
         }
-        .modal h3 {
-            font-size: 22px;
-            margin-bottom: 12px;
-            color: #f87171;
-        }
-        .modal p {
-            color: #94a3b8;
-            font-size: 15px;
-            margin-bottom: 16px;
-        }
-        .modal input {
-            width: 100%;
-            padding: 12px;
-            background: #2d3748;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 16px;
-            margin-bottom: 12px;
-        }
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-        }
-        .modal-actions button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .modal-actions .btn-cancel {
-            background: #2d3748;
-            color: #fff;
-        }
-        .modal-actions .btn-confirm-delete {
-            background: #dc2626;
-            color: #fff;
-        }
+        .modal h3 { font-size: 22px; margin-bottom: 12px; color: #f87171; }
+        .modal p { color: #94a3b8; font-size: 15px; margin-bottom: 16px; }
+        .modal input { width: 100%; padding: 12px; background: #2d3748; border: none; border-radius: 8px; color: #fff; font-size: 16px; margin-bottom: 12px; }
+        .modal-actions { display: flex; gap: 12px; }
+        .modal-actions button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .modal-actions .btn-cancel { background: #2d3748; color: #fff; }
+        .modal-actions .btn-confirm-delete { background: #dc2626; color: #fff; }
         footer {
             border-top: 1px solid #1a1f2e;
             padding: 20px 0;
@@ -468,58 +281,29 @@
             align-items: center;
             gap: 16px;
         }
-        footer .links {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        footer .links a {
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: 14px;
-            transition: 0.2s;
-        }
-        footer .links a:hover {
-            color: #fff;
-        }
-        .logout-btn {
-            background: #f87171;
+        footer .links { display: flex; gap: 20px; flex-wrap: wrap; }
+        footer .links a { color: #94a3b8; text-decoration: none; font-size: 14px; transition: 0.2s; }
+        footer .links a:hover { color: #fff; }
+        .logout-btn { background: #f87171; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: 0.2s; }
+        .logout-btn:hover { background: #ef4444; }
+        .pnl-update { font-size: 11px; color: #4a5568; text-align: right; margin-top: 4px; }
+        .btn-refresh {
+            background: #4f46e5;
             color: #fff;
             border: none;
-            padding: 8px 20px;
-            border-radius: 8px;
+            padding: 6px 14px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 13px;
             transition: 0.2s;
         }
-        .logout-btn:hover {
-            background: #ef4444;
-        }
-        .pnl-update {
-            font-size: 11px;
-            color: #4a5568;
-            text-align: right;
-            margin-top: 4px;
-        }
+        .btn-refresh:hover { background: #4338ca; }
         @media (max-width: 600px) {
-            .grid-2 {
-                grid-template-columns: 1fr 1fr;
-            }
-            footer {
-                flex-direction: column;
-                text-align: center;
-            }
-            .signal-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .bot-grid {
-                grid-template-columns: 1fr;
-            }
-            .modal {
-                padding: 20px;
-            }
+            .grid-2 { grid-template-columns: 1fr 1fr; }
+            footer { flex-direction: column; text-align: center; }
+            .signal-item { flex-direction: column; align-items: flex-start; }
+            .bot-grid { grid-template-columns: 1fr; }
+            .modal { padding: 20px; }
         }
     </style>
 </head>
@@ -574,7 +358,10 @@
                     <div class="value white" id="openTrades">0</div>
                 </div>
             </div>
-            <div class="pnl-update" id="pnlUpdateTime">Обновлено: только что</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                <div class="pnl-update" id="pnlUpdateTime">Обновлено: только что</div>
+                <button class="btn-refresh" onclick="refreshDemoData()">🔄 Обновить</button>
+            </div>
         </div>
 
         <!-- БОТЫ -->
@@ -612,7 +399,6 @@
 
     </div>
 
-    <!-- МОДАЛКА УДАЛЕНИЯ -->
     <div class="modal-overlay" id="deleteModal">
         <div class="modal">
             <h3>⚠️ Удаление бота</h3>
@@ -635,10 +421,8 @@
         let botsData = [];
         let deleteTargetId = null;
         let showPnl = true;
-        let demoBotData = null;
         let pnlUpdateInterval = null;
 
-        // ===== Toggle PNL =====
         const pnlToggle = document.getElementById('pnlToggle');
         const pnlHeader = document.getElementById('pnlHeader');
 
@@ -656,63 +440,57 @@
             pnlHeader.classList.toggle('visible', showPnl);
         }
 
-        // ===== БУРГЕР =====
         document.getElementById('burgerBtn').addEventListener('click', () => {
             document.getElementById('burgerMenu').classList.toggle('open');
         });
 
-        // ===== ВЫХОД =====
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('smtUser');
             window.location.href = '/';
         });
 
-        // ===== ПЕРЕХОД НА СТРАНИЦУ СИГНАЛОВ =====
         document.getElementById('expandSignalsBtn').addEventListener('click', () => {
             window.location.href = '/signals.html';
         });
 
-        // ===== ОБНОВЛЕНИЕ PNL =====
-        async function updatePNL() {
+        // ===== ОБНОВЛЕНИЕ ДЕМО-ДАННЫХ =====
+        async function refreshDemoData() {
             try {
-                const res = await fetch(`/api/pnl/${user.email}`);
+                const res = await fetch(`/api/demo/${user.email}`);
                 const data = await res.json();
-                if (res.ok) {
-                    // Обновляем PNL в блоке
+                if (res.ok && data.ok) {
                     const pnlUsdt = document.getElementById('pnlUsdt');
                     const openTrades = document.getElementById('openTrades');
                     const pnlPercent = document.getElementById('pnlPercent');
+                    const depositPnl = document.getElementById('depositPnl');
+                    const deposit = 1000;
 
-                    if (data.totalPnl !== undefined) {
-                        const pnlValue = data.totalPnl;
+                    if (data.data.totalPnl !== undefined) {
+                        const pnlValue = data.data.totalPnl;
+                        const pnlPercentValue = (pnlValue / deposit) * 100;
+
                         pnlUsdt.textContent = (pnlValue >= 0 ? '+' : '') + pnlValue.toFixed(2);
                         pnlUsdt.className = 'value ' + (pnlValue >= 0 ? 'green' : 'red');
 
-                        // PNL в процентах (относительно депозита)
-                        const deposit = 1000;
-                        const pnlPercentValue = (pnlValue / deposit) * 100;
                         pnlPercent.textContent = (pnlPercentValue >= 0 ? '+' : '') + pnlPercentValue.toFixed(2) + '%';
                         pnlPercent.className = 'value ' + (pnlPercentValue >= 0 ? 'green' : 'red');
+
+                        depositPnl.textContent = '$' + (deposit + pnlValue).toFixed(2);
 
                         // Обновляем демо-PNL в хедере
                         const pnlHeaderValue = document.getElementById('pnlHeaderValue');
                         pnlHeaderValue.textContent = (pnlPercentValue >= 0 ? '+' : '') + pnlPercentValue.toFixed(2) + '%';
                         pnlHeaderValue.className = 'pnl-value ' + (pnlPercentValue >= 0 ? 'green' : 'red');
-
-                        // Депозит + PNL
-                        const depositPnl = document.getElementById('depositPnl');
-                        depositPnl.textContent = '$' + (deposit + pnlValue).toFixed(2);
                     }
 
-                    if (data.openPositions !== undefined) {
-                        openTrades.textContent = data.openPositions;
+                    if (data.data.positions !== undefined) {
+                        openTrades.textContent = data.data.positions.length;
                     }
 
-                    // Обновляем время
                     document.getElementById('pnlUpdateTime').textContent = 'Обновлено: ' + new Date().toLocaleTimeString();
                 }
             } catch (err) {
-                console.error('Ошибка обновления PNL:', err);
+                console.error('Ошибка обновления демо-данных:', err);
             }
         }
 
@@ -738,10 +516,9 @@
                     loadBots(botsData);
                     loadSignals();
 
-                    // Запускаем обновление PNL
-                    await updatePNL();
+                    await refreshDemoData();
                     if (pnlUpdateInterval) clearInterval(pnlUpdateInterval);
-                    pnlUpdateInterval = setInterval(updatePNL, 10000);
+                    pnlUpdateInterval = setInterval(refreshDemoData, 10000);
                 }
             } catch (err) {
                 console.error('Ошибка загрузки:', err);
@@ -896,7 +673,6 @@
             });
         }
 
-        // ===== ДЕМО-БОТ =====
         async function handleDemoAction(action) {
             try {
                 const res = await fetch(`/api/demo/action`, {
@@ -912,7 +688,6 @@
             }
         }
 
-        // ===== БОТЫ =====
         async function handleBotAction(index, action) {
             const bot = botsData[index];
             if (!bot) return;
@@ -968,7 +743,6 @@
             deleteTargetId = null;
         });
 
-        // ===== СИГНАЛЫ =====
         async function loadSignals() {
             try {
                 const res = await fetch(`/api/signals/user/${user.email}`);
@@ -1007,7 +781,6 @@
             `;
         }
 
-        // ===== ЗАГЛУШКИ =====
         document.getElementById('profileLink').addEventListener('click', (e) => {
             e.preventDefault();
             alert('Личная информация (будет реализовано позже)');
@@ -1017,10 +790,8 @@
             alert('Настройки (будет реализовано позже)');
         });
 
-        // ===== ЗАПУСК =====
         loadDashboard();
 
-        // Останавливаем обновление при уходе со страницы
         window.addEventListener('beforeunload', () => {
             if (pnlUpdateInterval) clearInterval(pnlUpdateInterval);
         });
