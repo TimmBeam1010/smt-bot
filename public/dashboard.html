@@ -34,6 +34,8 @@
             font-size: clamp(22px, 4vw, 28px);
             font-weight: 700;
             color: #4f46e5;
+            cursor: pointer;
+            text-decoration: none;
         }
         .burger {
             font-size: 28px;
@@ -48,7 +50,6 @@
             background: #1a1f2e;
             color: #fff;
         }
-        /* БУРГЕР-МЕНЮ */
         .burger-menu {
             display: none;
             flex-direction: column;
@@ -74,7 +75,6 @@
             color: #fff;
         }
 
-        /* КАРТОЧКИ */
         .card {
             background: #1a1f2e;
             padding: 20px;
@@ -126,8 +126,6 @@
         .value.white {
             color: #fff;
         }
-
-        /* БОТ */
         .bot-status {
             display: flex;
             align-items: center;
@@ -154,8 +152,6 @@
         .settings-icon:hover {
             color: #fff;
         }
-
-        /* СИГНАЛЫ */
         .signal-item {
             padding: 12px 16px;
             border-radius: 10px;
@@ -208,14 +204,6 @@
             background: #4f46e5;
             color: #fff;
         }
-        .signals-hidden {
-            display: none;
-        }
-        .signals-hidden.open {
-            display: block;
-        }
-
-        /* FOOTER */
         footer {
             border-top: 1px solid #1a1f2e;
             padding: 20px 0;
@@ -273,20 +261,18 @@
 <body>
     <div class="container">
 
-        <!-- HEADER -->
         <header>
-            <div class="logo">🤖 SMT Bot</div>
+            <a href="/" class="logo">🤖 SMT Bot</a>
             <div class="burger" id="burgerBtn">☰</div>
         </header>
 
-        <!-- БУРГЕР-МЕНЮ -->
         <div class="burger-menu" id="burgerMenu">
             <a href="/">🏠 Главная</a>
             <a href="#" id="profileLink">👤 Личная информация</a>
             <a href="#" id="settingsLink">⚙️ Настройки</a>
         </div>
 
-        <!-- PNL БЛОК -->
+        <!-- PNL -->
         <div class="card">
             <h2>📊 Ваш PNL</h2>
             <div class="grid-2">
@@ -313,7 +299,7 @@
             </div>
         </div>
 
-        <!-- БЛОК «БОТ» -->
+        <!-- БОТ -->
         <div class="card">
             <h2>
                 🤖 Бот
@@ -329,7 +315,7 @@
             </div>
         </div>
 
-        <!-- БЛОК «СИГНАЛЫ» -->
+        <!-- СИГНАЛЫ -->
         <div class="card">
             <h2>
                 📈 Сигналы
@@ -338,11 +324,9 @@
             <div id="signalsList">
                 <p style="color:#94a3b8;">Загрузка...</p>
             </div>
-            <button class="expand-btn" id="expandSignalsBtn">Развернуть все</button>
-            <div class="signals-hidden" id="signalsHidden"></div>
+            <button class="expand-btn" id="expandSignalsBtn">📋 Перейти к списку сигналов</button>
         </div>
 
-        <!-- FOOTER -->
         <footer>
             <div class="links">
                 <a href="/">Главная</a>
@@ -356,28 +340,47 @@
     </div>
 
     <script>
-        // ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
         const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
         if (!user || !user.email) {
             window.location.href = '/login.html';
         }
 
-        // ===== БУРГЕР =====
+        // Бургер
         const burgerBtn = document.getElementById('burgerBtn');
         const burgerMenu = document.getElementById('burgerMenu');
         burgerBtn.addEventListener('click', () => {
             burgerMenu.classList.toggle('open');
         });
 
-        // ===== ВЫХОД =====
+        // Выход
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('smtUser');
             window.location.href = '/';
         });
 
-        // ===== ЗАГРУЗКА ДАННЫХ =====
-        const API_URL = '';
+        // Переход на страницу сигналов
+        document.getElementById('expandSignalsBtn').addEventListener('click', () => {
+            window.location.href = '/signals.html';
+        });
 
+        // Настройки бота
+        document.getElementById('botSettingsBtn').addEventListener('click', () => {
+            alert('Настройки бота (будет реализовано позже)');
+        });
+
+        // Личная информация
+        document.getElementById('profileLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('Личная информация (будет реализовано позже)');
+        });
+
+        // Настройки
+        document.getElementById('settingsLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('Настройки (будет реализовано позже)');
+        });
+
+        // Загрузка данных
         async function loadDashboard() {
             try {
                 const res = await fetch(`/api/user/${user.email}`);
@@ -394,15 +397,11 @@
                     document.getElementById('pnlPercent').className = 'value ' + (pnl >= 0 ? 'green' : 'red');
                     document.getElementById('depositPnl').textContent = '$' + (deposit + pnlUsdt).toFixed(2);
                     document.getElementById('openTrades').textContent = u.openTrades || 0;
-
-                    // Бот
                     document.getElementById('tariff').textContent = u.tariff || 'Стандарт';
                     document.getElementById('tariffEnd').textContent = u.tariffEnd || '2026-08-01';
                     const isActive = u.botActive !== false;
                     document.getElementById('botDot').className = 'dot ' + (isActive ? 'online' : 'offline');
                     document.getElementById('botStatusText').textContent = isActive ? 'Активен' : 'Приостановлен';
-
-                    // Сигналы
                     loadSignals();
                 }
             } catch (err) {
@@ -415,25 +414,13 @@
                 const res = await fetch(`/api/signals/user/${user.email}`);
                 const data = await res.json();
                 const container = document.getElementById('signalsList');
-                const hiddenContainer = document.getElementById('signalsHidden');
                 const badge = document.getElementById('signalBadge');
-
                 if (data.signals && data.signals.length) {
                     const unread = data.signals.filter(s => !s.read).length;
                     badge.textContent = unread + ' новых';
-
-                    const first5 = data.signals.slice(0, 5);
-                    const rest = data.signals.slice(5);
-
-                    container.innerHTML = first5.map(s => signalHTML(s)).join('');
-                    hiddenContainer.innerHTML = rest.map(s => signalHTML(s)).join('');
-
-                    if (rest.length === 0) {
-                        hiddenContainer.innerHTML = '<p style="color:#94a3b8;">Все сигналы показаны</p>';
-                    }
+                    container.innerHTML = data.signals.slice(0, 5).map(s => signalHTML(s)).join('');
                 } else {
                     container.innerHTML = '<p style="color:#94a3b8;">Нет сигналов</p>';
-                    hiddenContainer.innerHTML = '';
                     badge.textContent = '0 новых';
                 }
             } catch (err) {
@@ -459,33 +446,6 @@
                 </div>
             `;
         }
-
-        // ===== РАЗВЕРНУТЬ СИГНАЛЫ =====
-        const expandBtn = document.getElementById('expandSignalsBtn');
-        const signalsHidden = document.getElementById('signalsHidden');
-        let expanded = false;
-        expandBtn.addEventListener('click', () => {
-            expanded = !expanded;
-            signalsHidden.classList.toggle('open', expanded);
-            expandBtn.textContent = expanded ? 'Свернуть' : 'Развернуть все';
-        });
-
-        // ===== НАСТРОЙКИ БОТА =====
-        document.getElementById('botSettingsBtn').addEventListener('click', () => {
-            alert('Настройки бота (будет реализовано позже)');
-        });
-
-        // ===== ЛИЧНАЯ ИНФОРМАЦИЯ =====
-        document.getElementById('profileLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            alert('Личная информация (будет реализовано позже)');
-        });
-
-        // ===== НАСТРОЙКИ =====
-        document.getElementById('settingsLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            alert('Настройки (будет реализовано позже)');
-        });
 
         loadDashboard();
     </script>
