@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Bot — Активация бота</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            padding: 16px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            font-size: clamp(22px, 4vw, 28px);
+            font-weight: 700;
+            color: #4f46e5;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .back-link {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+        .page-title {
+            font-size: clamp(24px, 3vw, 32px);
+            font-weight: 700;
+            margin: 20px 0 8px;
+        }
+        .page-sub {
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .pricing-card {
+            background: #1a1f2e;
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid #2d3748;
+            text-align: center;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .pricing-card:hover {
+            border-color: #4f46e5;
+        }
+        .pricing-card.highlight {
+            border: 2px solid #4f46e5;
+        }
+        .pricing-card .plan-name {
+            font-size: clamp(20px, 2vw, 24px);
+            font-weight: 700;
+        }
+        .pricing-card .plan-price {
+            font-size: clamp(28px, 3vw, 36px);
+            font-weight: 700;
+            margin: 12px 0;
+            color: #4f46e5;
+        }
+        .pricing-card .plan-price small {
+            font-size: 16px;
+            color: #94a3b8;
+            font-weight: 400;
+        }
+        .pricing-card ul {
+            list-style: none;
+            color: #94a3b8;
+            font-size: 14px;
+            text-align: left;
+            margin: 12px 0;
+            flex: 1;
+        }
+        .pricing-card ul li {
+            padding: 4px 0;
+            border-bottom: 1px solid #1a1f2e;
+        }
+        .pricing-card ul li:last-child {
+            border-bottom: none;
+        }
+        .pricing-card .btn-activate {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 12px;
+            width: 100%;
+        }
+        .pricing-card .btn-activate:hover {
+            background: #4338ca;
+        }
+        .pricing-card .btn-activate.free {
+            background: #34d399;
+            color: #0a0e17;
+        }
+        .pricing-card .btn-activate.free:hover {
+            background: #2bcc8a;
+        }
+        .custom-config {
+            text-align: center;
+            padding: 24px;
+            background: #1a1f2e;
+            border-radius: 16px;
+            border: 2px dashed #4f46e5;
+            margin-top: 10px;
+        }
+        .custom-config h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+        .custom-config p {
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+        .btn-custom {
+            background: transparent;
+            border: 2px solid #4f46e5;
+            color: #fff;
+            padding: 12px 32px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-custom:hover {
+            background: #4f46e5;
+        }
+        .footer {
+            border-top: 1px solid #1a1f2e;
+            padding: 20px 0;
+            margin-top: 30px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        @media (max-width: 600px) {
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="logo">🤖 SMT Bot</a>
+            <a href="/dashboard.html" class="back-link">← Назад в кабинет</a>
+        </header>
+
+        <h1 class="page-title">🚀 Активация бота</h1>
+        <p class="page-sub">Выберите тариф или создайте свою конфигурацию</p>
+
+        <!-- ТАРИФЫ -->
+        <div class="pricing-grid">
+
+            <!-- Бесплатный (тестовый BingX) -->
+            <div class="pricing-card highlight">
+                <div>
+                    <div class="plan-name">🆓 Тестовый BingX</div>
+                    <div class="plan-price">0 ₽ <small>/мес</small></div>
+                    <ul>
+                        <li>✅ Биржа: BingX</li>
+                        <li>✅ 5 сигналов/день</li>
+                        <li>✅ 5 монет</li>
+                        <li>✅ Базовая стратегия</li>
+                        <li>✅ Без автоторговли</li>
+                    </ul>
+                </div>
+                <button class="btn-activate free" id="activateFreeBot">➕ Активировать бесплатно</button>
+            </div>
+
+            <!-- Базовый -->
+            <div class="pricing-card">
+                <div>
+                    <div class="plan-name">🛡️ Базовый</div>
+                    <div class="plan-price">1 500 ₽ <small>/мес</small></div>
+                    <ul>
+                        <li>✅ 10 сигналов/день</li>
+                        <li>✅ 10 монет</li>
+                        <li>✅ 2 стратегии</li>
+                        <li>✅ Биржа: BingX / Bybit</li>
+                    </ul>
+                </div>
+                <button class="btn-activate">Подключить</button>
+            </div>
+
+            <!-- Стандарт -->
+            <div class="pricing-card">
+                <div>
+                    <div class="plan-name">⚖️ Стандарт</div>
+                    <div class="plan-price">3 500 ₽ <small>/мес</small></div>
+                    <ul>
+                        <li>✅ 30 сигналов/день</li>
+                        <li>✅ 30 монет</li>
+                        <li>✅ 4 стратегии</li>
+                        <li>✅ Smart Money</li>
+                        <li>✅ Биржа: BingX / Bybit / Binance</li>
+                    </ul>
+                </div>
+                <button class="btn-activate">Подключить</button>
+            </div>
+
+            <!-- Про -->
+            <div class="pricing-card">
+                <div>
+                    <div class="plan-name">⚡ Про</div>
+                    <div class="plan-price">7 000 ₽ <small>/мес</small></div>
+                    <ul>
+                        <li>✅ ∞ сигналы</li>
+                        <li>✅ ∞ монеты</li>
+                        <li>✅ Все стратегии</li>
+                        <li>✅ Smart Money</li>
+                        <li>✅ Автоторговля</li>
+                        <li>✅ Все биржи</li>
+                    </ul>
+                </div>
+                <button class="btn-activate">Подключить</button>
+            </div>
+
+        </div>
+
+        <!-- СВОЯ КОНФИГУРАЦИЯ -->
+        <div class="custom-config">
+            <h3>⚙️ Своя конфигурация</h3>
+            <p>Настройте бота под свои задачи: выберите биржу, монеты, стратегии, риск и многое другое.</p>
+            <button class="btn-custom" id="customConfigBtn">Настроить свою конфигурацию →</button>
+        </div>
+
+        <footer class="footer">
+            <p>© 2026 SMT Bot. Не является финансовой рекомендацией.</p>
+        </footer>
+    </div>
+
+    <script>
+        // ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
+        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
+        if (!user || !user.email) {
+            window.location.href = '/login.html';
+        }
+
+        // ===== АКТИВАЦИЯ БЕСПЛАТНОГО БОТА =====
+        document.getElementById('activateFreeBot').addEventListener('click', async () => {
+            try {
+                // Загружаем текущего пользователя
+                const res = await fetch(`/api/user/${user.email}`);
+                const data = await res.json();
+                if (!res.ok || !data.user) throw new Error('Ошибка загрузки пользователя');
+
+                const currentBots = data.user.bots || [];
+
+                // Добавляем нового бота
+                const newBot = {
+                    exchange: 'bingx',
+                    tariff: 'Тестовый бесплатный',
+                    services: ['Сигналы'],
+                    active: true,
+                    tariffEnd: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10), // +30 дней
+                    deposit: 0,
+                    pnl: 0,
+                    openTrades: 0,
+                    closedTrades: 0,
+                    activatedAt: new Date().toISOString()
+                };
+
+                const updateRes = await fetch(`/api/user/${user.email}/bots`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bots: [...currentBots, newBot] })
+                });
+
+                if (updateRes.ok) {
+                    alert('✅ Бесплатный бот BingX успешно активирован!');
+                    window.location.href = '/dashboard.html';
+                } else {
+                    alert('❌ Ошибка активации бота. Попробуйте позже.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('❌ Ошибка соединения с сервером');
+            }
+        });
+
+        // ===== СВОЯ КОНФИГУРАЦИЯ =====
+        document.getElementById('customConfigBtn').addEventListener('click', () => {
+            alert('⚙️ Страница настройки конфигурации будет доступна позже');
+        });
+
+        // ===== ОСТАЛЬНЫЕ КНОПКИ (заглушки) =====
+        document.querySelectorAll('.btn-activate:not(.free)').forEach(btn => {
+            btn.addEventListener('click', () => {
+                alert('💳 Оплата и подключение тарифа будут доступны позже');
+            });
+        });
+    </script>
+</body>
+</html>
