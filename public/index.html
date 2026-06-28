@@ -50,7 +50,8 @@
         .nav a:hover {
             color: #fff;
         }
-        .btn-primary, .btn-outline {
+        .btn-primary,
+        .btn-outline {
             padding: 8px 16px;
             border-radius: 8px;
             font-weight: 600;
@@ -117,6 +118,53 @@
             border-radius: 8px;
             text-align: left;
             font-size: clamp(12px, 1.2vw, 14px);
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            padding: 30px 0;
+        }
+        .dash-card {
+            background: #1a1f2e;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #2d3748;
+            text-align: center;
+        }
+        .dash-card .label {
+            color: #94a3b8;
+            font-size: clamp(12px, 1.2vw, 14px);
+        }
+        .dash-card .value {
+            font-size: clamp(18px, 2vw, 24px);
+            font-weight: 700;
+            margin-top: 4px;
+        }
+        .dash-card .value.green {
+            color: #34d399;
+        }
+        .dash-card .value.red {
+            color: #f87171;
+        }
+        .fear-gauge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .fear-gauge .bar {
+            flex: 1;
+            height: 8px;
+            background: linear-gradient(to right, #f87171, #fbbf24, #34d399);
+            border-radius: 4px;
+            max-width: 120px;
+        }
+        .fear-gauge .bar .fill {
+            height: 100%;
+            background: #4f46e5;
+            border-radius: 4px;
+            transition: width 0.5s;
         }
         .features {
             display: grid;
@@ -186,8 +234,32 @@
             gap: 8px;
             flex-wrap: wrap;
         }
+        #newsContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        .news-item {
+            background: #1a1f2e;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #2d3748;
+        }
+        .news-item h4 {
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+        .news-item p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .news-item a {
+            color: #4f46e5;
+            font-size: 13px;
+            text-decoration: none;
+        }
 
-        /* Адаптив для планшетов и телефонов */
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
@@ -210,17 +282,18 @@
             .nav-actions {
                 justify-content: center;
             }
-            .btn-primary, .btn-outline {
+            .btn-primary,
+            .btn-outline {
                 width: 100%;
                 max-width: 200px;
             }
         }
-
         @media (max-width: 480px) {
             .features {
                 grid-template-columns: 1fr;
             }
-            .btn-primary, .btn-outline {
+            .btn-primary,
+            .btn-outline {
                 width: 100%;
                 max-width: none;
             }
@@ -242,6 +315,7 @@
             </div>
         </header>
 
+        <!-- Hero -->
         <section class="hero">
             <div class="hero-text">
                 <h1>Торгуй <span>умнее</span> с SMT Bot</h1>
@@ -260,6 +334,39 @@
             </div>
         </section>
 
+        <!-- Дашборд (индикаторы) -->
+        <section id="dashboard">
+            <div class="dashboard-grid" id="dashGrid">
+                <div class="dash-card">
+                    <div class="label">😨 Fear & Greed</div>
+                    <div class="fear-gauge">
+                        <span id="fearValue" style="font-weight:700;">--</span>
+                        <div class="bar"><div class="fill" id="fearBar" style="width:50%;"></div></div>
+                    </div>
+                    <div id="fearLabel" style="font-size:12px;color:#94a3b8;">--</div>
+                </div>
+                <div class="dash-card">
+                    <div class="label">💰 Капитализация</div>
+                    <div class="value" id="totalCap">--</div>
+                </div>
+                <div class="dash-card">
+                    <div class="label">₿ BTC Price</div>
+                    <div class="value" id="btcPrice">--</div>
+                </div>
+                <div class="dash-card" id="pnlCard">
+                    <div class="label">📊 Ваш PNL</div>
+                    <div class="value" id="pnlValue">--</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Новости -->
+        <section>
+            <h2 style="text-align:center;font-size:clamp(24px,3vw,32px);margin-bottom:16px;">📰 Новости рынка</h2>
+            <div id="newsContainer"><p style="color:#94a3b8;text-align:center;">Загрузка...</p></div>
+        </section>
+
+        <!-- Features -->
         <section id="features" class="features">
             <div class="feature-card">
                 <h3>📊 Технический анализ</h3>
@@ -279,8 +386,9 @@
             </div>
         </section>
 
+        <!-- Тарифы -->
         <section id="pricing">
-            <h2 style="text-align: center; font-size: clamp(24px, 3vw, 36px); margin-bottom: 24px;">💰 Выбери тариф</h2>
+            <h2 style="text-align:center;font-size:clamp(24px,3vw,32px);margin-bottom:24px;">💰 Выбери тариф</h2>
             <div class="pricing-grid">
                 <div class="pricing-card">
                     <h3>🛡️ Базовый</h3>
@@ -290,7 +398,7 @@
                         <li>✅ 10 монет</li>
                         <li>✅ 2 стратегии</li>
                     </ul>
-                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px; width: 100%;">Выбрать</a>
+                    <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
                 </div>
                 <div class="pricing-card highlight">
                     <h3>⚖️ Стандарт</h3>
@@ -301,7 +409,7 @@
                         <li>✅ 4 стратегии</li>
                         <li>✅ Smart Money</li>
                     </ul>
-                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px; width: 100%;">Выбрать</a>
+                    <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
                 </div>
                 <div class="pricing-card">
                     <h3>⚡ Про</h3>
@@ -313,7 +421,7 @@
                         <li>✅ Smart Money</li>
                         <li>✅ Автоторговля</li>
                     </ul>
-                    <a href="/login.html" class="btn-primary" style="display: inline-block; margin-top: 16px; width: 100%;">Выбрать</a>
+                    <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
                 </div>
             </div>
         </section>
@@ -322,5 +430,80 @@
             <p>© 2026 SMT Bot. Не является финансовой рекомендацией.</p>
         </footer>
     </div>
+
+    <script>
+        // ===== НОВОСТИ =====
+        async function loadNews() {
+            try {
+                const res = await fetch('/api/news');
+                const data = await res.json();
+                const container = document.getElementById('newsContainer');
+                if (data.news && data.news.length) {
+                    container.innerHTML = data.news.map(item => `
+                        <div class="news-item">
+                            <h4>${item.title}</h4>
+                            <p>${item.description || ''}</p>
+                            <a href="${item.url}" target="_blank">Читать →</a>
+                            <div style="font-size:11px;color:#4a5568;margin-top:6px;">${new Date(item.publishedAt).toLocaleDateString()}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color:#94a3b8;text-align:center;">Новости временно недоступны</p>';
+                }
+            } catch (e) {
+                document.getElementById('newsContainer').innerHTML = '<p style="color:#f87171;text-align:center;">Ошибка загрузки новостей</p>';
+            }
+        }
+
+        // ===== ДАШБОРД =====
+        async function loadDashboard() {
+            try {
+                const res = await fetch('/api/market-data');
+                const data = await res.json();
+                if (data) {
+                    // Fear & Greed
+                    const fear = data.fearGreed || 50;
+                    document.getElementById('fearValue').textContent = fear;
+                    document.getElementById('fearBar').style.width = fear + '%';
+                    const labels = ['Экстремальный страх', 'Страх', 'Нейтрально', 'Жадность', 'Экстремальная жадность'];
+                    const idx = Math.min(4, Math.floor(fear / 20));
+                    document.getElementById('fearLabel').textContent = labels[idx] || 'Нейтрально';
+
+                    // Капитализация
+                    document.getElementById('totalCap').textContent = data.totalCap || '--';
+
+                    // BTC
+                    document.getElementById('btcPrice').textContent = data.btcPrice ? '$' + data.btcPrice : '--';
+                }
+            } catch (e) {
+                console.warn('Ошибка дашборда:', e);
+            }
+            // PNL (если пользователь залогинен)
+            const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
+            const pnlEl = document.getElementById('pnlValue');
+            if (user && user.email) {
+                try {
+                    const res = await fetch(`/api/user/${user.email}`);
+                    const data = await res.json();
+                    if (data.user && data.user.pnl !== undefined) {
+                        const pnl = data.user.pnl;
+                        pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl + '%';
+                        pnlEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
+                    } else {
+                        pnlEl.textContent = '0%';
+                        pnlEl.className = 'value';
+                    }
+                } catch (e) {
+                    pnlEl.textContent = '--';
+                }
+            } else {
+                pnlEl.textContent = 'Войдите';
+                pnlEl.className = 'value';
+            }
+        }
+
+        loadNews();
+        loadDashboard();
+    </script>
 </body>
 </html>
