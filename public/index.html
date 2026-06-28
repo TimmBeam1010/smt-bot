@@ -347,7 +347,9 @@
                         <span>📊</span>
                         <span class="pnl-value" id="pnlHeaderValue">--</span>
                     </a>
+                    <!-- Кнопка "Войти" (будет скрыта для авторизованных) -->
                     <a href="/login.html" class="btn-outline" id="loginBtn">Войти</a>
+                    <!-- Кнопка "Начать" (будет скрыта для авторизованных) -->
                     <a href="/login.html" class="btn-primary" id="startBtn">Начать</a>
                 </div>
             </div>
@@ -478,11 +480,11 @@
             // Показываем PNL в шапке
             pnlHeader.classList.add('visible');
 
-            // Меняем кнопки "Войти" и "Начать" на "Кабинет"
-            loginBtn.textContent = '👤 Кабинет';
-            loginBtn.href = '/dashboard.html';
-            startBtn.textContent = '👤 Кабинет';
-            startBtn.href = '/dashboard.html';
+            // Скрываем кнопки "Войти" и "Начать"
+            loginBtn.style.display = 'none';
+            startBtn.style.display = 'none';
+
+            // Меняем кнопку "Начать бесплатно" в Hero на "Кабинет"
             heroStartBtn.textContent = '👤 Кабинет';
             heroStartBtn.href = '/dashboard.html';
 
@@ -504,6 +506,8 @@
                 });
         } else {
             pnlHeader.classList.remove('visible');
+            loginBtn.style.display = 'inline-block';
+            startBtn.style.display = 'inline-block';
         }
 
         // ===== НОВОСТИ =====
