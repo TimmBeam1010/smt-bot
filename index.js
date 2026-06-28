@@ -410,6 +410,66 @@ app.put('/api/user/:email/bots', async (req, res) => {
 });
 
 // ============================================
+//  ПОДКЛЮЧЕНИЕ БИРЖИ
+// ============================================
+
+app.post('/api/exchange/connect', async (req, res) => {
+    const { email, exchange, apiKey, secretKey } = req.body;
+    if (!email || !exchange || !apiKey || !secretKey) {
+        return res.status(400).json({ error: 'Все поля обязательны' });
+    }
+
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .update({
+                exchange_connected: true,
+                exchange_name: exchange,
+                exchange_api_key: apiKey,
+                exchange_secret_key: secretKey,
+                updated_at: new Date()
+            })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (error) throw error;
+        if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+
+        // Добавляем бота в массив bots
+        const currentBots = user.bots || [];
+        const newBot = {
+            exchange: exchange,
+            tariff: 'Пользовательский',
+            services: ['Сигналы'],
+            active: true,
+            tariffEnd: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+            deposit: 0,
+            pnl: 0,
+            openTrades: 0,
+            closedTrades: 0,
+            activatedAt: new Date().toISOString()
+        };
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ bots: [...currentBots, newBot] })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        delete updatedUser.password;
+        res.json({ success: true, user: updatedUser });
+
+    } catch (err) {
+        console.error('Ошибка подключения биржи:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
 //  ОСТАЛЬНЫЕ МАРШРУТЫ API
 // ============================================
 
