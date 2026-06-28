@@ -35,7 +35,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("✅ Подключение к Supabase установлено");
 
 // ============================================
-//  МАРШРУТЫ АВТОРИЗАЦИИ (БЕЗ ВЕРИФИКАЦИИ)
+//  МАРШРУТЫ АВТОРИЗАЦИИ
 // ============================================
 
 app.post('/api/register', async (req, res) => {
@@ -271,6 +271,111 @@ app.get('/api/market-data', async (req, res) => {
     } catch (error) {
         console.error('❌ Ошибка получения рыночных данных:', error.message);
         res.json({ fearGreed: 50, btcPrice: '--', totalCap: '--' });
+    }
+});
+
+// ============================================
+//  СИГНАЛЫ ПОЛЬЗОВАТЕЛЯ
+// ============================================
+
+app.get('/api/signals/user/:email', async (req, res) => {
+    const { email } = req.params;
+    try {
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const { data: signals, error } = await supabase
+            .from('signals')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.json({ signals });
+    } catch (err) {
+        console.error('Ошибка получения сигналов:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
+//  ПРОВЕРКА СИГНАЛА
+// ============================================
+
+app.post('/api/signals/check/:id', async (req, res) => {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    try {
+        // Получаем сигнал из БД
+        const { data: signal, error } = await supabase
+            .from('signals')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error || !signal) {
+            return res.status(404).json({ error: 'Сигнал не найден' });
+        }
+
+        // Получаем текущую цену
+        const currentPrice = await trading.getPrice(signal.symbol);
+        if (!currentPrice) {
+            return res.status(500).json({ error: 'Не удалось получить текущую цену' });
+        }
+
+        const entryPrice = parseFloat(signal.entry_price);
+        const priceChange = ((currentPrice - entryPrice) / entryPrice) * 100;
+
+        let status, message;
+
+        // Определяем статус сигнала
+        if (signal.side === 'LONG') {
+            if (priceChange > 0.5) {
+                status = 'profit';
+                message = `✅ Прибыль: +${priceChange.toFixed(2)}% (сейчас ${currentPrice})`;
+            } else if (priceChange < -0.5) {
+                status = 'loss';
+                message = `❌ Убыток: ${priceChange.toFixed(2)}% (сейчас ${currentPrice})`;
+            } else {
+                // Проверяем, актуален ли тренд
+                const priceHistory = []; // Здесь нужно собрать историю цен за последние 20 свечей
+                // В реальном проекте — запрос к БД или API
+                // Пока заглушка
+                status = 'active';
+                message = `🟡 Актуально (изменение ${priceChange.toFixed(2)}%)`;
+            }
+        } else { // SHORT
+            if (priceChange < -0.5) {
+                status = 'profit';
+                message = `✅ Прибыль: ${Math.abs(priceChange).toFixed(2)}% (сейчас ${currentPrice})`;
+            } else if (priceChange > 0.5) {
+                status = 'loss';
+                message = `❌ Убыток: -${priceChange.toFixed(2)}% (сейчас ${currentPrice})`;
+            } else {
+                status = 'active';
+                message = `🟡 Актуально (изменение ${priceChange.toFixed(2)}%)`;
+            }
+        }
+
+        // Обновляем статус сигнала в БД (опционально)
+        await supabase
+            .from('signals')
+            .update({ checked: true, check_result: status, checked_at: new Date() })
+            .eq('id', id);
+
+        res.json({ status, message });
+
+    } catch (err) {
+        console.error('Ошибка проверки сигнала:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
