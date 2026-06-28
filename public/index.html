@@ -260,6 +260,14 @@
             text-decoration: none;
         }
 
+        /* Скрытый блок для PNL (показывается только авторизованным) */
+        #pnlBlock {
+            display: none;
+        }
+        #pnlBlock.visible {
+            display: block;
+        }
+
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
@@ -309,18 +317,28 @@
                 <a href="#features">Функции</a>
                 <a href="#pricing">Тарифы</a>
                 <div class="nav-actions">
-                    <a href="/login.html" class="btn-outline">Войти</a>
-                    <a href="/login.html" class="btn-primary">Начать</a>
+                    <a href="/login.html" class="btn-outline" id="loginBtn">Войти</a>
+                    <a href="/login.html" class="btn-primary" id="startBtn">Начать</a>
                 </div>
             </div>
         </header>
+
+        <!-- Блок PNL (показывается только авторизованным) -->
+        <div id="pnlBlock">
+            <div class="dashboard-grid">
+                <div class="dash-card" style="border-color: #4f46e5;">
+                    <div class="label">📊 Ваш PNL</div>
+                    <div class="value" id="pnlValue">--</div>
+                </div>
+            </div>
+        </div>
 
         <!-- Hero -->
         <section class="hero">
             <div class="hero-text">
                 <h1>Торгуй <span>умнее</span> с SMT Bot</h1>
                 <p>Автоматический помощник для криптотрейдинга на основе RSI, MACD, Smart Money и анализа маркет-мейкера.</p>
-                <a href="/login.html" class="btn-primary">Начать бесплатно</a>
+                <a href="/login.html" class="btn-primary" id="heroStartBtn">Начать бесплатно</a>
             </div>
             <div class="hero-card">
                 <div class="icon">📈</div>
@@ -352,10 +370,6 @@
                 <div class="dash-card">
                     <div class="label">₿ BTC Price</div>
                     <div class="value" id="btcPrice">--</div>
-                </div>
-                <div class="dash-card" id="pnlCard">
-                    <div class="label">📊 Ваш PNL</div>
-                    <div class="value" id="pnlValue">--</div>
                 </div>
             </div>
         </section>
@@ -432,6 +446,46 @@
     </div>
 
     <script>
+        // ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
+        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
+        const pnlBlock = document.getElementById('pnlBlock');
+        const pnlValue = document.getElementById('pnlValue');
+        const loginBtn = document.getElementById('loginBtn');
+        const startBtn = document.getElementById('startBtn');
+        const heroStartBtn = document.getElementById('heroStartBtn');
+
+        if (user && user.email) {
+            // Показываем PNL-блок
+            pnlBlock.classList.add('visible');
+            // Меняем кнопки "Войти" и "Начать" на "Личный кабинет"
+            loginBtn.textContent = '👤 Кабинет';
+            loginBtn.href = '/dashboard.html';
+            startBtn.textContent = '👤 Кабинет';
+            startBtn.href = '/dashboard.html';
+            heroStartBtn.textContent = '👤 Кабинет';
+            heroStartBtn.href = '/dashboard.html';
+
+            // Загружаем PNL
+            fetch(`/api/user/${user.email}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.user && data.user.pnl !== undefined) {
+                        const pnl = data.user.pnl;
+                        pnlValue.textContent = (pnl >= 0 ? '+' : '') + pnl + '%';
+                        pnlValue.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
+                    } else {
+                        pnlValue.textContent = '0%';
+                        pnlValue.className = 'value';
+                    }
+                })
+                .catch(() => {
+                    pnlValue.textContent = '--';
+                });
+        } else {
+            // Прячем PNL-блок
+            pnlBlock.classList.remove('visible');
+        }
+
         // ===== НОВОСТИ =====
         async function loadNews() {
             try {
@@ -461,7 +515,6 @@
                 const res = await fetch('/api/market-data');
                 const data = await res.json();
                 if (data) {
-                    // Fear & Greed
                     const fear = data.fearGreed || 50;
                     document.getElementById('fearValue').textContent = fear;
                     document.getElementById('fearBar').style.width = fear + '%';
@@ -469,36 +522,11 @@
                     const idx = Math.min(4, Math.floor(fear / 20));
                     document.getElementById('fearLabel').textContent = labels[idx] || 'Нейтрально';
 
-                    // Капитализация
                     document.getElementById('totalCap').textContent = data.totalCap || '--';
-
-                    // BTC
                     document.getElementById('btcPrice').textContent = data.btcPrice ? '$' + data.btcPrice : '--';
                 }
             } catch (e) {
                 console.warn('Ошибка дашборда:', e);
-            }
-            // PNL (если пользователь залогинен)
-            const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
-            const pnlEl = document.getElementById('pnlValue');
-            if (user && user.email) {
-                try {
-                    const res = await fetch(`/api/user/${user.email}`);
-                    const data = await res.json();
-                    if (data.user && data.user.pnl !== undefined) {
-                        const pnl = data.user.pnl;
-                        pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl + '%';
-                        pnlEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
-                    } else {
-                        pnlEl.textContent = '0%';
-                        pnlEl.className = 'value';
-                    }
-                } catch (e) {
-                    pnlEl.textContent = '--';
-                }
-            } else {
-                pnlEl.textContent = 'Войдите';
-                pnlEl.className = 'value';
             }
         }
 
