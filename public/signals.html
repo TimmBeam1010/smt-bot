@@ -70,18 +70,6 @@
         .result-box.loss { color: #f87171; }
         .result-box.active { color: #fbbf24; }
         .result-box.inactive { color: #94a3b8; }
-        .debug-box {
-            background: #2d3748;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 16px;
-            font-size: 13px;
-            color: #fbbf24;
-            border: 1px solid #4f46e5;
-            word-break: break-all;
-        }
-        .debug-box .error { color: #f87171; }
-        .debug-box .success { color: #34d399; }
         footer {
             border-top: 1px solid #1a1f2e;
             padding: 20px 0;
@@ -175,17 +163,9 @@
         </div>
 
         <div id="signalsList"><p style="color:#94a3b8;">Загрузка...</p></div>
-
-        <!-- Отладочный блок -->
-        <div class="debug-box" id="debugBox">
-            <strong>📊 Отладка:</strong><br>
-            <span id="debugInfo">Загрузка...</span>
-        </div>
-
         <footer>© 2026 SMT Bot</footer>
     </div>
 
-    <!-- Модалка -->
     <div class="modal-overlay" id="botSelectModal">
         <div class="modal">
             <h3>🤖 Выберите бота</h3>
@@ -198,22 +178,10 @@
     </div>
 
     <script>
-        const debug = document.getElementById('debugInfo');
-
-        // Получаем пользователя
-        let user = null;
-        try {
-            user = JSON.parse(localStorage.getItem('smtUser') || 'null');
-        } catch (e) {
-            debug.innerHTML = '❌ Ошибка чтения пользователя: ' + e.message;
-        }
-
+        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
         if (!user || !user.email) {
-            debug.innerHTML = '❌ Пользователь не найден. Перенаправление на логин...';
-            setTimeout(() => { window.location.href = '/login.html'; }, 2000);
+            window.location.href = '/login.html';
         }
-
-        debug.innerHTML = `✅ Пользователь: ${user.email}`;
 
         let allSignals = [];
         let selectedSignalId = null;
@@ -235,29 +203,19 @@
                             isDemo: true
                         });
                     }
-                    debug.innerHTML += `<br>✅ Ботов загружено: ${userBots.length}`;
-                } else {
-                    debug.innerHTML += `<br>❌ Ошибка загрузки ботов: ${data.error || 'Неизвестно'}`;
                 }
             } catch (err) {
-                debug.innerHTML += `<br>❌ Ошибка загрузки ботов: ${err.message}`;
+                console.error('Ошибка загрузки ботов:', err);
             }
         }
 
         async function loadSignals() {
             try {
-                debug.innerHTML += `<br>🔄 Загрузка сигналов...`;
                 const res = await fetch(`/api/signals/user/${user.email}`);
                 const data = await res.json();
-                if (res.ok) {
-                    allSignals = data.signals || [];
-                    debug.innerHTML += `<br>✅ Сигналов загружено: ${allSignals.length}`;
-                    applyFilters();
-                } else {
-                    debug.innerHTML += `<br>❌ Ошибка загрузки сигналов: ${data.error || 'Неизвестно'}`;
-                }
+                allSignals = data.signals || [];
+                applyFilters();
             } catch (err) {
-                debug.innerHTML += `<br>❌ Ошибка загрузки сигналов: ${err.message}`;
                 document.getElementById('signalsList').innerHTML = '<p style="color:#f87171;">Ошибка загрузки</p>';
             }
         }
@@ -290,7 +248,6 @@
                 }
             }
 
-            debug.innerHTML += `<br>📊 После фильтров: ${filtered.length} сигналов`;
             renderSignals(filtered);
         }
 
@@ -438,7 +395,15 @@
                     alert('✅ Позиции открыты!');
                     document.getElementById('botSelectModal').classList.remove('open');
                     selectedSignalId = null;
-                    loadSignals();
+                    loadSignals(); // Перезагружаем сигналы
+                    // Обновляем демо-данные в ЛК (если страница открыта)
+                    if (window.opener && !window.opener.closed) {
+                        window.opener.location.reload();
+                    }
+                    // Если страница открыта в той же вкладке — просто обновляем
+                    if (window.parent && window.parent.location) {
+                        window.parent.location.reload();
+                    }
                 } else {
                     alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
                 }
@@ -451,7 +416,6 @@
         document.getElementById('filterPeriod').addEventListener('change', applyFilters);
         document.getElementById('filterStatus').addEventListener('change', applyFilters);
 
-        // Запуск
         loadBots();
         loadSignals();
     </script>
