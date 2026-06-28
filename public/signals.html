@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Bot — Сигналы</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            padding: 16px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            font-size: clamp(22px, 4vw, 28px);
+            font-weight: 700;
+            color: #4f46e5;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .back-link {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 20px 0;
+            background: #1a1f2e;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #2d3748;
+            align-items: center;
+        }
+        .filters label {
+            color: #94a3b8;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .filters select,
+        .filters input {
+            background: #2d3748;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .signal-item {
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4f46e5;
+            background: #1a1f2e;
+            transition: 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .signal-item.unread {
+            background: #2d3748;
+        }
+        .signal-item .symbol {
+            font-weight: 600;
+            font-size: clamp(15px, 1.4vw, 17px);
+        }
+        .signal-item .side {
+            font-weight: 600;
+        }
+        .signal-item .side.long {
+            color: #34d399;
+        }
+        .signal-item .side.short {
+            color: #f87171;
+        }
+        .signal-item .meta {
+            color: #94a3b8;
+            font-size: clamp(12px, 1.2vw, 14px);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .check-btn {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .check-btn:hover {
+            background: #4338ca;
+        }
+        .result-box {
+            margin-top: 6px;
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: #2d3748;
+            display: inline-block;
+        }
+        .result-box.profit {
+            color: #34d399;
+        }
+        .result-box.loss {
+            color: #f87171;
+        }
+        .result-box.active {
+            color: #fbbf24;
+        }
+        .result-box.inactive {
+            color: #94a3b8;
+        }
+        footer {
+            border-top: 1px solid #1a1f2e;
+            padding: 20px 0;
+            margin-top: 30px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        @media (max-width: 600px) {
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .signal-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="logo">🤖 SMT Bot</a>
+            <a href="/dashboard.html" class="back-link">← Назад в кабинет</a>
+        </header>
+
+        <div class="filters">
+            <label>Тип сигнала
+                <select id="filterType">
+                    <option value="all">Все</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </label>
+            <label>Период
+                <select id="filterPeriod">
+                    <option value="1h">1 час</option>
+                    <option value="6h">6 часов</option>
+                    <option value="24h">24 часа</option>
+                    <option value="7d">7 дней</option>
+                    <option value="all">За весь период</option>
+                </select>
+            </label>
+            <label>Статус
+                <select id="filterStatus">
+                    <option value="all">Все</option>
+                    <option value="unread">Непрочитанные</option>
+                    <option value="read">Прочитанные</option>
+                </select>
+            </label>
+        </div>
+
+        <div id="signalsList"><p style="color:#94a3b8;">Загрузка...</p></div>
+        <footer>© 2026 SMT Bot</footer>
+    </div>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
+        if (!user || !user.email) {
+            window.location.href = '/login.html';
+        }
+
+        let allSignals = [];
+
+        async function loadSignals() {
+            try {
+                const res = await fetch(`/api/signals/user/${user.email}`);
+                const data = await res.json();
+                allSignals = data.signals || [];
+                applyFilters();
+            } catch (err) {
+                document.getElementById('signalsList').innerHTML = '<p style="color:#f87171;">Ошибка загрузки</p>';
+            }
+        }
+
+        function applyFilters() {
+            const type = document.getElementById('filterType').value;
+            const period = document.getElementById('filterPeriod').value;
+            const status = document.getElementById('filterStatus').value;
+
+            let filtered = allSignals;
+
+            if (type !== 'all') {
+                filtered = filtered.filter(s => s.confidence === type);
+            }
+            if (status === 'unread') {
+                filtered = filtered.filter(s => !s.read);
+            } else if (status === 'read') {
+                filtered = filtered.filter(s => s.read);
+            }
+            if (period !== 'all') {
+                const now = new Date();
+                const limit = {
+                    '1h': 3600000,
+                    '6h': 21600000,
+                    '24h': 86400000,
+                    '7d': 604800000
+                } [period];
+                if (limit) {
+                    filtered = filtered.filter(s => now - new Date(s.created_at) < limit);
+                }
+            }
+
+            renderSignals(filtered);
+        }
+
+        function renderSignals(signals) {
+            const container = document.getElementById('signalsList');
+            if (!signals.length) {
+                container.innerHTML = '<p style="color:#94a3b8;">Нет сигналов по выбранным фильтрам</p>';
+                return;
+            }
+            container.innerHTML = signals.map(s => {
+                const sideClass = s.side.toLowerCase();
+                const unreadClass = s.read ? '' : 'unread';
+                return `
+                    <div class="signal-item ${unreadClass}" data-id="${s.id}">
+                        <div>
+                            <span class="symbol">${s.symbol}</span>
+                            <span class="side ${sideClass}">${s.side}</span>
+                            <span style="font-size:13px;color:#94a3b8;">(${s.confidence})</span>
+                        </div>
+                        <div class="meta">
+                            <span>💰 ${s.entry_price}</span>
+                            <span>📅 ${new Date(s.created_at).toLocaleDateString()}</span>
+                            <button class="check-btn" data-id="${s.id}">Проверить</button>
+                            <span id="result-${s.id}"></span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.check-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = btn.dataset.id;
+                    await checkSignal(id);
+                });
+            });
+        }
+
+        async function checkSignal(id) {
+            const resultSpan = document.getElementById(`result-${id}`);
+            resultSpan.textContent = '⏳ ...';
+
+            try {
+                const res = await fetch(`/api/signals/check/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user.email })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    const cls = data.status === 'profit' ? 'profit' :
+                               data.status === 'loss' ? 'loss' :
+                               data.status === 'active' ? 'active' : 'inactive';
+                    resultSpan.innerHTML = `<span class="result-box ${cls}">${data.message}</span>`;
+                } else {
+                    resultSpan.textContent = '❌ Ошибка';
+                }
+            } catch (err) {
+                resultSpan.textContent = '❌ Ошибка';
+            }
+        }
+
+        document.getElementById('filterType').addEventListener('change', applyFilters);
+        document.getElementById('filterPeriod').addEventListener('change', applyFilters);
+        document.getElementById('filterStatus').addEventListener('change', applyFilters);
+
+        loadSignals();
+    </script>
+</body>
+</html>
