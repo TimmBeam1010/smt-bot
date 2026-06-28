@@ -484,7 +484,8 @@ function getDemoSession(userId) {
             trades: [],
             totalPnl: 0,
             paused: false,
-            active: true
+            active: true,
+            testSignalSent: false // Флаг для тестового сигнала
         };
     }
     return demoSessions[userId];
@@ -680,7 +681,7 @@ app.get('/api/chat/export', async (req, res) => {
 });
 
 // ============================================
-//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА (С ТЕСТОВЫМ СИГНАЛОМ)
+//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА
 // ============================================
 
 const SYMBOLS = ['BONK-USDT', 'DOGS-USDT', 'PEPE-USDT', 'SOL-USDT', 'XRP-USDT'];
@@ -773,7 +774,6 @@ cron.schedule('*/1 * * * *', async () => {
 
                             if (hasDemoBot) {
                                 const account = getDemoSession(userId);
-                                // Проверяем, нет ли уже открытой позиции по этой монете
                                 const existing = account.positions.find(p => p.symbol === signal.symbol && p.status === 'open');
                                 if (!existing) {
                                     const size = Math.min(account.balance * 0.05, 100);
@@ -797,7 +797,7 @@ cron.schedule('*/1 * * * *', async () => {
             }
         }
 
-        // === ПРИНУДИТЕЛЬНЫЙ ТЕСТОВЫЙ СИГНАЛ (если нет реальных) ===
+        // === ПРИНУДИТЕЛЬНЫЙ ТЕСТОВЫЙ СИГНАЛ (ТОЛЬКО ОДИН РАЗ) ===
         try {
             const { data: user } = await supabase
                 .from('users')
@@ -809,8 +809,9 @@ cron.schedule('*/1 * * * *', async () => {
                 const userId = user.id;
                 const account = getDemoSession(userId);
                 const hasOpen = account.positions.some(p => p.status === 'open');
+                const testSignalSent = account.testSignalSent || false;
 
-                if (!hasOpen && account.active && !account.paused) {
+                if (!hasOpen && account.active && !account.paused && !testSignalSent) {
                     const testPrice = 0.00000420;
                     const testStop = 0.00000410;
                     const testProfit = 0.00000440;
@@ -825,7 +826,8 @@ cron.schedule('*/1 * * * *', async () => {
                         testProfit,
                         testSize
                     );
-                    console.log('🧪 ДЕМО: Тестовая позиция BONK-USDT LONG открыта (принудительно)');
+                    account.testSignalSent = true;
+                    console.log('🧪 ДЕМО: Тестовая позиция BONK-USDT LONG открыта (принудительно, один раз)');
                 }
             }
         } catch (testError) {
