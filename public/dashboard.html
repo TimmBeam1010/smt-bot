@@ -20,7 +20,6 @@
             max-width: 1000px;
             margin: 0 auto;
         }
-        /* HEADER */
         header {
             display: flex;
             justify-content: space-between;
@@ -74,7 +73,6 @@
         .burger-menu a:hover {
             color: #fff;
         }
-
         .card {
             background: #1a1f2e;
             padding: 20px;
@@ -204,6 +202,55 @@
             background: #4f46e5;
             color: #fff;
         }
+
+        /* БОТ-КАРТОЧКИ */
+        .bot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 8px;
+        }
+        .bot-card {
+            background: #2d3748;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #1a1f2e;
+            transition: 0.2s;
+        }
+        .bot-card:hover {
+            border-color: #4f46e5;
+        }
+        .bot-card .bot-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .bot-card .bot-detail {
+            color: #94a3b8;
+            font-size: 14px;
+            margin: 4px 0;
+        }
+        .bot-card .bot-detail strong {
+            color: #fff;
+        }
+        .add-bot-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 2px dashed #4f46e5;
+            border-radius: 12px;
+            padding: 24px;
+            cursor: pointer;
+            font-size: 32px;
+            color: #4f46e5;
+            transition: 0.2s;
+            min-height: 120px;
+        }
+        .add-bot-btn:hover {
+            background: #1a1f2e;
+            border-color: #818cf8;
+        }
+
         footer {
             border-top: 1px solid #1a1f2e;
             padding: 20px 0;
@@ -255,6 +302,9 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
+            .bot-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -299,19 +349,15 @@
             </div>
         </div>
 
-        <!-- БОТ -->
+        <!-- БЛОК «БОТ» (карточки) -->
         <div class="card">
             <h2>
-                🤖 Бот
-                <span class="settings-icon" id="botSettingsBtn">⚙️</span>
+                🤖 Мои боты
+                <span class="badge" id="botCount">0</span>
             </h2>
-            <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-                <div class="bot-status">
-                    <span class="dot online" id="botDot"></span>
-                    <span id="botStatusText">Активен</span>
-                </div>
-                <div><strong>Тариф:</strong> <span id="tariff">Стандарт</span></div>
-                <div><strong>До:</strong> <span id="tariffEnd">2026-08-01</span></div>
+            <div class="bot-grid" id="botGrid">
+                <!-- Карточки ботов будут добавлены через JS -->
+                <div class="add-bot-btn" id="addBotBtn">+</div>
             </div>
         </div>
 
@@ -345,42 +391,30 @@
             window.location.href = '/login.html';
         }
 
-        // Бургер
+        // ===== БУРГЕР =====
         const burgerBtn = document.getElementById('burgerBtn');
         const burgerMenu = document.getElementById('burgerMenu');
         burgerBtn.addEventListener('click', () => {
             burgerMenu.classList.toggle('open');
         });
 
-        // Выход
+        // ===== ВЫХОД =====
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('smtUser');
             window.location.href = '/';
         });
 
-        // Переход на страницу сигналов
+        // ===== ПЕРЕХОД НА СТРАНИЦУ СИГНАЛОВ =====
         document.getElementById('expandSignalsBtn').addEventListener('click', () => {
             window.location.href = '/signals.html';
         });
 
-        // Настройки бота
-        document.getElementById('botSettingsBtn').addEventListener('click', () => {
-            alert('Настройки бота (будет реализовано позже)');
+        // ===== ДОБАВЛЕНИЕ БОТА =====
+        document.getElementById('addBotBtn').addEventListener('click', () => {
+            alert('Переход на страницу тарифов для подключения бота (будет реализовано)');
         });
 
-        // Личная информация
-        document.getElementById('profileLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            alert('Личная информация (будет реализовано позже)');
-        });
-
-        // Настройки
-        document.getElementById('settingsLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            alert('Настройки (будет реализовано позже)');
-        });
-
-        // Загрузка данных
+        // ===== ЗАГРУЗКА ДАННЫХ =====
         async function loadDashboard() {
             try {
                 const res = await fetch(`/api/user/${user.email}`);
@@ -397,11 +431,10 @@
                     document.getElementById('pnlPercent').className = 'value ' + (pnl >= 0 ? 'green' : 'red');
                     document.getElementById('depositPnl').textContent = '$' + (deposit + pnlUsdt).toFixed(2);
                     document.getElementById('openTrades').textContent = u.openTrades || 0;
-                    document.getElementById('tariff').textContent = u.tariff || 'Стандарт';
-                    document.getElementById('tariffEnd').textContent = u.tariffEnd || '2026-08-01';
-                    const isActive = u.botActive !== false;
-                    document.getElementById('botDot').className = 'dot ' + (isActive ? 'online' : 'offline');
-                    document.getElementById('botStatusText').textContent = isActive ? 'Активен' : 'Приостановлен';
+
+                    // Загружаем ботов
+                    loadBots(u.bots || []);
+                    // Загружаем сигналы
                     loadSignals();
                 }
             } catch (err) {
@@ -409,6 +442,50 @@
             }
         }
 
+        // ===== БОТЫ =====
+        function loadBots(bots) {
+            const grid = document.getElementById('botGrid');
+            const countBadge = document.getElementById('botCount');
+            countBadge.textContent = bots.length;
+
+            // Удаляем все карточки, кроме кнопки "+"
+            const addBtn = grid.querySelector('.add-bot-btn');
+            grid.innerHTML = '';
+            grid.appendChild(addBtn);
+
+            bots.forEach((bot, index) => {
+                const card = document.createElement('div');
+                card.className = 'bot-card';
+                const isActive = bot.active !== false;
+                const hasAutoTrade = bot.services && bot.services.includes('autotrade');
+
+                let details = `
+                    <div class="bot-name">🤖 Бот #${index + 1}</div>
+                    <div class="bot-detail">
+                        <span class="bot-status">
+                            <span class="dot ${isActive ? 'online' : 'offline'}"></span>
+                            ${isActive ? 'Активен' : 'Приостановлен'}
+                        </span>
+                    </div>
+                    <div class="bot-detail"><strong>Тариф:</strong> ${bot.tariff || 'Стандарт'}</div>
+                    <div class="bot-detail"><strong>Услуги:</strong> ${(bot.services || ['Сигналы']).join(', ')}</div>
+                    <div class="bot-detail"><strong>До:</strong> ${bot.tariffEnd || '2026-08-01'}</div>
+                `;
+
+                if (hasAutoTrade) {
+                    details += `
+                        <div class="bot-detail"><strong>Депозит:</strong> $${(bot.deposit || 0).toFixed(2)}</div>
+                        <div class="bot-detail"><strong>PNL:</strong> <span style="color:${bot.pnl >= 0 ? '#34d399' : '#f87171'}">${(bot.pnl || 0).toFixed(2)}%</span></div>
+                        <div class="bot-detail"><strong>Открыто:</strong> ${bot.openTrades || 0} | <strong>Закрыто:</strong> ${bot.closedTrades || 0}</div>
+                    `;
+                }
+
+                card.innerHTML = details;
+                grid.insertBefore(card, addBtn);
+            });
+        }
+
+        // ===== СИГНАЛЫ =====
         async function loadSignals() {
             try {
                 const res = await fetch(`/api/signals/user/${user.email}`);
@@ -446,6 +523,16 @@
                 </div>
             `;
         }
+
+        // ===== ЗАГЛУШКИ =====
+        document.getElementById('profileLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('Личная информация (будет реализовано позже)');
+        });
+        document.getElementById('settingsLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('Настройки (будет реализовано позже)');
+        });
 
         loadDashboard();
     </script>
