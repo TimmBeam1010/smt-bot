@@ -1,374 +1,341 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMT Bot — Админка</title>
+    <title>🔐 SMT Bot — Админка</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
         }
         body {
             background: #0a0e17;
             color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             padding: 20px;
-        }
-        .container {
             max-width: 1200px;
             margin: 0 auto;
+            min-height: 100vh;
         }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #2d3748;
             flex-wrap: wrap;
             gap: 12px;
-            margin-bottom: 24px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #1a1f2e;
         }
-        .header h1 {
-            font-size: clamp(22px, 3vw, 28px);
-        }
-        .header h1 span {
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
             color: #4f46e5;
         }
-        .logout-btn {
-            background: #f87171;
+        .logo span {
             color: #fff;
-            border: none;
-            padding: 8px 16px;
+        }
+        .nav {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav a:hover {
+            color: #fff;
+            background: #1a1f2e;
+        }
+        .logout-btn {
+            background: #1a1f2e;
+            color: #94a3b8;
+            border: 1px solid #2d3748;
+            padding: 6px 16px;
             border-radius: 8px;
             cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
         }
         .logout-btn:hover {
-            background: #ef4444;
+            background: #2d3748;
+            color: #fff;
         }
         .card {
             background: #1a1f2e;
-            padding: 20px;
             border-radius: 16px;
-            border: 1px solid #2d3748;
+            padding: 24px;
             margin-bottom: 24px;
+            border: 1px solid #2d3748;
         }
-        .card h2 {
-            font-size: clamp(18px, 2vw, 22px);
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 16px;
-            color: #94a3b8;
+            flex-wrap: wrap;
+            gap: 12px;
         }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-        .form-row input {
-            padding: 12px;
-            background: #2d3748;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 16px;
-            width: 100%;
-        }
-        .form-row input:focus {
-            outline: 2px solid #4f46e5;
-        }
-        .btn-primary {
-            background: #4f46e5;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-        .btn-primary:hover {
-            background: #4338ca;
-        }
-        .btn-danger {
-            background: #f87171;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
+        .card-header h2 {
+            font-size: 20px;
             font-weight: 600;
         }
-        .btn-danger:hover {
-            background: #ef4444;
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 8px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: clamp(13px, 1.2vw, 15px);
+        .user-item:last-child {
+            border-bottom: none;
         }
-        th {
-            background: #2d3748;
-            padding: 12px;
-            text-align: left;
-            color: #94a3b8;
+        .user-item .left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
-        td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #2d3748;
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
         }
-        .status-active {
-            color: #34d399;
+        .badge-active {
+            background: #065f46;
+            color: #6ee7b7;
         }
-        .status-blocked {
-            color: #f87171;
+        .badge-blocked {
+            background: #7f1d1d;
+            color: #fca5a5;
         }
-        .btn-sm {
-            padding: 4px 12px;
+        .btn-toggle {
+            padding: 4px 14px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 12px;
+            transition: background 0.2s;
         }
-        .btn-sm-block {
-            background: #f87171;
+        .btn-toggle.block {
+            background: #ef4444;
             color: #fff;
         }
-        .btn-sm-unblock {
-            background: #34d399;
+        .btn-toggle.block:hover {
+            background: #dc2626;
+        }
+        .btn-toggle.unblock {
+            background: #10b981;
             color: #fff;
         }
-        .btn-sm-block:hover,
-        .btn-sm-unblock:hover {
-            opacity: 0.8;
+        .btn-toggle.unblock:hover {
+            background: #059669;
         }
-        .stats {
+        .empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 40px;
+            font-size: 16px;
+        }
+        .stats-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 16px;
+            gap: 12px;
             margin-bottom: 16px;
         }
-        .stat-item {
-            background: #2d3748;
-            padding: 16px;
-            border-radius: 12px;
+        .stats-row .stat {
+            background: #0a0e17;
+            padding: 12px;
+            border-radius: 8px;
             text-align: center;
         }
-        .stat-item h3 {
-            font-size: clamp(24px, 3vw, 32px);
-            color: #4f46e5;
+        .stats-row .stat .value {
+            font-size: 20px;
+            font-weight: 700;
         }
-        .stat-item p {
+        .stats-row .stat .label {
             color: #94a3b8;
-            font-size: clamp(12px, 1.2vw, 14px);
+            font-size: 11px;
+            text-transform: uppercase;
         }
-        .message {
-            padding: 10px 16px;
-            border-radius: 8px;
-            margin-top: 8px;
-            font-weight: 500;
+        .user-time {
+            color: #94a3b8;
+            font-size: 12px;
         }
-        .message-success {
-            background: rgba(52, 211, 153, 0.2);
-            color: #34d399;
-        }
-        .message-error {
-            background: rgba(248, 113, 113, 0.2);
-            color: #f87171;
-        }
-
         @media (max-width: 600px) {
-            .form-row {
-                grid-template-columns: 1fr;
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
             }
-            table {
-                font-size: 12px;
+            .nav {
+                justify-content: center;
+            }
+            .user-item {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .user-item .left {
+                justify-content: center;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔐 <span>SMT</span> Bot — Админка</h1>
-            <button class="logout-btn" id="logoutBtn">Выйти</button>
+
+    <div class="header">
+        <div class="logo">SMT <span>Bot</span> 🔐</div>
+        <div class="nav">
+            <span style="color:#ef4444;font-size:14px;">🔒 Админ-панель</span>
+            <a href="/dashboard.html">📊 ЛК</a>
+            <a href="/index.html">Главная</a>
+            <button class="logout-btn" onclick="logout()">Выйти</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>👥 Управление пользователями</h2>
+            <button class="refresh-btn" onclick="loadUsers()" style="background:#4f46e5;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">🔄 Обновить</button>
         </div>
 
-        <!-- Статистика -->
-        <div class="card">
-            <h2>📊 Статистика</h2>
-            <div class="stats">
-                <div class="stat-item">
-                    <h3 id="totalUsers">0</h3>
-                    <p>Всего</p>
-                </div>
-                <div class="stat-item">
-                    <h3 id="activeUsers">0</h3>
-                    <p>Активных</p>
-                </div>
-                <div class="stat-item">
-                    <h3 id="blockedUsers">0</h3>
-                    <p>Заблокировано</p>
-                </div>
+        <div class="stats-row" id="statsRow">
+            <div class="stat">
+                <div class="value" id="statTotal">0</div>
+                <div class="label">Всего</div>
+            </div>
+            <div class="stat">
+                <div class="value positive" id="statActive">0</div>
+                <div class="label">Активных</div>
+            </div>
+            <div class="stat">
+                <div class="value negative" id="statBlocked">0</div>
+                <div class="label">Заблокированных</div>
             </div>
         </div>
 
-        <!-- Форма создания пользователя -->
-        <div class="card">
-            <h2>👤 Создать пользователя</h2>
-            <div class="form-row">
-                <input type="email" id="newEmail" placeholder="Email">
-                <input type="password" id="newPassword" placeholder="Пароль (мин. 6 символов)">
-            </div>
-            <input type="text" id="newUsername" placeholder="Имя (опционально)" style="width:100%; padding:12px; background:#2d3748; border:none; border-radius:8px; color:#fff; margin-bottom:12px;">
-            <button class="btn-primary" id="createUserBtn">➕ Создать пользователя</button>
-            <div id="createMessage"></div>
-        </div>
-
-        <!-- Список пользователей -->
-        <div class="card">
-            <h2>👥 Все пользователи</h2>
-            <button class="btn-primary" id="refreshBtn" style="margin-bottom:12px;">🔄 Обновить</button>
-            <div id="usersList">Загрузка...</div>
+        <div id="usersContainer">
+            <div class="empty">Загрузка...</div>
         </div>
     </div>
 
     <script>
-        const API_URL = '';
-        const ADMIN_PASSWORD = 'admin123';
-        const user = JSON.parse(localStorage.getItem('smtUser'));
-
-        // Проверка авторизации (только админ)
-        if (!user || user.email !== 'trnabiev@gmail.com') {
-            window.location.href = '/login.html';
-        }
-
-        // ===== ЭЛЕМЕНТЫ =====
-        const totalUsers = document.getElementById('totalUsers');
-        const activeUsers = document.getElementById('activeUsers');
-        const blockedUsers = document.getElementById('blockedUsers');
-        const usersList = document.getElementById('usersList');
-        const createMessage = document.getElementById('createMessage');
-
-        // ===== ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ =====
-        async function loadUsers() {
-            try {
-                const res = await fetch('/api/admin/users');
-                const data = await res.json();
-                if (res.ok) {
-                    renderUsers(data.users);
-                    updateStats(data.users);
+        (function() {
+            // Простая проверка пароля для админки
+            const adminPassword = 'admin123';
+            const sessionKey = 'smt_admin_session';
+            
+            if (!sessionStorage.getItem(sessionKey)) {
+                const input = prompt('🔐 Введите пароль администратора:');
+                if (input === adminPassword) {
+                    sessionStorage.setItem(sessionKey, 'true');
                 } else {
-                    usersList.innerHTML = '<p style="color:#f87171;">Ошибка загрузки</p>';
+                    alert('❌ Неверный пароль!');
+                    window.location.replace('/dashboard.html');
+                    return;
                 }
-            } catch (err) {
-                usersList.innerHTML = '<p style="color:#f87171;">Ошибка соединения</p>';
-            }
-        }
-
-        function updateStats(users) {
-            totalUsers.textContent = users.length;
-            activeUsers.textContent = users.filter(u => u.is_active).length;
-            blockedUsers.textContent = users.filter(u => !u.is_active).length;
-        }
-
-        function renderUsers(users) {
-            if (!users || users.length === 0) {
-                usersList.innerHTML = '<p style="color:#94a3b8;">Нет пользователей</p>';
-                return;
-            }
-            let html = `<table>
-                <tr>
-                    <th>ID</th>
-                    <th>Email</th>
-                    <th>Имя</th>
-                    <th>Верифицирован</th>
-                    <th>Статус</th>
-                    <th>Действие</th>
-                </tr>`;
-            users.forEach(u => {
-                const statusClass = u.is_active ? 'status-active' : 'status-blocked';
-                const statusText = u.is_active ? 'Активен' : 'Заблокирован';
-                const verified = u.is_verified ? '✅' : '❌';
-                const actionBtn = u.is_active ?
-                    `<button class="btn-sm btn-sm-block" data-id="${u.id}" data-action="block">Блок</button>` :
-                    `<button class="btn-sm btn-sm-unblock" data-id="${u.id}" data-action="unblock">Разблок</button>`;
-                html += `<tr>
-                    <td>${u.id}</td>
-                    <td>${u.email}</td>
-                    <td>${u.telegram_username || '—'}</td>
-                    <td>${verified}</td>
-                    <td class="${statusClass}">${statusText}</td>
-                    <td>${actionBtn}</td>
-                </tr>`;
-            });
-            html += '</table>';
-            usersList.innerHTML = html;
-
-            document.querySelectorAll('.btn-sm-block, .btn-sm-unblock').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const id = btn.dataset.id;
-                    const action = btn.dataset.action;
-                    const newStatus = action === 'block' ? false : true;
-                    try {
-                        const res = await fetch(`/api/admin/users/${id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ is_active: newStatus })
-                        });
-                        if (res.ok) loadUsers();
-                    } catch (err) { alert('Ошибка'); }
-                });
-            });
-        }
-
-        // ===== СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ =====
-        document.getElementById('createUserBtn').addEventListener('click', async () => {
-            const email = document.getElementById('newEmail').value.trim();
-            const password = document.getElementById('newPassword').value;
-            const username = document.getElementById('newUsername').value.trim() || null;
-
-            if (!email || !password) {
-                createMessage.innerHTML = '<div class="message message-error">❌ Заполните email и пароль</div>';
-                return;
-            }
-            if (password.length < 6) {
-                createMessage.innerHTML = '<div class="message message-error">❌ Пароль минимум 6 символов</div>';
-                return;
             }
 
-            try {
-                const res = await fetch('/api/admin/create-user', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, username })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    createMessage.innerHTML = `<div class="message message-success">✅ Пользователь ${email} создан!</div>`;
-                    document.getElementById('newEmail').value = '';
-                    document.getElementById('newPassword').value = '';
-                    document.getElementById('newUsername').value = '';
-                    loadUsers();
-                } else {
-                    createMessage.innerHTML = `<div class="message message-error">❌ ${data.error || 'Ошибка'}</div>`;
+            async function loadUsers() {
+                try {
+                    const resp = await fetch('/api/admin/users');
+                    const data = await resp.json();
+                    if (data.users) {
+                        renderUsers(data.users);
+                    } else {
+                        renderUsers([]);
+                    }
+                } catch (e) {
+                    console.error('Ошибка загрузки пользователей:', e);
+                    renderUsers([]);
                 }
-            } catch (err) {
-                createMessage.innerHTML = '<div class="message message-error">❌ Ошибка соединения</div>';
             }
-        });
 
-        // ===== ВЫХОД =====
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('smtUser');
-            window.location.href = '/';
-        });
+            function renderUsers(users) {
+                const container = document.getElementById('usersContainer');
+                
+                const total = users.length;
+                const active = users.filter(u => u.is_active !== false).length;
+                const blocked = users.filter(u => u.is_active === false).length;
 
-        // ===== ОБНОВЛЕНИЕ =====
-        document.getElementById('refreshBtn').addEventListener('click', loadUsers);
+                document.getElementById('statTotal').textContent = total;
+                document.getElementById('statActive').textContent = active;
+                document.getElementById('statBlocked').textContent = blocked;
 
-        loadUsers();
+                if (!users || users.length === 0) {
+                    container.innerHTML = '<div class="empty">Нет пользователей</div>';
+                    return;
+                }
+
+                container.innerHTML = users.map(u => {
+                    const isActive = u.is_active !== false;
+                    return `
+                        <div class="user-item">
+                            <div class="left">
+                                <strong>${u.email || '--'}</strong>
+                                <span class="badge ${isActive ? 'badge-active' : 'badge-blocked'}">
+                                    ${isActive ? '✅ Активен' : '⛔ Заблокирован'}
+                                </span>
+                                <span class="user-time">
+                                    📅 ${u.created_at ? new Date(u.created_at).toLocaleString() : '--'}
+                                </span>
+                            </div>
+                            <div>
+                                <button class="btn-toggle ${isActive ? 'block' : 'unblock'}" onclick="toggleUser('${u.id}', ${!isActive})">
+                                    ${isActive ? '🔒 Заблокировать' : '🔓 Разблокировать'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.toggleUser = async function(userId, newStatus) {
+                if (!confirm(`Подтвердите ${newStatus ? 'разблокировку' : 'блокировку'} пользователя`)) return;
+
+                try {
+                    const resp = await fetch(`/api/admin/users/${userId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ is_active: newStatus })
+                    });
+                    const data = await resp.json();
+                    if (data.user) {
+                        loadUsers();
+                    } else {
+                        alert('❌ Ошибка обновления статуса');
+                    }
+                } catch (e) {
+                    console.error('Ошибка:', e);
+                    alert('❌ Ошибка при обновлении');
+                }
+            };
+
+            window.logout = function() {
+                sessionStorage.removeItem('smt_admin_session');
+                localStorage.removeItem('smt_user_email');
+                window.location.replace('/login.html');
+            };
+
+            window.loadUsers = loadUsers;
+
+            loadUsers();
+
+        })();
     </script>
+
 </body>
 </html>
