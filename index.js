@@ -1021,4 +1021,14 @@ cron.schedule('*/1 * * * *', async () => {
     timezone: "Europe/Moscow"
 });
 
-console.log('⏰ Планировщик запущен (каждую мину
+console.log('⏰ Планировщик запущен (каждую минуту)');
+
+// ============================================
+//  ЗАПУСК СЕРВЕРА
+// ============================================
+
+app.listen(port, () => {
+    console.log(`🚀 SMT Bot запущен на порту ${port}`);
+    console.log(`🌐 Открой: http://localhost:${port}/`);
+    console.log(`📡 API: http://localhost:${port}/api/health`);
+});
