@@ -470,7 +470,7 @@ app.post('/api/exchange/connect', async (req, res) => {
 });
 
 // ============================================
-//  ДЕМО-БОТ (С ХРАНЕНИЕМ В БД)
+//  ДЕМО-БОТ
 // ============================================
 
 async function getDemoBalance(userId) {
@@ -575,7 +575,6 @@ app.get('/api/demo/:userId', async (req, res) => {
 
 app.post('/api/demo/action', async (req, res) => {
     const { userId, action } = req.body;
-    // Действия теперь управляются через bots в таблице users
     res.json({ ok: true });
 });
 
@@ -627,7 +626,6 @@ app.post('/api/trade/open-manual', async (req, res) => {
                 );
                 results.push({ bot: 'demo', position });
             } else {
-                // Реальная торговля (заглушка)
                 results.push({ bot: bot.exchange, status: 'real_trade_not_implemented' });
             }
         }
@@ -636,6 +634,42 @@ app.post('/api/trade/open-manual', async (req, res) => {
 
     } catch (err) {
         console.error('Ошибка ручного открытия:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
+//  PNL В РЕАЛЬНОМ ВРЕМЕНИ
+// ============================================
+
+app.get('/api/pnl/:email', async (req, res) => {
+    const { email } = req.params;
+    try {
+        const { data: user } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+
+        // Получаем демо-баланс
+        const balance = await getDemoBalance(user.id);
+        const { data: positions } = await supabase
+            .from('demo_trades')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'open');
+
+        const totalPnl = positions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+
+        res.json({
+            balance: balance.balance,
+            totalPnl: totalPnl,
+            openPositions: positions.length
+        });
+    } catch (err) {
+        console.error('Ошибка получения PNL:', err);
         res.status(500).json({ error: err.message });
     }
 });
