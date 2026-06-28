@@ -5,16 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📊 SMT Bot — Личный кабинет</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             background: #0a0e17;
             color: #fff;
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             padding: 20px;
             max-width: 1200px;
             margin: 0 auto;
-        }
-        h1, h2, h3 {
-            color: #fff;
+            min-height: 100vh;
         }
         .header {
             display: flex;
@@ -23,71 +26,71 @@
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 1px solid #2d3748;
+            flex-wrap: wrap;
+            gap: 12px;
         }
-        .header a {
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
             color: #4f46e5;
-            text-decoration: none;
-            margin-left: 16px;
         }
-        .header a:hover {
-            text-decoration: underline;
+        .logo span {
+            color: #fff;
+        }
+        .nav {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav a:hover {
+            color: #fff;
+            background: #1a1f2e;
+        }
+        .nav .user-email {
+            color: #4f46e5;
+            font-size: 14px;
+        }
+        .logout-btn {
+            background: #1a1f2e;
+            color: #94a3b8;
+            border: 1px solid #2d3748;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover {
+            background: #2d3748;
+            color: #fff;
         }
         .card {
             background: #1a1f2e;
             border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #2d3748;
         }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-top: 16px;
-        }
-        .stat {
-            background: #0a0e17;
-            padding: 12px;
-            border-radius: 12px;
-            text-align: center;
-        }
-        .stat .value {
-            font-size: 24px;
-            font-weight: bold;
-            margin-top: 4px;
-        }
-        .stat .label {
-            color: #94a3b8;
-            font-size: 12px;
-            text-transform: uppercase;
-        }
-        .positive { color: #10b981; }
-        .negative { color: #ef4444; }
-        .neutral { color: #f59e0b; }
-        .trade-item {
+        .card-header {
             display: flex;
             justify-content: space-between;
-            padding: 8px 12px;
-            border-bottom: 1px solid #2d3748;
             align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
         }
-        .trade-item .side-long { color: #10b981; }
-        .trade-item .side-short { color: #ef4444; }
-        .btn-close {
-            padding: 4px 12px;
-            background: #ef4444;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .btn-close:hover {
-            background: #dc2626;
-        }
-        .empty {
-            color: #94a3b8;
-            text-align: center;
-            padding: 20px;
+        .card-header h2, .card-header h3 {
+            font-size: 18px;
+            font-weight: 600;
         }
         .refresh-btn {
             background: #4f46e5;
@@ -96,38 +99,144 @@
             padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
-            margin-left: 12px;
+            font-size: 14px;
+            transition: background 0.2s;
         }
         .refresh-btn:hover {
             background: #4338ca;
         }
-        .status-badge {
-            display: inline-block;
-            padding: 2px 10px;
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        .stat {
+            background: #0a0e17;
+            padding: 16px;
             border-radius: 12px;
-            font-size: 12px;
+            text-align: center;
+            border: 1px solid #1a1f2e;
         }
-        .status-open {
-            background: #065f46;
-            color: #6ee7b7;
+        .stat .value {
+            font-size: 26px;
+            font-weight: 700;
+            margin-top: 4px;
         }
-        .status-closed {
-            background: #1e293b;
+        .stat .label {
             color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .flex-between {
+        .stat .sub {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .positive { color: #10b981; }
+        .negative { color: #ef4444; }
+        .neutral { color: #f59e0b; }
+        .trade-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .trade-item:last-child {
+            border-bottom: none;
+        }
+        .trade-item .left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .trade-item .right {
+            text-align: right;
+        }
+        .side-long { color: #10b981; }
+        .side-short { color: #ef4444; }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-open {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .badge-closed {
+            background: #1e293b;
+            color: #94a3b8;
+        }
+        .btn-close {
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        .btn-close:hover {
+            background: #dc2626;
+        }
+        .empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 24px;
+            font-size: 14px;
+        }
+        .ws-status {
+            font-size: 12px;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ws-status .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .ws-status .dot.connected {
+            background: #10b981;
+        }
+        .ws-status .dot.disconnected {
+            background: #ef4444;
+        }
+        .hidden {
+            display: none !important;
         }
         @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .nav {
+                justify-content: center;
+            }
             .grid {
                 grid-template-columns: 1fr 1fr;
             }
             .trade-item {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
+                align-items: stretch;
+                text-align: center;
+            }
+            .trade-item .right {
+                text-align: center;
+            }
+            .trade-item .left {
+                justify-content: center;
             }
         }
     </style>
@@ -135,19 +244,23 @@
 <body>
 
     <div class="header">
-        <h1>📊 SMT Bot</h1>
-        <div>
-            <span id="userEmail" style="color:#94a3b8;margin-right:16px;"></span>
+        <div class="logo">SMT <span>Bot</span></div>
+        <div class="nav">
+            <span class="user-email" id="userEmail"></span>
             <a href="/index.html">Главная</a>
-            <a href="/signals.html">Сигналы</a>
             <a href="/admin.html">Админка</a>
+            <a href="/signals.html">Сигналы</a>
             <a href="/chat.html">Чат</a>
-            <a href="#" onclick="logout()">Выйти</a>
+            <button class="logout-btn" onclick="logout()">Выйти</button>
+            <span class="ws-status">
+                <span class="dot disconnected" id="wsDot"></span>
+                <span id="wsLabel">отключено</span>
+            </span>
         </div>
     </div>
 
     <div class="card">
-        <div class="flex-between">
+        <div class="card-header">
             <h2>📊 Портфель в реальном времени</h2>
             <button class="refresh-btn" onclick="updatePnl()">🔄 Обновить</button>
         </div>
@@ -155,7 +268,7 @@
             <div class="stat">
                 <div class="label">Баланс</div>
                 <div class="value" id="currentBalance">$0.00</div>
-                <div style="font-size:14px;color:#94a3b8;">
+                <div class="sub">
                     <span id="initialBalance">$0.00</span>
                     <span id="balanceChange"></span>
                 </div>
@@ -167,7 +280,7 @@
             <div class="stat">
                 <div class="label">Сделки</div>
                 <div class="value" id="tradeStats">0</div>
-                <div style="font-size:14px;color:#94a3b8;">
+                <div class="sub">
                     🟢 <span id="winCount">0</span> | 🔴 <span id="lossCount">0</span>
                 </div>
             </div>
@@ -179,181 +292,207 @@
     </div>
 
     <div class="card">
-        <h3>📈 Открытые позиции (<span id="openCount">0</span>)</h3>
+        <div class="card-header">
+            <h3>📈 Открытые позиции (<span id="openCount">0</span>)</h3>
+        </div>
         <div id="openPositions"></div>
     </div>
 
     <div class="card">
-        <h3>📜 История сделок</h3>
+        <div class="card-header">
+            <h3>📜 История сделок</h3>
+        </div>
         <div id="tradeHistory"></div>
     </div>
 
     <script>
-        const userEmail = localStorage.getItem('userEmail');
-        if (!userEmail) {
-            window.location.href = '/login.html';
-        }
-        document.getElementById('userEmail').textContent = userEmail;
-
-        let ws = null;
-        let reconnectAttempts = 0;
-        const MAX_RECONNECT = 5;
-
-        function connectWebSocket() {
-            if (!userEmail) return;
-            
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/ws?userId=${encodeURIComponent(userEmail)}`;
-            ws = new WebSocket(wsUrl);
-            
-            ws.onopen = () => {
-                console.log('✅ WebSocket подключен');
-                reconnectAttempts = 0;
-                updatePnl();
-            };
-            
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    updatePnlUI(data);
-                } catch (e) {
-                    console.error('Ошибка парсинга WebSocket:', e);
-                }
-            };
-            
-            ws.onclose = () => {
-                console.log('❌ WebSocket отключен');
-                if (reconnectAttempts < MAX_RECONNECT) {
-                    reconnectAttempts++;
-                    setTimeout(connectWebSocket, 3000 * reconnectAttempts);
-                }
-            };
-            
-            ws.onerror = (error) => {
-                console.error('WebSocket ошибка:', error);
-            };
-        }
-
-        async function updatePnl() {
-            try {
-                const response = await fetch(`/api/pnl/realtime/${userEmail}`);
-                const result = await response.json();
-                if (result.success) {
-                    updatePnlUI(result.data);
-                }
-            } catch (e) {
-                console.error('Ошибка загрузки PNL:', e);
-            }
-        }
-
-        function updatePnlUI(data) {
-            if (!data) return;
-
-            const balance = data.balance;
-            document.getElementById('currentBalance').textContent = `$${balance.current.toFixed(2)}`;
-            document.getElementById('initialBalance').textContent = `$${balance.initial.toFixed(2)}`;
-            
-            const changeEl = document.getElementById('balanceChange');
-            if (balance.change > 0.01) {
-                changeEl.innerHTML = `<span class="positive">+$${balance.change.toFixed(2)} (+${balance.changePercent.toFixed(1)}%)</span>`;
-            } else if (balance.change < -0.01) {
-                changeEl.innerHTML = `<span class="negative">-$${Math.abs(balance.change).toFixed(2)} (${balance.changePercent.toFixed(1)}%)</span>`;
-            } else {
-                changeEl.innerHTML = `<span class="neutral">$0.00 (0%)</span>`;
+        (function() {
+            // Проверяем сессию — если нет, редирект на логин
+            const userEmail = localStorage.getItem('smt_user_email');
+            if (!userEmail) {
+                window.location.replace('/login.html');
+                return;
             }
 
-            const totalPnl = data.trades.totalPnl + data.positions.reduce((sum, p) => sum + (p.pnl || 0), 0);
-            const pnlEl = document.getElementById('totalPnl');
-            pnlEl.textContent = `$${totalPnl.toFixed(2)}`;
-            pnlEl.className = 'value ' + (totalPnl > 0.01 ? 'positive' : totalPnl < -0.01 ? 'negative' : 'neutral');
+            document.getElementById('userEmail').textContent = userEmail;
 
-            const trades = data.trades;
-            document.getElementById('tradeStats').textContent = trades.total;
-            document.getElementById('winCount').textContent = trades.wins;
-            document.getElementById('lossCount').textContent = trades.losses;
-            document.getElementById('winRate').textContent = trades.winRate + '%';
-            document.getElementById('openCount').textContent = trades.open;
+            let ws = null;
+            let reconnectAttempts = 0;
+            const MAX_RECONNECT = 5;
 
-            const positionsContainer = document.getElementById('openPositions');
-            if (data.positions.length === 0) {
-                positionsContainer.innerHTML = '<div class="empty">Нет открытых позиций</div>';
-            } else {
-                positionsContainer.innerHTML = data.positions.map(pos => `
-                    <div class="trade-item">
-                        <div>
-                            <strong>${pos.symbol}</strong>
-                            <span class="${pos.side === 'LONG' ? 'side-long' : 'side-short'}">${pos.side}</span>
-                            <span style="color:#94a3b8;font-size:12px;margin-left:8px;">${pos.size.toFixed(2)} USDT</span>
-                            <span class="status-badge status-open">открыта</span>
-                        </div>
-                        <div style="text-align:right;">
-                            <div>Entry: $${pos.entry_price.toFixed(4)}</div>
-                            <div>Current: $${pos.currentPrice ? pos.currentPrice.toFixed(4) : '--'}</div>
-                            <div class="${pos.pnl > 0.01 ? 'positive' : pos.pnl < -0.01 ? 'negative' : 'neutral'}">
-                                ${pos.pnl > 0 ? '+' : ''}$${pos.pnl ? pos.pnl.toFixed(2) : '0.00'} (${pos.pnlPercent ? pos.pnlPercent.toFixed(1) : '0'}%)
-                            </div>
-                            <button class="btn-close" onclick="closePosition('${pos.id}')">Закрыть</button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            const historyContainer = document.getElementById('tradeHistory');
-            if (!data.recentTrades || data.recentTrades.length === 0) {
-                historyContainer.innerHTML = '<div class="empty">Нет завершенных сделок</div>';
-            } else {
-                historyContainer.innerHTML = data.recentTrades.map(trade => `
-                    <div class="trade-item">
-                        <div>
-                            <strong>${trade.symbol}</strong>
-                            <span class="${trade.side === 'LONG' ? 'side-long' : 'side-short'}">${trade.side}</span>
-                            <span style="color:#94a3b8;font-size:12px;margin-left:8px;">
-                                ${new Date(trade.close_time).toLocaleString()}
-                            </span>
-                            <span class="status-badge status-closed">закрыта</span>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-size:13px;color:#94a3b8;">
-                                ${trade.entry_price.toFixed(4)} → ${trade.close_price.toFixed(4)}
-                            </div>
-                            <div class="${trade.pnl > 0.01 ? 'positive' : trade.pnl < -0.01 ? 'negative' : 'neutral'}">
-                                ${trade.pnl > 0 ? '+' : ''}$${trade.pnl ? trade.pnl.toFixed(2) : '0.00'} (${trade.pnl_percent ? trade.pnl_percent.toFixed(1) : '0'}%)
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        async function closePosition(positionId) {
-            if (!confirm('Закрыть эту позицию?')) return;
-            
-            try {
-                const response = await fetch('/api/trade/close', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ positionId, email: userEmail })
-                });
-                const result = await response.json();
+            function connectWebSocket() {
+                if (!userEmail) return;
                 
-                if (result.success) {
-                    alert(`✅ Позиция закрыта. PNL: $${result.pnl.toFixed(2)}`);
-                    updatePnl();
-                } else {
-                    alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws?userId=${encodeURIComponent(userEmail)}`;
+                
+                try {
+                    ws = new WebSocket(wsUrl);
+                } catch (e) {
+                    console.error('WS create error:', e);
+                    return;
                 }
-            } catch (e) {
-                console.error('Ошибка закрытия:', e);
-                alert('❌ Ошибка при закрытии позиции');
+                
+                ws.onopen = () => {
+                    console.log('✅ WebSocket подключен');
+                    reconnectAttempts = 0;
+                    document.getElementById('wsDot').className = 'dot connected';
+                    document.getElementById('wsLabel').textContent = 'подключено';
+                    updatePnl();
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        updatePnlUI(data);
+                    } catch (e) {
+                        console.error('Ошибка парсинга WebSocket:', e);
+                    }
+                };
+                
+                ws.onclose = () => {
+                    console.log('❌ WebSocket отключен');
+                    document.getElementById('wsDot').className = 'dot disconnected';
+                    document.getElementById('wsLabel').textContent = 'отключено';
+                    if (reconnectAttempts < MAX_RECONNECT) {
+                        reconnectAttempts++;
+                        setTimeout(connectWebSocket, 3000 * reconnectAttempts);
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket ошибка:', error);
+                };
             }
-        }
 
-        function logout() {
-            localStorage.removeItem('userEmail');
-            window.location.href = '/login.html';
-        }
+            async function updatePnl() {
+                try {
+                    const response = await fetch(`/api/pnl/realtime/${userEmail}`);
+                    const result = await response.json();
+                    if (result.success) {
+                        updatePnlUI(result.data);
+                    }
+                } catch (e) {
+                    console.error('Ошибка загрузки PNL:', e);
+                }
+            }
 
-        document.addEventListener('DOMContentLoaded', () => {
+            function updatePnlUI(data) {
+                if (!data) return;
+
+                const balance = data.balance || { initial: 0, current: 0, change: 0, changePercent: 0 };
+                document.getElementById('currentBalance').textContent = `$${balance.current.toFixed(2)}`;
+                document.getElementById('initialBalance').textContent = `$${balance.initial.toFixed(2)}`;
+                
+                const changeEl = document.getElementById('balanceChange');
+                if (balance.change > 0.01) {
+                    changeEl.innerHTML = `<span class="positive">+$${balance.change.toFixed(2)} (+${balance.changePercent.toFixed(1)}%)</span>`;
+                } else if (balance.change < -0.01) {
+                    changeEl.innerHTML = `<span class="negative">-$${Math.abs(balance.change).toFixed(2)} (${balance.changePercent.toFixed(1)}%)</span>`;
+                } else {
+                    changeEl.innerHTML = `<span class="neutral">$0.00 (0%)</span>`;
+                }
+
+                const positions = data.positions || [];
+                const trades = data.trades || { total: 0, open: 0, closed: 0, wins: 0, losses: 0, winRate: 0, totalPnl: 0 };
+                
+                const totalPnl = trades.totalPnl + positions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+                const pnlEl = document.getElementById('totalPnl');
+                pnlEl.textContent = `$${totalPnl.toFixed(2)}`;
+                pnlEl.className = 'value ' + (totalPnl > 0.01 ? 'positive' : totalPnl < -0.01 ? 'negative' : 'neutral');
+
+                document.getElementById('tradeStats').textContent = trades.total || 0;
+                document.getElementById('winCount').textContent = trades.wins || 0;
+                document.getElementById('lossCount').textContent = trades.losses || 0;
+                document.getElementById('winRate').textContent = (trades.winRate || 0) + '%';
+                document.getElementById('openCount').textContent = trades.open || 0;
+
+                const positionsContainer = document.getElementById('openPositions');
+                if (!positions || positions.length === 0) {
+                    positionsContainer.innerHTML = '<div class="empty">Нет открытых позиций</div>';
+                } else {
+                    positionsContainer.innerHTML = positions.map(pos => `
+                        <div class="trade-item">
+                            <div class="left">
+                                <strong>${pos.symbol || '--'}</strong>
+                                <span class="${pos.side === 'LONG' ? 'side-long' : 'side-short'}">${pos.side || '--'}</span>
+                                <span style="color:#94a3b8;font-size:12px;">${(pos.size || 0).toFixed(2)} USDT</span>
+                                <span class="badge badge-open">открыта</span>
+                            </div>
+                            <div class="right">
+                                <div>Entry: $${(pos.entry_price || 0).toFixed(4)}</div>
+                                <div>Current: $${pos.currentPrice ? pos.currentPrice.toFixed(4) : '--'}</div>
+                                <div class="${(pos.pnl || 0) > 0.01 ? 'positive' : (pos.pnl || 0) < -0.01 ? 'negative' : 'neutral'}">
+                                    ${(pos.pnl || 0) > 0 ? '+' : ''}$${(pos.pnl || 0).toFixed(2)} (${(pos.pnlPercent || 0).toFixed(1)}%)
+                                </div>
+                                <button class="btn-close" onclick="closePosition('${pos.id}')">Закрыть</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                const historyContainer = document.getElementById('tradeHistory');
+                const recentTrades = data.recentTrades || [];
+                if (!recentTrades || recentTrades.length === 0) {
+                    historyContainer.innerHTML = '<div class="empty">Нет завершенных сделок</div>';
+                } else {
+                    historyContainer.innerHTML = recentTrades.map(trade => `
+                        <div class="trade-item">
+                            <div class="left">
+                                <strong>${trade.symbol || '--'}</strong>
+                                <span class="${trade.side === 'LONG' ? 'side-long' : 'side-short'}">${trade.side || '--'}</span>
+                                <span style="color:#94a3b8;font-size:12px;">
+                                    ${trade.close_time ? new Date(trade.close_time).toLocaleString() : '--'}
+                                </span>
+                                <span class="badge badge-closed">закрыта</span>
+                            </div>
+                            <div class="right">
+                                <div style="font-size:13px;color:#94a3b8;">
+                                    ${(trade.entry_price || 0).toFixed(4)} → ${(trade.close_price || 0).toFixed(4)}
+                                </div>
+                                <div class="${(trade.pnl || 0) > 0.01 ? 'positive' : (trade.pnl || 0) < -0.01 ? 'negative' : 'neutral'}">
+                                    ${(trade.pnl || 0) > 0 ? '+' : ''}$${(trade.pnl || 0).toFixed(2)} (${(trade.pnl_percent || 0).toFixed(1)}%)
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            window.closePosition = async function(positionId) {
+                if (!confirm('Закрыть эту позицию?')) return;
+                
+                try {
+                    const response = await fetch('/api/trade/close', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ positionId, email: userEmail })
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert(`✅ Позиция закрыта. PNL: $${(result.pnl || 0).toFixed(2)}`);
+                        updatePnl();
+                    } else {
+                        alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                    }
+                } catch (e) {
+                    console.error('Ошибка закрытия:', e);
+                    alert('❌ Ошибка при закрытии позиции');
+                }
+            };
+
+            window.updatePnl = updatePnl;
+
+            window.logout = function() {
+                localStorage.removeItem('smt_user_email');
+                if (ws) {
+                    try { ws.close(); } catch(e) {}
+                }
+                window.location.replace('/login.html');
+            };
+
+            // Запуск
             connectWebSocket();
             
             setInterval(() => {
@@ -361,7 +500,8 @@
                     updatePnl();
                 }
             }, 5000);
-        });
+
+        })();
     </script>
 
 </body>
