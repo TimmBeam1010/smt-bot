@@ -1,254 +1,252 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMT Bot — Вход</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
         body {
             background: #0a0e17;
             color: #fff;
+            font-family: sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 16px;
+            margin: 0;
+            padding: 20px;
         }
-        .login-card {
+        .container {
             background: #1a1f2e;
-            padding: 32px 28px;
-            border-radius: 20px;
+            padding: 40px;
+            border-radius: 16px;
             width: 100%;
             max-width: 400px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
         }
-        .login-card h1 {
+        h1 {
             text-align: center;
-            font-size: clamp(24px, 5vw, 32px);
-            font-weight: 700;
+            margin-bottom: 8px;
         }
-        .login-card h1 span {
-            color: #4f46e5;
-        }
-        .login-card .sub {
+        .subtitle {
             text-align: center;
             color: #94a3b8;
-            font-size: clamp(14px, 1.5vw, 16px);
-            margin-bottom: 24px;
+            margin-bottom: 30px;
         }
-        .login-card input {
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        input {
             width: 100%;
-            padding: 12px 14px;
-            margin: 8px 0 16px;
-            background: #2d3748;
-            border: none;
-            border-radius: 10px;
+            padding: 12px;
+            background: #0a0e17;
             color: #fff;
-            font-size: clamp(14px, 1.5vw, 16px);
+            border: 1px solid #2d3748;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
         }
-        .login-card input:focus {
-            outline: 2px solid #4f46e5;
-            background: #374151;
+        input:focus {
+            outline: none;
+            border-color: #4f46e5;
         }
-        .login-card button {
+        button {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             background: #4f46e5;
             color: #fff;
-            font-weight: 600;
-            font-size: clamp(16px, 1.5vw, 18px);
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
-            transition: 0.2s;
-            margin-top: 4px;
+            margin-top: 8px;
         }
-        .login-card button:hover {
+        button:hover {
             background: #4338ca;
-            transform: scale(1.01);
-        }
-        .login-card button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .toggle {
-            text-align: center;
-            margin-top: 16px;
-            font-size: clamp(14px, 1.5vw, 16px);
-            color: #94a3b8;
-        }
-        .toggle a {
-            color: #818cf8;
-            cursor: pointer;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .toggle a:hover {
-            text-decoration: underline;
-        }
-        #message {
-            margin-top: 16px;
-            text-align: center;
-            font-size: clamp(14px, 1.5vw, 16px);
-            min-height: 22px;
-        }
-        .success {
-            color: #34d399;
         }
         .error {
-            color: #f87171;
-        }
-        .loader {
+            background: #7f1d1d;
+            color: #fca5a5;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
             display: none;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #fff;
-            border-top: 2px solid transparent;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 10px auto 0;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #94a3b8;
+        }
+        .footer a {
+            color: #4f46e5;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .footer a:hover {
+            text-decoration: underline;
         }
         .back-link {
             display: block;
             text-align: center;
             margin-top: 16px;
             color: #94a3b8;
-            font-size: clamp(14px, 1.5vw, 16px);
             text-decoration: none;
         }
         .back-link:hover {
             color: #fff;
         }
-        .hidden {
-            display: none !important;
-        }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <h1>🤖 <span>SMT</span> Bot</h1>
-        <p class="sub">Войдите или создайте аккаунт</p>
+    <div class="container">
+        <h1>SMT Bot</h1>
+        <div class="subtitle">Войдите или создайте аккаунт</div>
 
-        <form id="authForm">
-            <input type="email" id="email" placeholder="Email" required autofocus>
-            <input type="password" id="password" placeholder="Пароль (мин. 6 символов)" required>
-            <input type="text" id="username" placeholder="Имя (опционально)" style="display: none;">
-            <button type="submit" id="submitBtn">Войти</button>
-        </form>
+        <div class="error" id="errorMessage"></div>
 
-        <div class="toggle">
-            <span id="toggleText">Нет аккаунта? </span>
-            <a id="toggleLink">Зарегистрироваться</a>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
         </div>
 
-        <div id="message"></div>
-        <div class="loader" id="loader"></div>
+        <div class="form-group">
+            <label for="password">Пароль (мин. 6 символов)</label>
+            <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+
+        <button id="loginBtn">Войти</button>
+
+        <div class="footer">
+            Нет аккаунта? <a id="registerLink">Зарегистрироваться</a>
+        </div>
 
         <a href="/" class="back-link">← На главную</a>
     </div>
 
     <script>
-        const form = document.getElementById('authForm');
-        const email = document.getElementById('email');
-        const password = document.getElementById('password');
-        const username = document.getElementById('username');
-        const submitBtn = document.getElementById('submitBtn');
-        const toggleLink = document.getElementById('toggleLink');
-        const toggleText = document.getElementById('toggleText');
-        const message = document.getElementById('message');
-        const loader = document.getElementById('loader');
-
-        let isLogin = true;
-
-        toggleLink.addEventListener('click', () => {
-            isLogin = !isLogin;
-            if (isLogin) {
-                submitBtn.textContent = 'Войти';
-                toggleText.textContent = 'Нет аккаунта? ';
-                toggleLink.textContent = 'Зарегистрироваться';
-                username.style.display = 'none';
-            } else {
-                submitBtn.textContent = 'Зарегистрироваться';
-                toggleText.textContent = 'Уже есть аккаунт? ';
-                toggleLink.textContent = 'Войти';
-                username.style.display = 'block';
-            }
-            message.textContent = '';
-            message.className = '';
-        });
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const endpoint = isLogin ? '/api/login' : '/api/register';
-            const body = isLogin ? {
-                email: email.value.trim(),
-                password: password.value
-            } : {
-                email: email.value.trim(),
-                password: password.value,
-                username: username.value.trim() || null
-            };
-
-            if (!body.email || !body.password) {
-                message.textContent = '❌ Заполните все обязательные поля';
-                message.className = 'error';
-                return;
-            }
-            if (!isLogin && body.password.length < 6) {
-                message.textContent = '❌ Пароль должен быть минимум 6 символов';
-                message.className = 'error';
+        (function() {
+            // Если уже есть сессия — сразу идём в дашборд
+            const savedEmail = localStorage.getItem('smt_user_email');
+            if (savedEmail) {
+                window.location.href = '/dashboard.html';
                 return;
             }
 
-            submitBtn.disabled = true;
-            loader.style.display = 'block';
-            message.textContent = '';
-            message.className = '';
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const errorEl = document.getElementById('errorMessage');
+            const loginBtn = document.getElementById('loginBtn');
+            const registerLink = document.getElementById('registerLink');
 
-            try {
-                const res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                });
+            function showError(msg) {
+                errorEl.textContent = msg;
+                errorEl.style.display = 'block';
+                setTimeout(() => {
+                    errorEl.style.display = 'none';
+                }, 5000);
+            }
 
-                const data = await res.json();
+            async function login() {
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
 
-                if (res.ok) {
-                    message.textContent = isLogin ? '✅ Вход выполнен!' : '✅ Регистрация успешна!';
-                    message.className = 'success';
-                    localStorage.setItem('smtUser', JSON.stringify(data.user));
-                    setTimeout(() => {
-                        window.location.href = '/dashboard.html';
-                    }, 500);
-                } else {
-                    message.textContent = '❌ ' + (data.error || 'Неизвестная ошибка');
-                    message.className = 'error';
+                if (!email || !password) {
+                    showError('Заполните все поля');
+                    return;
                 }
-            } catch (err) {
-                console.error(err);
-                message.textContent = '❌ Ошибка соединения с сервером';
-                message.className = 'error';
-            } finally {
-                submitBtn.disabled = false;
-                loader.style.display = 'none';
-            }
-        });
 
-        // Если пользователь уже залогинен
-        if (localStorage.getItem('smtUser')) {
-            window.location.href = '/dashboard.html';
-        }
+                if (password.length < 6) {
+                    showError('Пароль должен быть минимум 6 символов');
+                    return;
+                }
+
+                loginBtn.disabled = true;
+                loginBtn.textContent = '⏳ Загрузка...';
+
+                try {
+                    const resp = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    const data = await resp.json();
+
+                    if (data.user) {
+                        localStorage.setItem('smt_user_email', data.user.email);
+                        window.location.replace('/dashboard.html');
+                    } else {
+                        showError(data.error || 'Неверный email или пароль');
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = 'Войти';
+                    }
+                } catch (e) {
+                    console.error('Login error:', e);
+                    showError('Ошибка соединения с сервером');
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Войти';
+                }
+            }
+
+            async function register() {
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+
+                if (!email || !password) {
+                    showError('Заполните email и пароль');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showError('Пароль должен быть минимум 6 символов');
+                    return;
+                }
+
+                loginBtn.disabled = true;
+                loginBtn.textContent = '⏳ Регистрация...';
+
+                try {
+                    const resp = await fetch('/api/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    const data = await resp.json();
+
+                    if (data.user) {
+                        localStorage.setItem('smt_user_email', data.user.email);
+                        window.location.replace('/dashboard.html');
+                    } else {
+                        showError(data.error || 'Ошибка регистрации');
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = 'Войти';
+                    }
+                } catch (e) {
+                    console.error('Register error:', e);
+                    showError('Ошибка соединения с сервером');
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Войти';
+                }
+            }
+
+            loginBtn.addEventListener('click', login);
+            registerLink.addEventListener('click', register);
+
+            passwordInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') login();
+            });
+
+            emailInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') passwordInput.focus();
+            });
+
+        })();
     </script>
 </body>
 </html>
