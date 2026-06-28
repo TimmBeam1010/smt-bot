@@ -57,6 +57,7 @@
             align-items: center;
             gap: 16px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         .exchange-header .logo-big {
             font-size: 48px;
@@ -352,7 +353,6 @@
             let allExchanges = [];
             let isConnected = false;
 
-            // Инструкции для каждой биржи
             const EXCHANGE_INSTRUCTIONS = {
                 'binance': {
                     steps: [
@@ -556,12 +556,10 @@
 
             async function loadExchangeData() {
                 try {
-                    // Загружаем список всех бирж
                     const allResp = await fetch('/api/exchanges/list');
                     const allData = await allResp.json();
                     allExchanges = allData.exchanges || [];
 
-                    // Загружаем данные пользователя
                     const userResp = await fetch(`/api/user/${userEmail}`);
                     const userData = await userResp.json();
                     
@@ -570,7 +568,6 @@
                         isConnected = exchangeData && exchangeData.api_key && exchangeData.secret_key;
                     }
 
-                    // Находим информацию о бирже в общем списке
                     const exchangeInfo = allExchanges.find(ex => ex.id === exchangeId);
                     
                     if (exchangeData || exchangeInfo) {
@@ -592,7 +589,6 @@
                             document.getElementById('disconnectBtn').style.display = 'none';
                         }
 
-                        // Инструкции
                         const instructions = EXCHANGE_INSTRUCTIONS[exchangeId];
                         if (instructions) {
                             const list = document.getElementById('instructionsList');
@@ -661,11 +657,16 @@
                         exchanges.push(newExchange);
                     }
 
+                    console.log('📤 Отправка на сервер:', JSON.stringify(exchanges, null, 2));
+
                     const saveResp = await fetch(`/api/user/${userEmail}/exchanges`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ exchanges })
                     });
+
+                    const responseData = await saveResp.json();
+                    console.log('📥 Ответ сервера:', responseData);
 
                     if (saveResp.ok) {
                         showStatus('success', '✅ Настройки сохранены успешно!');
@@ -675,8 +676,7 @@
                         document.getElementById('statusBadge').className = 'badge badge-connected';
                         document.getElementById('disconnectBtn').style.display = 'block';
                     } else {
-                        const errorData = await saveResp.json();
-                        showStatus('error', '❌ Ошибка сохранения: ' + (errorData.error || 'Неизвестная ошибка'));
+                        showStatus('error', '❌ Ошибка сохранения: ' + (responseData.error || 'Неизвестная ошибка'));
                     }
                 } catch (e) {
                     console.error('Ошибка:', e);
