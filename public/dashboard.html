@@ -174,6 +174,18 @@
             background: #1e293b;
             color: #94a3b8;
         }
+        .badge-active {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .badge-paused {
+            background: #92400e;
+            color: #fbbf24;
+        }
+        .badge-inactive {
+            background: #1e293b;
+            color: #94a3b8;
+        }
         .btn-close {
             background: #ef4444;
             color: #fff;
@@ -186,6 +198,48 @@
         }
         .btn-close:hover {
             background: #dc2626;
+        }
+        .btn-pause {
+            background: #f59e0b;
+            color: #fff;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+            margin-left: 4px;
+        }
+        .btn-pause:hover {
+            background: #d97706;
+        }
+        .btn-resume {
+            background: #10b981;
+            color: #fff;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+            margin-left: 4px;
+        }
+        .btn-resume:hover {
+            background: #059669;
+        }
+        .btn-delete {
+            background: #7f1d1d;
+            color: #fca5a5;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+            margin-left: 4px;
+        }
+        .btn-delete:hover {
+            background: #991b1b;
         }
         .empty {
             color: #94a3b8;
@@ -212,8 +266,44 @@
         .ws-status .dot.disconnected {
             background: #ef4444;
         }
-        .hidden {
-            display: none !important;
+        .bot-item {
+            background: #0a0e17;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #1a1f2e;
+            margin-bottom: 12px;
+        }
+        .bot-item:last-child {
+            margin-bottom: 0;
+        }
+        .bot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .bot-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .bot-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        .bot-details span {
+            background: #1a1f2e;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .bot-actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
         }
         @media (max-width: 600px) {
             .header {
@@ -236,6 +326,14 @@
                 text-align: center;
             }
             .trade-item .left {
+                justify-content: center;
+            }
+            .bot-header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .bot-actions {
                 justify-content: center;
             }
         }
@@ -293,6 +391,14 @@
 
     <div class="card">
         <div class="card-header">
+            <h3>🤖 Мои боты</h3>
+            <a href="/configure-bot.html" style="color:#4f46e5;text-decoration:none;font-size:14px;">+ Создать бота</a>
+        </div>
+        <div id="botsContainer"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
             <h3>📈 Открытые позиции (<span id="openCount">0</span>)</h3>
         </div>
         <div id="openPositions"></div>
@@ -307,7 +413,6 @@
 
     <script>
         (function() {
-            // Проверяем сессию — если нет, редирект на логин
             const userEmail = localStorage.getItem('smt_user_email');
             if (!userEmail) {
                 window.location.replace('/login.html');
@@ -319,6 +424,126 @@
             let ws = null;
             let reconnectAttempts = 0;
             const MAX_RECONNECT = 5;
+
+            async function loadBots() {
+                try {
+                    const resp = await fetch(`/api/user/${userEmail}`);
+                    const data = await resp.json();
+                    if (data.user && data.user.bots) {
+                        renderBots(data.user.bots);
+                    } else {
+                        renderBots([]);
+                    }
+                } catch (e) {
+                    console.error('Ошибка загрузки ботов:', e);
+                    renderBots([]);
+                }
+            }
+
+            function renderBots(bots) {
+                const container = document.getElementById('botsContainer');
+                if (!bots || bots.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty">
+                            У вас ещё нет ботов.<br>
+                            <a href="/configure-bot.html" style="color:#4f46e5;text-decoration:none;">Создать первого бота →</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = bots.map((bot, index) => {
+                    const statusClass = bot.active ? (bot.paused ? 'badge-paused' : 'badge-active') : 'badge-inactive';
+                    const statusText = bot.active ? (bot.paused ? '⏸ Пауза' : '✅ Активен') : '⛔ Отключён';
+                    
+                    return `
+                        <div class="bot-item">
+                            <div class="bot-header">
+                                <div>
+                                    <span class="bot-name">${bot.exchange || 'Демо-бот'}</span>
+                                    <span class="badge ${statusClass}" style="margin-left:8px;">${statusText}</span>
+                                </div>
+                                <div class="bot-actions">
+                                    ${bot.active ? `
+                                        ${bot.paused ? 
+                                            `<button class="btn-resume" onclick="toggleBot(${index}, false)">▶ Возобновить</button>` :
+                                            `<button class="btn-pause" onclick="toggleBot(${index}, true)">⏸ Пауза</button>`
+                                        }
+                                    ` : `
+                                        <button class="btn-resume" onclick="toggleBot(${index}, false, true)">▶ Активировать</button>
+                                    `}
+                                    <button class="btn-delete" onclick="deleteBot(${index})">🗑 Удалить</button>
+                                </div>
+                            </div>
+                            <div class="bot-details">
+                                <span>💰 Депозит: $${(bot.deposit || 0).toFixed(2)}</span>
+                                <span>📈 PNL: ${(bot.pnl || 0) >= 0 ? '+' : ''}$${(bot.pnl || 0).toFixed(2)}</span>
+                                <span>📊 Сделки: ${(bot.openTrades || 0)} открыто / ${(bot.closedTrades || 0)} закрыто</span>
+                                <span>📅 До: ${bot.tariffEnd || '--'}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.toggleBot = async function(index, pause, activate = false) {
+                try {
+                    const resp = await fetch(`/api/user/${userEmail}`);
+                    const data = await resp.json();
+                    if (!data.user) return;
+
+                    const bots = data.user.bots || [];
+                    if (index >= bots.length) return;
+
+                    if (activate) {
+                        bots[index].active = true;
+                        bots[index].paused = false;
+                    } else {
+                        bots[index].paused = pause;
+                    }
+
+                    const updateResp = await fetch(`/api/user/${userEmail}/bots`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ bots })
+                    });
+
+                    if (updateResp.ok) {
+                        loadBots();
+                    }
+                } catch (e) {
+                    console.error('Ошибка управления ботом:', e);
+                    alert('Ошибка при управлении ботом');
+                }
+            };
+
+            window.deleteBot = async function(index) {
+                if (!confirm('Удалить этого бота?')) return;
+
+                try {
+                    const resp = await fetch(`/api/user/${userEmail}`);
+                    const data = await resp.json();
+                    if (!data.user) return;
+
+                    const bots = data.user.bots || [];
+                    if (index >= bots.length) return;
+
+                    bots.splice(index, 1);
+
+                    const updateResp = await fetch(`/api/user/${userEmail}/bots`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ bots })
+                    });
+
+                    if (updateResp.ok) {
+                        loadBots();
+                    }
+                } catch (e) {
+                    console.error('Ошибка удаления бота:', e);
+                    alert('Ошибка при удалении бота');
+                }
+            };
 
             function connectWebSocket() {
                 if (!userEmail) return;
@@ -339,6 +564,7 @@
                     document.getElementById('wsDot').className = 'dot connected';
                     document.getElementById('wsLabel').textContent = 'подключено';
                     updatePnl();
+                    loadBots();
                 };
                 
                 ws.onmessage = (event) => {
@@ -492,7 +718,6 @@
                 window.location.replace('/login.html');
             };
 
-            // Запуск
             connectWebSocket();
             
             setInterval(() => {
@@ -500,6 +725,8 @@
                     updatePnl();
                 }
             }, 5000);
+
+            loadBots();
 
         })();
     </script>
