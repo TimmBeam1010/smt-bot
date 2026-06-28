@@ -138,17 +138,11 @@
         .dot.online {
             background: #34d399;
         }
+        .dot.paused {
+            background: #fbbf24;
+        }
         .dot.offline {
             background: #f87171;
-        }
-        .settings-icon {
-            font-size: 22px;
-            cursor: pointer;
-            color: #94a3b8;
-            transition: 0.2s;
-        }
-        .settings-icon:hover {
-            color: #fff;
         }
         .signal-item {
             padding: 12px 16px;
@@ -255,6 +249,57 @@
         .bot-card .bot-detail strong {
             color: #fff;
         }
+        .bot-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .bot-actions button {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-pause {
+            background: #fbbf24;
+            color: #0a0e17;
+        }
+        .btn-pause:hover {
+            background: #f59e0b;
+        }
+        .btn-resume {
+            background: #34d399;
+            color: #0a0e17;
+        }
+        .btn-resume:hover {
+            background: #2bcc8a;
+        }
+        .btn-stop {
+            background: #f87171;
+            color: #fff;
+        }
+        .btn-stop:hover {
+            background: #ef4444;
+        }
+        .btn-start {
+            background: #34d399;
+            color: #0a0e17;
+        }
+        .btn-start:hover {
+            background: #2bcc8a;
+        }
+        .btn-delete {
+            background: #dc2626;
+            color: #fff;
+        }
+        .btn-delete:hover {
+            background: #b91c1c;
+        }
+
         .add-bot-btn {
             display: flex;
             align-items: center;
@@ -273,6 +318,83 @@
         .add-bot-btn:hover {
             background: #1a1f2e;
             border-color: #818cf8;
+        }
+
+        /* МОДАЛКА УДАЛЕНИЯ */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal {
+            background: #1a1f2e;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 420px;
+            width: 100%;
+            border: 1px solid #2d3748;
+        }
+        .modal h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #f87171;
+        }
+        .modal p {
+            color: #94a3b8;
+            font-size: 15px;
+            margin-bottom: 16px;
+        }
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            background: #2d3748;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        .modal input:focus {
+            outline: 2px solid #4f46e5;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .modal-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .modal-actions .btn-cancel {
+            background: #2d3748;
+            color: #fff;
+        }
+        .modal-actions .btn-cancel:hover {
+            background: #4a5568;
+        }
+        .modal-actions .btn-confirm-delete {
+            background: #dc2626;
+            color: #fff;
+        }
+        .modal-actions .btn-confirm-delete:hover {
+            background: #b91c1c;
         }
 
         footer {
@@ -329,6 +451,9 @@
             .bot-grid {
                 grid-template-columns: 1fr;
             }
+            .modal {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -373,7 +498,7 @@
             </div>
         </div>
 
-        <!-- БЛОК «БОТ» (карточки) -->
+        <!-- БОТЫ -->
         <div class="card">
             <h2>
                 🤖 Мои боты
@@ -408,11 +533,28 @@
 
     </div>
 
+    <!-- МОДАЛКА УДАЛЕНИЯ -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <h3>⚠️ Удаление бота</h3>
+            <p>Вы уверены? Возврат денежных средств за неиспользованный период <strong>не предусмотрен</strong>.</p>
+            <p style="font-size:13px;color:#f87171;">Введите пароль от личного кабинета для подтверждения.</p>
+            <input type="password" id="deletePassword" placeholder="Введите пароль">
+            <div class="modal-actions">
+                <button class="btn-cancel" id="cancelDeleteBtn">Отмена</button>
+                <button class="btn-confirm-delete" id="confirmDeleteBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
         if (!user || !user.email) {
             window.location.href = '/login.html';
         }
+
+        let botsData = [];
+        let deleteTargetId = null;
 
         // ===== БУРГЕР =====
         const burgerBtn = document.getElementById('burgerBtn');
@@ -450,7 +592,8 @@
                     document.getElementById('depositPnl').textContent = '$' + (deposit + pnlUsdt).toFixed(2);
                     document.getElementById('openTrades').textContent = u.openTrades || 0;
 
-                    loadBots(u.bots || []);
+                    botsData = u.bots || [];
+                    loadBots(botsData);
                     loadSignals();
                 }
             } catch (err) {
@@ -480,9 +623,20 @@
                 const card = document.createElement('div');
                 card.className = 'bot-card';
                 const isActive = bot.active !== false;
+                const isPaused = bot.paused === true;
                 const hasAutoTrade = bot.services && bot.services.includes('autotrade');
                 const exchange = bot.exchange || 'bingx';
                 const logoChar = exchangeLogos[exchange.toLowerCase()] || exchangeLogos.default;
+
+                let statusClass = 'online';
+                let statusText = 'Активен';
+                if (isPaused) {
+                    statusClass = 'paused';
+                    statusText = 'На паузе (сигналы приостановлены)';
+                } else if (!isActive) {
+                    statusClass = 'offline';
+                    statusText = 'Отключен';
+                }
 
                 let details = `
                     <div class="bot-header">
@@ -494,8 +648,8 @@
                     </div>
                     <div class="bot-detail">
                         <span class="bot-status">
-                            <span class="dot ${isActive ? 'online' : 'offline'}"></span>
-                            ${isActive ? 'Активен' : 'Приостановлен'}
+                            <span class="dot ${statusClass}"></span>
+                            ${statusText}
                         </span>
                     </div>
                     <div class="bot-detail"><strong>Тариф:</strong> ${bot.tariff || 'Стандарт'}</div>
@@ -511,10 +665,116 @@
                     `;
                 }
 
+                // Кнопки управления
+                let actions = '';
+                if (isActive && !isPaused) {
+                    actions += `<button class="btn-pause" data-id="${index}" data-action="pause">⏸ Пауза</button>`;
+                    actions += `<button class="btn-stop" data-id="${index}" data-action="stop">⏹ Отключить</button>`;
+                } else if (isActive && isPaused) {
+                    actions += `<button class="btn-resume" data-id="${index}" data-action="resume">▶️ Продолжить</button>`;
+                    actions += `<button class="btn-stop" data-id="${index}" data-action="stop">⏹ Отключить</button>`;
+                } else {
+                    actions += `<button class="btn-start" data-id="${index}" data-action="start">▶️ Запустить</button>`;
+                }
+                actions += `<button class="btn-delete" data-id="${index}" data-action="delete">🗑 Удалить</button>`;
+
+                details += `<div class="bot-actions">${actions}</div>`;
                 card.innerHTML = details;
                 grid.insertBefore(card, addBtn);
             });
+
+            // Обработчики кнопок
+            document.querySelectorAll('.bot-actions button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const index = parseInt(btn.dataset.id);
+                    const action = btn.dataset.action;
+                    handleBotAction(index, action);
+                });
+            });
         }
+
+        // ===== ДЕЙСТВИЯ С БОТАМИ (обновлённая логика) =====
+        async function handleBotAction(index, action) {
+            const bot = botsData[index];
+            if (!bot) return;
+
+            if (action === 'delete') {
+                deleteTargetId = index;
+                document.getElementById('deleteModal').classList.add('open');
+                document.getElementById('deletePassword').value = '';
+                return;
+            }
+
+            let updatedBot = { ...bot };
+            switch (action) {
+                case 'pause':
+                    updatedBot.paused = true;
+                    // Анализ продолжается, сигналы НЕ отправляются
+                    break;
+                case 'resume':
+                    updatedBot.paused = false;
+                    // Сигналы возобновляются
+                    break;
+                case 'stop':
+                    updatedBot.active = false;
+                    updatedBot.paused = false;
+                    updatedBot.openTrades = 0; // закрываем позиции
+                    break;
+                case 'start':
+                    updatedBot.active = true;
+                    updatedBot.paused = false;
+                    break;
+                default:
+                    return;
+            }
+
+            botsData[index] = updatedBot;
+            await saveBots();
+        }
+
+        async function saveBots() {
+            try {
+                const res = await fetch(`/api/user/${user.email}/bots`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bots: botsData })
+                });
+                if (res.ok) {
+                    loadDashboard();
+                } else {
+                    alert('❌ Ошибка обновления бота');
+                }
+            } catch (err) {
+                alert('❌ Ошибка соединения');
+            }
+        }
+
+        // ===== УДАЛЕНИЕ =====
+        document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+            document.getElementById('deleteModal').classList.remove('open');
+            deleteTargetId = null;
+        });
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            const password = document.getElementById('deletePassword').value;
+            if (!password) {
+                alert('Введите пароль');
+                return;
+            }
+
+            // Проверка пароля (имитация)
+            if (password !== '88888888') {
+                alert('❌ Неверный пароль');
+                return;
+            }
+
+            if (deleteTargetId === null) return;
+
+            botsData.splice(deleteTargetId, 1);
+            await saveBots();
+            document.getElementById('deleteModal').classList.remove('open');
+            deleteTargetId = null;
+        });
 
         // ===== СИГНАЛЫ =====
         async function loadSignals() {
