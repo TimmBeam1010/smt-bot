@@ -38,7 +38,7 @@
         .nav {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             flex-wrap: wrap;
         }
         .nav a {
@@ -131,6 +131,16 @@
             border-radius: 12px;
             border: 1px solid #2d3748;
             text-align: center;
+            transition: 0.3s;
+            cursor: default;
+        }
+        .dash-card.clickable {
+            cursor: pointer;
+            border-color: #4f46e5;
+        }
+        .dash-card.clickable:hover {
+            border-color: #818cf8;
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
         }
         .dash-card .label {
             color: #94a3b8;
@@ -233,6 +243,7 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
         }
         #newsContainer {
             display: grid;
@@ -260,7 +271,6 @@
             text-decoration: none;
         }
 
-        /* Скрытый блок для PNL (показывается только авторизованным) */
         #pnlBlock {
             display: none;
         }
@@ -326,10 +336,12 @@
         <!-- Блок PNL (показывается только авторизованным) -->
         <div id="pnlBlock">
             <div class="dashboard-grid">
-                <div class="dash-card" style="border-color: #4f46e5;">
-                    <div class="label">📊 Ваш PNL</div>
-                    <div class="value" id="pnlValue">--</div>
-                </div>
+                <a href="/dashboard.html" style="text-decoration: none; display: block;" id="pnlLink">
+                    <div class="dash-card clickable">
+                        <div class="label">📊 Ваш PNL</div>
+                        <div class="value" id="pnlValue">--</div>
+                    </div>
+                </a>
             </div>
         </div>
 
@@ -457,6 +469,7 @@
         if (user && user.email) {
             // Показываем PNL-блок
             pnlBlock.classList.add('visible');
+
             // Меняем кнопки "Войти" и "Начать" на "Личный кабинет"
             loginBtn.textContent = '👤 Кабинет';
             loginBtn.href = '/dashboard.html';
@@ -482,7 +495,6 @@
                     pnlValue.textContent = '--';
                 });
         } else {
-            // Прячем PNL-блок
             pnlBlock.classList.remove('visible');
         }
 
