@@ -470,67 +470,113 @@ app.post('/api/exchange/connect', async (req, res) => {
 });
 
 // ============================================
-//  ДЕМО-БОТ
+//  ДЕМО-БОТ (С ХРАНЕНИЕМ В БД)
 // ============================================
 
-const demoSessions = {};
+async function getDemoBalance(userId) {
+    const { data, error } = await supabase
+        .from('demo_balance')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-function getDemoSession(userId) {
-    if (!demoSessions[userId]) {
-        demoSessions[userId] = {
-            balance: 1000,
-            equity: 1000,
-            positions: [],
-            trades: [],
-            totalPnl: 0,
-            paused: false,
-            active: true,
-            testSignalSent: false // Флаг для тестового сигнала
-        };
+    if (error && error.code === 'PGRST116') {
+        const { data: newData, error: createError } = await supabase
+            .from('demo_balance')
+            .insert({ user_id: userId, balance: 1000 })
+            .select()
+            .single();
+        if (createError) throw createError;
+        return newData;
     }
-    return demoSessions[userId];
+    if (error) throw error;
+    return data;
 }
 
-function openDemoPosition(userId, symbol, side, entry, stopLoss, takeProfit, size) {
-    const account = getDemoSession(userId);
-    const position = {
-        id: Date.now(),
-        symbol,
-        side,
-        entry,
-        stopLoss,
-        takeProfit,
-        size,
-        openTime: new Date(),
-        status: 'open'
-    };
-    account.positions.push(position);
-    account.balance -= size;
-    return position;
+async function updateDemoBalance(userId, newBalance) {
+    const { error } = await supabase
+        .from('demo_balance')
+        .update({ balance: newBalance, updated_at: new Date() })
+        .eq('user_id', userId);
+    if (error) throw error;
 }
 
-app.get('/api/demo/:userId', (req, res) => {
+async function openDemoPosition(userId, symbol, side, entry, stopLoss, takeProfit, size) {
+    const { data, error } = await supabase
+        .from('demo_trades')
+        .insert({
+            user_id: userId,
+            symbol,
+            side,
+            entry_price: entry,
+            stop_loss: stopLoss,
+            take_profit: takeProfit,
+            size,
+            status: 'open',
+            open_time: new Date()
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+
+    const balance = await getDemoBalance(userId);
+    await updateDemoBalance(userId, balance.balance - size);
+
+    return data;
+}
+
+app.get('/api/demo/:userId', async (req, res) => {
     const { userId } = req.params;
-    const session = getDemoSession(userId);
-    res.json({
-        ok: true,
-        data: {
-            balance: session.balance,
-            equity: session.equity,
-            totalPnl: session.totalPnl,
-            positions: session.positions.filter(p => p.status === 'open'),
-            trades: session.trades.slice(-20)
-        }
-    });
+
+    try {
+        const { data: user } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', userId)
+            .single();
+
+        if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+
+        const balance = await getDemoBalance(user.id);
+        const { data: positions, error: posError } = await supabase
+            .from('demo_trades')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'open');
+
+        const { data: trades, error: tradesError } = await supabase
+            .from('demo_trades')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'closed')
+            .order('close_time', { ascending: false })
+            .limit(20);
+
+        if (posError || tradesError) throw posError || tradesError;
+
+        const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+
+        res.json({
+            ok: true,
+            data: {
+                balance: balance.balance,
+                equity: balance.balance + positions.reduce((sum, p) => sum + (p.pnl || 0), 0),
+                totalPnl: totalPnl,
+                positions: positions,
+                trades: trades
+            }
+        });
+    } catch (err) {
+        console.error('Ошибка демо-данных:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/demo/action', (req, res) => {
+app.post('/api/demo/action', async (req, res) => {
     const { userId, action } = req.body;
-    const session = getDemoSession(userId);
-    if (action === 'pause') session.paused = true;
-    if (action === 'resume') session.paused = false;
-    if (action === 'stop') { session.active = false; session.positions = []; }
-    if (action === 'start') { session.active = true; session.paused = false; }
+    // Действия теперь управляются через bots в таблице users
+    // Логика остаётся на фронтенде
     res.json({ ok: true });
 });
 
@@ -681,7 +727,7 @@ app.get('/api/chat/export', async (req, res) => {
 });
 
 // ============================================
-//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА
+//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА (С ДЕМО-БД)
 // ============================================
 
 const SYMBOLS = ['BONK-USDT', 'DOGS-USDT', 'PEPE-USDT', 'SOL-USDT', 'XRP-USDT'];
@@ -726,6 +772,7 @@ cron.schedule('*/1 * * * *', async () => {
                         }
                     }
 
+                    // Сохраняем сигнал в БД (для первого пользователя)
                     try {
                         const { data: users, error: userError } = await supabase
                             .from('users')
@@ -759,7 +806,7 @@ cron.schedule('*/1 * * * *', async () => {
                         console.error('❌ Ошибка БД:', dbError.message);
                     }
 
-                    // === ДЕМО-ТОРГОВЛЯ ПО СИГНАЛУ ===
+                    // === ДЕМО-ТОРГОВЛЯ ПО СИГНАЛУ (С БД) ===
                     try {
                         const { data: user } = await supabase
                             .from('users')
@@ -773,11 +820,17 @@ cron.schedule('*/1 * * * *', async () => {
                             const hasDemoBot = bots.some(b => b.exchange === 'demo' && b.active === true && b.paused !== true);
 
                             if (hasDemoBot) {
-                                const account = getDemoSession(userId);
-                                const existing = account.positions.find(p => p.symbol === signal.symbol && p.status === 'open');
+                                const balance = await getDemoBalance(userId);
+                                const { data: openPositions } = await supabase
+                                    .from('demo_trades')
+                                    .select('*')
+                                    .eq('user_id', userId)
+                                    .eq('status', 'open');
+
+                                const existing = openPositions.find(p => p.symbol === signal.symbol);
                                 if (!existing) {
-                                    const size = Math.min(account.balance * 0.05, 100);
-                                    openDemoPosition(
+                                    const size = Math.min(balance.balance * 0.05, 100);
+                                    await openDemoPosition(
                                         userId,
                                         signal.symbol,
                                         signal.side,
@@ -807,17 +860,25 @@ cron.schedule('*/1 * * * *', async () => {
 
             if (user) {
                 const userId = user.id;
-                const account = getDemoSession(userId);
-                const hasOpen = account.positions.some(p => p.status === 'open');
-                const testSignalSent = account.testSignalSent || false;
+                const balance = await getDemoBalance(userId);
+                const { data: openPositions } = await supabase
+                    .from('demo_trades')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .eq('status', 'open');
 
-                if (!hasOpen && account.active && !account.paused && !testSignalSent) {
+                const hasOpen = openPositions.length > 0;
+                const bots = user.bots || [];
+                const hasDemoBot = bots.some(b => b.exchange === 'demo' && b.active === true && b.paused !== true);
+
+                // Проверяем, был ли уже открыт тестовый сигнал (храним в сессии)
+                if (!hasOpen && hasDemoBot && balance.balance >= 50) {
                     const testPrice = 0.00000420;
                     const testStop = 0.00000410;
                     const testProfit = 0.00000440;
                     const testSize = 50;
 
-                    openDemoPosition(
+                    await openDemoPosition(
                         userId,
                         'BONK-USDT',
                         'LONG',
@@ -826,7 +887,6 @@ cron.schedule('*/1 * * * *', async () => {
                         testProfit,
                         testSize
                     );
-                    account.testSignalSent = true;
                     console.log('🧪 ДЕМО: Тестовая позиция BONK-USDT LONG открыта (принудительно, один раз)');
                 }
             }
