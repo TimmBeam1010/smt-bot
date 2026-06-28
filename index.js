@@ -4,7 +4,6 @@ const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const axios = require('axios');
-const nodemailer = require('nodemailer');
 const trading = require('./trading');
 require('dotenv').config();
 
@@ -36,45 +35,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("✅ Подключение к Supabase установлено");
 
 // ============================================
-//  НАСТРОЙКА ПОЧТЫ (SMTP)
-// ============================================
-
-const emailTransporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT),
-    secure: process.env.EMAIL_SECURE === 'true',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
-
-async function sendVerificationCode(email, code) {
-    try {
-        await emailTransporter.sendMail({
-            from: process.env.EMAIL_FROM,
-            to: email,
-            subject: 'Код верификации SMT Bot',
-            html: `
-                <h2>Добро пожаловать в SMT Bot!</h2>
-                <p>Ваш код верификации:</p>
-                <h1 style="font-size: 32px; letter-spacing: 4px;">${code}</h1>
-                <p>Код действителен 15 минут.</p>
-                <p>Если вы не регистрировались, просто проигнорируйте это письмо.</p>
-                <hr>
-                <p>SMT Bot — торгуй умнее.</p>
-            `
-        });
-        console.log(`✅ Письмо с кодом отправлено на ${email}`);
-        return true;
-    } catch (err) {
-        console.error('❌ Ошибка отправки письма:', err.message);
-        return false;
-    }
-}
-
-// ============================================
-//  МАРШРУТЫ АВТОРИЗАЦИИ И ВЕРИФИКАЦИИ
+//  МАРШРУТЫ АВТОРИЗАЦИИ (БЕЗ ВЕРИФИКАЦИИ)
 // ============================================
 
 // --- РЕГИСТРАЦИЯ ---
@@ -107,7 +68,8 @@ app.post('/api/register', async (req, res) => {
                 password: hashedPassword,
                 telegram_username: username || null,
                 auth_provider: 'email',
-                is_verified: false
+                is_verified: true,
+                is_active: true
             })
             .select()
             .single();
@@ -117,103 +79,12 @@ app.post('/api/register', async (req, res) => {
             return res.status(500).json({ error: 'Ошибка создания пользователя' });
         }
 
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-        await supabase
-            .from('verification_codes')
-            .insert({
-                email,
-                code: verificationCode,
-                expires_at: new Date(Date.now() + 15 * 60 * 1000)
-            });
-
-        // === ОТПРАВКА КОДА НА ПОЧТУ ===
-        await sendVerificationCode(email, verificationCode);
-
         delete newUser.password;
-        res.status(201).json({ user: newUser, needVerification: true });
+        res.status(201).json({ user: newUser });
 
     } catch (err) {
         console.error('Непредвиденная ошибка:', err);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-    }
-});
-
-// --- ВЕРИФИКАЦИЯ ПОЧТЫ ---
-app.post('/api/verify', async (req, res) => {
-    const { email, code } = req.body;
-    if (!email || !code) {
-        return res.status(400).json({ error: 'Email и код обязательны' });
-    }
-
-    try {
-        const { data: record, error } = await supabase
-            .from('verification_codes')
-            .select('*')
-            .eq('email', email)
-            .eq('code', code)
-            .single();
-
-        if (error || !record) {
-            return res.status(400).json({ error: 'Неверный код или истёк срок действия' });
-        }
-
-        if (new Date(record.expires_at) < new Date()) {
-            return res.status(400).json({ error: 'Код истёк. Запросите новый' });
-        }
-
-        const { data: user, updateError } = await supabase
-            .from('users')
-            .update({ is_verified: true })
-            .eq('email', email)
-            .select()
-            .single();
-
-        if (updateError) {
-            console.error('Ошибка обновления:', updateError);
-            return res.status(500).json({ error: 'Ошибка верификации' });
-        }
-
-        await supabase
-            .from('verification_codes')
-            .delete()
-            .eq('email', email);
-
-        delete user.password;
-        res.json({ user, verified: true });
-
-    } catch (err) {
-        console.error('Непредвиденная ошибка:', err);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-    }
-});
-
-// --- ПОВТОРНАЯ ОТПРАВКА КОДА ---
-app.post('/api/resend-code', async (req, res) => {
-    const { email } = req.body;
-    if (!email) {
-        return res.status(400).json({ error: 'Email обязателен' });
-    }
-
-    try {
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-        await supabase
-            .from('verification_codes')
-            .upsert({
-                email,
-                code: verificationCode,
-                expires_at: new Date(Date.now() + 15 * 60 * 1000)
-            });
-
-        // === ОТПРАВКА НОВОГО КОДА НА ПОЧТУ ===
-        await sendVerificationCode(email, verificationCode);
-
-        res.json({ success: true });
-
-    } catch (err) {
-        console.error('Ошибка:', err);
-        res.status(500).json({ error: 'Ошибка отправки кода' });
     }
 });
 
@@ -238,14 +109,6 @@ app.post('/api/login', async (req, res) => {
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ error: 'Неверный email или пароль' });
-        }
-
-        if (!user.is_verified) {
-            return res.status(403).json({
-                error: 'Почта не подтверждена. Проверьте почту или запросите код повторно.',
-                needVerification: true,
-                email: user.email
-            });
         }
 
         delete user.password;
