@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Bot — Конструктор тарифа</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            padding: 16px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            font-size: clamp(22px, 4vw, 28px);
+            font-weight: 700;
+            color: #4f46e5;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .back-link {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+        .page-title {
+            font-size: clamp(24px, 3vw, 32px);
+            font-weight: 700;
+            margin: 20px 0 8px;
+        }
+        .page-sub {
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+        .config-block {
+            background: #1a1f2e;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid #2d3748;
+            margin-bottom: 16px;
+        }
+        .config-block h3 {
+            margin-bottom: 12px;
+            color: #94a3b8;
+        }
+        .config-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .config-row label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #2d3748;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+        .config-row label:hover {
+            background: #4f46e5;
+        }
+        .config-row label input {
+            accent-color: #4f46e5;
+        }
+        .total-block {
+            background: #1a1f2e;
+            padding: 20px;
+            border-radius: 16px;
+            border: 2px solid #4f46e5;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .total-block .price {
+            font-size: 36px;
+            font-weight: 700;
+            color: #4f46e5;
+        }
+        .total-block .price small {
+            font-size: 18px;
+            color: #94a3b8;
+        }
+        .btn-activate {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 12px;
+        }
+        .btn-activate:hover {
+            background: #4338ca;
+        }
+        .btn-activate:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        @media (max-width: 600px) {
+            .config-row label {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="logo">🤖 SMT Bot</a>
+            <a href="/activate-bot.html" class="back-link">← Назад</a>
+        </header>
+
+        <h1 class="page-title">⚙️ Конфигурация бота</h1>
+        <p class="page-sub">Выберите параметры для вашего бота</p>
+
+        <!-- 1. Биржа -->
+        <div class="config-block">
+            <h3>📊 Биржа</h3>
+            <div class="config-row" id="exchangeGroup">
+                <label><input type="radio" name="exchange" value="bingx" checked> BingX</label>
+                <label><input type="radio" name="exchange" value="bybit"> Bybit</label>
+                <label><input type="radio" name="exchange" value="binance"> Binance</label>
+                <label><input type="radio" name="exchange" value="okx"> OKX</label>
+            </div>
+        </div>
+
+        <!-- 2. Монеты -->
+        <div class="config-block">
+            <h3>🪙 Количество монет</h3>
+            <div class="config-row" id="coinsGroup">
+                <label><input type="radio" name="coins" value="5" checked> 5</label>
+                <label><input type="radio" name="coins" value="10"> 10</label>
+                <label><input type="radio" name="coins" value="20"> 20</label>
+                <label><input type="radio" name="coins" value="50"> 50</label>
+                <label><input type="radio" name="coins" value="100"> 100</label>
+                <label><input type="radio" name="coins" value="inf"> ∞</label>
+            </div>
+        </div>
+
+        <!-- 3. Стратегии -->
+        <div class="config-block">
+            <h3>📈 Стратегии</h3>
+            <div class="config-row" id="strategyGroup">
+                <label><input type="radio" name="strategy" value="basic" checked> Базовая</label>
+                <label><input type="radio" name="strategy" value="standard"> Стандарт</label>
+                <label><input type="radio" name="strategy" value="pro"> Про</label>
+                <label><input type="radio" name="strategy" value="all"> Все</label>
+            </div>
+        </div>
+
+        <!-- 4. Риск -->
+        <div class="config-block">
+            <h3>🛡️ Управление риском</h3>
+            <div class="config-row" id="riskGroup">
+                <label><input type="checkbox" value="adaptive"> Адаптивный риск (+500 ₽)</label>
+                <label><input type="checkbox" value="trailing"> Трейлинг-стоп (+300 ₽)</label>
+                <label><input type="checkbox" value="profiles"> Профили риска (+500 ₽)</label>
+            </div>
+        </div>
+
+        <!-- 5. Автоторговля -->
+        <div class="config-block">
+            <h3>🤖 Автоторговля</h3>
+            <div class="config-row">
+                <label><input type="checkbox" id="autoTrade" value="autotrade"> Автоторговля (+2 000 ₽)</label>
+            </div>
+        </div>
+
+        <!-- 6. Smart Money -->
+        <div class="config-block">
+            <h3>🧠 Smart Money и анализ</h3>
+            <div class="config-row">
+                <label><input type="checkbox" value="smart"> Smart Money (+1 000 ₽)</label>
+                <label><input type="checkbox" value="mm"> Маркет-мейкер (+1 000 ₽)</label>
+            </div>
+        </div>
+
+        <!-- 7. Уведомления -->
+        <div class="config-block">
+            <h3>📬 Уведомления</h3>
+            <div class="config-row">
+                <label><input type="checkbox" value="telegram"> Telegram (+300 ₽)</label>
+                <label><input type="checkbox" value="email"> Email (+200 ₽)</label>
+                <label><input type="checkbox" value="all"> Все каналы (+500 ₽)</label>
+            </div>
+        </div>
+
+        <!-- 8. Поддержка -->
+        <div class="config-block">
+            <h3>🆘 Поддержка</h3>
+            <div class="config-row">
+                <label><input type="checkbox" value="priority"> Приоритетная 24/7 (+1 000 ₽)</label>
+            </div>
+        </div>
+
+        <!-- 9. Дополнительно -->
+        <div class="config-block">
+            <h3>📦 Дополнительно</h3>
+            <div class="config-row">
+                <label><input type="checkbox" value="export"> Экспорт данных (+300 ₽)</label>
+                <label><input type="checkbox" value="api"> API-доступ (+1 000 ₽)</label>
+            </div>
+        </div>
+
+        <!-- ИТОГО -->
+        <div class="total-block">
+            <div style="font-size:18px;color:#94a3b8;">Итоговая стоимость</div>
+            <div class="price" id="totalPrice">500 ₽</div>
+            <div style="font-size:14px;color:#94a3b8;">включая подключение к бирже (500 ₽)</div>
+            <button class="btn-activate" id="activateBtn">Продолжить →</button>
+        </div>
+    </div>
+
+    <script>
+        const PRICES = {
+            exchange: 500,
+            coins: { 5: 0, 10: 500, 20: 1000, 50: 1800, 100: 2800, inf: 4000 },
+            strategy: { basic: 0, standard: 500, pro: 1000, all: 1800 },
+            adaptive: 500,
+            trailing: 300,
+            profiles: 500,
+            autotrade: 2000,
+            smart: 1000,
+            mm: 1000,
+            telegram: 300,
+            email: 200,
+            allnotify: 500,
+            priority: 1000,
+            export: 300,
+            api: 1000
+        };
+
+        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
+        if (!user || !user.email) {
+            window.location.href = '/login.html';
+        }
+
+        function calcTotal() {
+            let total = PRICES.exchange;
+
+            const coins = document.querySelector('input[name="coins"]:checked');
+            if (coins) total += PRICES.coins[coins.value] || 0;
+
+            const strategy = document.querySelector('input[name="strategy"]:checked');
+            if (strategy) total += PRICES.strategy[strategy.value] || 0;
+
+            document.querySelectorAll('#riskGroup input[type="checkbox"]:checked').forEach(el => {
+                if (el.value === 'adaptive') total += PRICES.adaptive;
+                if (el.value === 'trailing') total += PRICES.trailing;
+                if (el.value === 'profiles') total += PRICES.profiles;
+            });
+
+            if (document.getElementById('autoTrade').checked) total += PRICES.autotrade;
+
+            document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+                if (el.value === 'smart' && el.checked) total += PRICES.smart;
+                if (el.value === 'mm' && el.checked) total += PRICES.mm;
+                if (el.value === 'telegram' && el.checked) total += PRICES.telegram;
+                if (el.value === 'email' && el.checked) total += PRICES.email;
+                if (el.value === 'all' && el.checked) total += PRICES.allnotify;
+                if (el.value === 'priority' && el.checked) total += PRICES.priority;
+                if (el.value === 'export' && el.checked) total += PRICES.export;
+                if (el.value === 'api' && el.checked) total += PRICES.api;
+            });
+
+            document.getElementById('totalPrice').textContent = total.toLocaleString() + ' ₽';
+            return total;
+        }
+
+        document.querySelectorAll('input').forEach(el => {
+            el.addEventListener('change', calcTotal);
+        });
+
+        document.getElementById('activateBtn').addEventListener('click', () => {
+            const total = calcTotal();
+            // Сохраняем конфигурацию в localStorage для следующего шага
+            const config = {
+                exchange: document.querySelector('input[name="exchange"]:checked')?.value || 'bingx',
+                coins: document.querySelector('input[name="coins"]:checked')?.value || '5',
+                strategy: document.querySelector('input[name="strategy"]:checked')?.value || 'basic',
+                risk: {
+                    adaptive: document.querySelector('#riskGroup input[value="adaptive"]')?.checked || false,
+                    trailing: document.querySelector('#riskGroup input[value="trailing"]')?.checked || false,
+                    profiles: document.querySelector('#riskGroup input[value="profiles"]')?.checked || false
+                },
+                autotrade: document.getElementById('autoTrade').checked,
+                smart: document.querySelector('input[value="smart"]')?.checked || false,
+                mm: document.querySelector('input[value="mm"]')?.checked || false,
+                notifications: {
+                    telegram: document.querySelector('input[value="telegram"]')?.checked || false,
+                    email: document.querySelector('input[value="email"]')?.checked || false,
+                    all: document.querySelector('input[value="all"]')?.checked || false
+                },
+                priority: document.querySelector('input[value="priority"]')?.checked || false,
+                export: document.querySelector('input[value="export"]')?.checked || false,
+                api: document.querySelector('input[value="api"]')?.checked || false,
+                total: total
+            };
+            localStorage.setItem('botConfig', JSON.stringify(config));
+            window.location.href = '/connect-exchange.html';
+        });
+
+        calcTotal();
+    </script>
+</body>
+</html>
