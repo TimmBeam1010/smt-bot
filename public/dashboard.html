@@ -17,38 +17,64 @@
             padding: 16px;
         }
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
         }
-        .header {
+        /* HEADER */
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 16px;
+            padding: 12px 0 16px;
             border-bottom: 1px solid #1a1f2e;
             flex-wrap: wrap;
             gap: 12px;
         }
-        .header h1 {
-            font-size: clamp(20px, 4vw, 28px);
+        .logo {
+            font-size: clamp(22px, 4vw, 28px);
             font-weight: 700;
-        }
-        .header h1 span {
             color: #4f46e5;
         }
-        .logout-btn {
-            background: #f87171;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
+        .burger {
+            font-size: 28px;
             cursor: pointer;
-            font-size: clamp(14px, 1.5vw, 16px);
+            color: #94a3b8;
+            user-select: none;
+            padding: 4px 8px;
+            border-radius: 8px;
             transition: 0.2s;
         }
-        .logout-btn:hover {
-            background: #ef4444;
+        .burger:hover {
+            background: #1a1f2e;
+            color: #fff;
         }
+        /* БУРГЕР-МЕНЮ */
+        .burger-menu {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            background: #1a1f2e;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #2d3748;
+            margin-top: 8px;
+            width: 100%;
+        }
+        .burger-menu.open {
+            display: flex;
+        }
+        .burger-menu a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 6px 0;
+            transition: 0.2s;
+        }
+        .burger-menu a:hover {
+            color: #fff;
+        }
+
+        /* КАРТОЧКИ */
         .card {
             background: #1a1f2e;
             padding: 20px;
@@ -58,39 +84,97 @@
         }
         .card h2 {
             font-size: clamp(18px, 2vw, 22px);
+            color: #94a3b8;
             margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card h2 .badge {
+            font-size: 13px;
+            background: #2d3748;
+            padding: 2px 10px;
+            border-radius: 20px;
             color: #94a3b8;
         }
-        .stats {
+        .grid-2 {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 16px;
-            margin-top: 12px;
         }
         .stat-item {
-            background: #2d3748;
-            padding: 16px;
-            border-radius: 12px;
             text-align: center;
+            background: #2d3748;
+            padding: 14px;
+            border-radius: 12px;
         }
-        .stat-item h3 {
-            font-size: clamp(22px, 3vw, 30px);
-            color: #4f46e5;
-        }
-        .stat-item p {
+        .stat-item .label {
             color: #94a3b8;
             font-size: clamp(12px, 1.2vw, 14px);
         }
+        .stat-item .value {
+            font-size: clamp(20px, 2.5vw, 28px);
+            font-weight: 700;
+            margin-top: 4px;
+        }
+        .value.green {
+            color: #34d399;
+        }
+        .value.red {
+            color: #f87171;
+        }
+        .value.white {
+            color: #fff;
+        }
+
+        /* БОТ */
+        .bot-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bot-status .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot.online {
+            background: #34d399;
+        }
+        .dot.offline {
+            background: #f87171;
+        }
+        .settings-icon {
+            font-size: 22px;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: 0.2s;
+        }
+        .settings-icon:hover {
+            color: #fff;
+        }
+
+        /* СИГНАЛЫ */
         .signal-item {
-            background: #2d3748;
             padding: 12px 16px;
             border-radius: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             border-left: 4px solid #4f46e5;
+            background: #1a1f2e;
+            transition: 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .signal-item.unread {
+            background: #2d3748;
         }
         .signal-item .symbol {
             font-weight: 600;
-            font-size: clamp(16px, 1.5vw, 18px);
+            font-size: clamp(15px, 1.4vw, 17px);
         }
         .signal-item .side {
             font-weight: 600;
@@ -108,50 +192,80 @@
             display: flex;
             flex-wrap: wrap;
             gap: 12px;
-            margin-top: 4px;
         }
-        .btn-primary {
+        .expand-btn {
+            background: transparent;
+            border: 1px solid #4f46e5;
+            color: #94a3b8;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+            margin-top: 8px;
+        }
+        .expand-btn:hover {
             background: #4f46e5;
             color: #fff;
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            font-size: clamp(14px, 1.5vw, 16px);
         }
-        .btn-primary:hover {
-            background: #4338ca;
+        .signals-hidden {
+            display: none;
         }
-        .back-link {
-            display: inline-block;
-            margin-top: 16px;
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: clamp(14px, 1.5vw, 16px);
-        }
-        .back-link:hover {
-            color: #fff;
-        }
-        .empty {
-            color: #94a3b8;
-            text-align: center;
-            padding: 20px 0;
+        .signals-hidden.open {
+            display: block;
         }
 
-        /* Адаптив */
-        @media (max-width: 480px) {
-            .header {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-            .stats {
+        /* FOOTER */
+        footer {
+            border-top: 1px solid #1a1f2e;
+            padding: 20px 0;
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        footer .links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        footer .links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        footer .links a:hover {
+            color: #fff;
+        }
+        .logout-btn {
+            background: #f87171;
+            color: #fff;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .logout-btn:hover {
+            background: #ef4444;
+        }
+
+        @media (max-width: 600px) {
+            .grid-2 {
                 grid-template-columns: 1fr 1fr;
             }
-            .logout-btn {
-                width: 100%;
+            footer {
+                flex-direction: column;
+                text-align: center;
+            }
+            .signal-item {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
@@ -159,53 +273,101 @@
 <body>
     <div class="container">
 
-        <!-- Шапка -->
-        <div class="header">
-            <h1>🤖 <span>SMT</span> Bot</h1>
-            <button class="logout-btn" id="logoutBtn">Выйти</button>
+        <!-- HEADER -->
+        <header>
+            <div class="logo">🤖 SMT Bot</div>
+            <div class="burger" id="burgerBtn">☰</div>
+        </header>
+
+        <!-- БУРГЕР-МЕНЮ -->
+        <div class="burger-menu" id="burgerMenu">
+            <a href="/">🏠 Главная</a>
+            <a href="#" id="profileLink">👤 Личная информация</a>
+            <a href="#" id="settingsLink">⚙️ Настройки</a>
         </div>
 
-        <!-- Приветствие -->
+        <!-- PNL БЛОК -->
         <div class="card">
-            <h2>👋 Привет, <span id="userName">пользователь</span></h2>
-            <p style="color: #94a3b8;">Добро пожаловать в личный кабинет. Ниже — последние сигналы и статистика.</p>
-        </div>
-
-        <!-- Статистика -->
-        <div class="card">
-            <h2>📊 Статистика</h2>
-            <div class="stats">
+            <h2>📊 Ваш PNL</h2>
+            <div class="grid-2">
                 <div class="stat-item">
-                    <h3 id="totalSignals">0</h3>
-                    <p>Всего сигналов</p>
+                    <div class="label">💰 Депозит</div>
+                    <div class="value white" id="deposit">--</div>
                 </div>
                 <div class="stat-item">
-                    <h3 id="todaySignals">0</h3>
-                    <p>За сегодня</p>
+                    <div class="label">📈 PNL (USDT)</div>
+                    <div class="value" id="pnlUsdt">--</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">📊 PNL (%)</div>
+                    <div class="value" id="pnlPercent">--</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">🏦 Депозит + PNL</div>
+                    <div class="value white" id="depositPnl">--</div>
+                </div>
+                <div class="stat-item" style="grid-column: span 2;">
+                    <div class="label">📌 Открытых сделок</div>
+                    <div class="value white" id="openTrades">0</div>
                 </div>
             </div>
         </div>
 
-        <!-- Последние сигналы -->
+        <!-- БЛОК «БОТ» -->
         <div class="card">
-            <h2>📈 Последние сигналы</h2>
+            <h2>
+                🤖 Бот
+                <span class="settings-icon" id="botSettingsBtn">⚙️</span>
+            </h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                <div class="bot-status">
+                    <span class="dot online" id="botDot"></span>
+                    <span id="botStatusText">Активен</span>
+                </div>
+                <div><strong>Тариф:</strong> <span id="tariff">Стандарт</span></div>
+                <div><strong>До:</strong> <span id="tariffEnd">2026-08-01</span></div>
+            </div>
+        </div>
+
+        <!-- БЛОК «СИГНАЛЫ» -->
+        <div class="card">
+            <h2>
+                📈 Сигналы
+                <span class="badge" id="signalBadge">0 новых</span>
+            </h2>
             <div id="signalsList">
-                <p class="empty">Загрузка...</p>
+                <p style="color:#94a3b8;">Загрузка...</p>
             </div>
+            <button class="expand-btn" id="expandSignalsBtn">Развернуть все</button>
+            <div class="signals-hidden" id="signalsHidden"></div>
         </div>
 
-        <a href="/" class="back-link">← На главную</a>
+        <!-- FOOTER -->
+        <footer>
+            <div class="links">
+                <a href="/">Главная</a>
+                <a href="#">Помощь</a>
+                <a href="#">Контакты</a>
+                <a href="#">Политика</a>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Выйти</button>
+        </footer>
+
     </div>
 
     <script>
         // ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
-        const user = JSON.parse(localStorage.getItem('smtUser'));
-        if (!user) {
+        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
+        if (!user || !user.email) {
             window.location.href = '/login.html';
         }
 
-        // ===== ОТОБРАЖЕНИЕ ИМЕНИ =====
-        document.getElementById('userName').textContent = user.email || 'пользователь';
+        // ===== БУРГЕР =====
+        const burgerBtn = document.getElementById('burgerBtn');
+        const burgerMenu = document.getElementById('burgerMenu');
+        burgerBtn.addEventListener('click', () => {
+            burgerMenu.classList.toggle('open');
+        });
 
         // ===== ВЫХОД =====
         document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -214,43 +376,116 @@
         });
 
         // ===== ЗАГРУЗКА ДАННЫХ =====
+        const API_URL = '';
+
         async function loadDashboard() {
             try {
-                const res = await fetch('/api/user/' + user.email);
+                const res = await fetch(`/api/user/${user.email}`);
                 const data = await res.json();
                 if (res.ok && data.user) {
-                    // Статистика (заглушка, позже сделаем полноценную)
-                    document.getElementById('totalSignals').textContent = '12';
-                    document.getElementById('todaySignals').textContent = '3';
+                    const u = data.user;
+                    const deposit = u.deposit || 1000;
+                    const pnl = u.pnl || 0;
+                    const pnlUsdt = deposit * (pnl / 100);
+                    document.getElementById('deposit').textContent = '$' + deposit.toFixed(2);
+                    document.getElementById('pnlUsdt').textContent = (pnlUsdt >= 0 ? '+' : '') + pnlUsdt.toFixed(2);
+                    document.getElementById('pnlUsdt').className = 'value ' + (pnlUsdt >= 0 ? 'green' : 'red');
+                    document.getElementById('pnlPercent').textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + '%';
+                    document.getElementById('pnlPercent').className = 'value ' + (pnl >= 0 ? 'green' : 'red');
+                    document.getElementById('depositPnl').textContent = '$' + (deposit + pnlUsdt).toFixed(2);
+                    document.getElementById('openTrades').textContent = u.openTrades || 0;
+
+                    // Бот
+                    document.getElementById('tariff').textContent = u.tariff || 'Стандарт';
+                    document.getElementById('tariffEnd').textContent = u.tariffEnd || '2026-08-01';
+                    const isActive = u.botActive !== false;
+                    document.getElementById('botDot').className = 'dot ' + (isActive ? 'online' : 'offline');
+                    document.getElementById('botStatusText').textContent = isActive ? 'Активен' : 'Приостановлен';
+
+                    // Сигналы
+                    loadSignals();
                 }
             } catch (err) {
                 console.error('Ошибка загрузки:', err);
             }
+        }
 
-            // Заглушка сигналов (позже — из БД)
-            const signals = [
-                { symbol: 'BONK-USDT', side: 'LONG', entry: 0.00000452, confidence: 'high' },
-                { symbol: 'DOGS-USDT', side: 'SHORT', entry: 0.0000402, confidence: 'medium' },
-                { symbol: 'SOL-USDT', side: 'LONG', entry: 69.8, confidence: 'high' },
-            ];
+        async function loadSignals() {
+            try {
+                const res = await fetch(`/api/signals/user/${user.email}`);
+                const data = await res.json();
+                const container = document.getElementById('signalsList');
+                const hiddenContainer = document.getElementById('signalsHidden');
+                const badge = document.getElementById('signalBadge');
 
-            const container = document.getElementById('signalsList');
-            if (signals.length === 0) {
-                container.innerHTML = '<p class="empty">Нет сигналов</p>';
-                return;
+                if (data.signals && data.signals.length) {
+                    const unread = data.signals.filter(s => !s.read).length;
+                    badge.textContent = unread + ' новых';
+
+                    const first5 = data.signals.slice(0, 5);
+                    const rest = data.signals.slice(5);
+
+                    container.innerHTML = first5.map(s => signalHTML(s)).join('');
+                    hiddenContainer.innerHTML = rest.map(s => signalHTML(s)).join('');
+
+                    if (rest.length === 0) {
+                        hiddenContainer.innerHTML = '<p style="color:#94a3b8;">Все сигналы показаны</p>';
+                    }
+                } else {
+                    container.innerHTML = '<p style="color:#94a3b8;">Нет сигналов</p>';
+                    hiddenContainer.innerHTML = '';
+                    badge.textContent = '0 новых';
+                }
+            } catch (err) {
+                console.error('Ошибка загрузки сигналов:', err);
+                document.getElementById('signalsList').innerHTML = '<p style="color:#f87171;">Ошибка загрузки</p>';
             }
+        }
 
-            container.innerHTML = signals.map(s => `
-                <div class="signal-item">
-                    <div class="symbol">${s.symbol}</div>
-                    <div class="side ${s.side.toLowerCase()}">${s.side}</div>
+        function signalHTML(s) {
+            const sideClass = s.side.toLowerCase();
+            const unreadClass = s.read ? '' : 'unread';
+            return `
+                <div class="signal-item ${unreadClass}">
+                    <div>
+                        <span class="symbol">${s.symbol}</span>
+                        <span class="side ${sideClass}">${s.side}</span>
+                    </div>
                     <div class="meta">
-                        <span>💰 ${s.entry}</span>
+                        <span>💰 ${s.entry_price}</span>
                         <span>🎯 ${s.confidence}</span>
+                        <span>📅 ${new Date(s.created_at).toLocaleDateString()}</span>
                     </div>
                 </div>
-            `).join('');
+            `;
         }
+
+        // ===== РАЗВЕРНУТЬ СИГНАЛЫ =====
+        const expandBtn = document.getElementById('expandSignalsBtn');
+        const signalsHidden = document.getElementById('signalsHidden');
+        let expanded = false;
+        expandBtn.addEventListener('click', () => {
+            expanded = !expanded;
+            signalsHidden.classList.toggle('open', expanded);
+            expandBtn.textContent = expanded ? 'Свернуть' : 'Развернуть все';
+        });
+
+        // ===== НАСТРОЙКИ БОТА =====
+        document.getElementById('botSettingsBtn').addEventListener('click', () => {
+            alert('Настройки бота (будет реализовано позже)');
+        });
+
+        // ===== ЛИЧНАЯ ИНФОРМАЦИЯ =====
+        document.getElementById('profileLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('Личная информация (будет реализовано позже)');
+        });
+
+        // ===== НАСТРОЙКИ =====
+        document.getElementById('settingsLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('Настройки (будет реализовано позже)');
+        });
 
         loadDashboard();
     </script>
