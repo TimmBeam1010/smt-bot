@@ -1,583 +1,76 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMT Bot — Умный криптотрейдинг</title>
+    <title>SMT Bot</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
         body {
             background: #0a0e17;
             color: #fff;
-            line-height: 1.6;
-            padding: 0 16px;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
         }
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            max-width: 600px;
         }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 0;
-            border-bottom: 1px solid #1a1f2e;
-            flex-wrap: wrap;
-            gap: 12px;
+        h1 {
+            font-size: 48px;
+            margin-bottom: 8px;
         }
-        .logo {
-            font-size: clamp(20px, 4vw, 28px);
-            font-weight: 700;
+        h1 span {
             color: #4f46e5;
         }
-        .nav {
+        .subtitle {
+            color: #94a3b8;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+        .links {
             display: flex;
-            align-items: center;
             gap: 16px;
+            justify-content: center;
             flex-wrap: wrap;
         }
-        .nav a {
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: clamp(14px, 1.5vw, 16px);
-            transition: 0.2s;
-        }
-        .nav a:hover {
-            color: #fff;
-        }
-        /* --- PNL в шапке --- */
-        .pnl-header {
-            display: none;
-            align-items: center;
-            gap: 6px;
-            font-weight: 600;
-            font-size: clamp(14px, 1.5vw, 18px);
-            padding: 4px 12px;
-            border-radius: 8px;
+        .links a {
             background: #1a1f2e;
+            color: #fff;
+            padding: 12px 32px;
+            border-radius: 12px;
+            text-decoration: none;
             border: 1px solid #2d3748;
-            transition: 0.2s;
-            cursor: pointer;
-            text-decoration: none;
-            color: #fff;
+            transition: all 0.2s;
         }
-        .pnl-header:hover {
-            border-color: #4f46e5;
-            background: #2d3748;
-        }
-        .pnl-header .pnl-value {
-            font-weight: 700;
-        }
-        .pnl-header .pnl-value.green {
-            color: #34d399;
-        }
-        .pnl-header .pnl-value.red {
-            color: #f87171;
-        }
-        .pnl-header.visible {
-            display: flex;
-        }
-        .btn-primary,
-        .btn-outline {
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: 0.2s;
-            font-size: clamp(14px, 1.5vw, 16px);
-            display: inline-block;
-            text-align: center;
-        }
-        .btn-primary {
+        .links a:hover {
             background: #4f46e5;
-            color: #fff;
+            border-color: #4f46e5;
         }
-        .btn-primary:hover {
+        .links a.primary {
+            background: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .links a.primary:hover {
             background: #4338ca;
         }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #4f46e5;
-            color: #fff;
-        }
-        .btn-outline:hover {
-            background: #4f46e5;
-        }
-        /* --- Блоки для авторизованных --- */
-        #authContent {
-            display: none;
-        }
-        #authContent.visible {
-            display: block;
-        }
-        /* --- Блоки для неавторизованных --- */
-        #unauthContent {
-            display: block;
-        }
-        #unauthContent.hidden {
-            display: none;
-        }
-
-        .hero {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 40px 0;
-            gap: 30px;
-            flex-wrap: wrap;
-        }
-        .hero-text {
-            flex: 1 1 300px;
-        }
-        .hero-text h1 {
-            font-size: clamp(28px, 5vw, 48px);
-            font-weight: 700;
-            line-height: 1.2;
-        }
-        .hero-text h1 span {
-            color: #4f46e5;
-        }
-        .hero-text p {
-            font-size: clamp(16px, 1.8vw, 20px);
-            color: #94a3b8;
-            margin: 16px 0;
-        }
-        .hero-card {
-            flex: 1 1 280px;
-            background: #1a1f2e;
-            padding: 24px;
-            border-radius: 16px;
-            border: 1px solid #2d3748;
-            text-align: center;
-        }
-        .hero-card .icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-        }
-        .hero-card .signal-example {
-            background: #2d3748;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: left;
-            font-size: clamp(12px, 1.2vw, 14px);
-        }
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            padding: 30px 0;
-        }
-        .dash-card {
-            background: #1a1f2e;
-            padding: 16px 20px;
-            border-radius: 12px;
-            border: 1px solid #2d3748;
-            text-align: center;
-            transition: 0.3s;
-            cursor: default;
-        }
-        .dash-card .label {
-            color: #94a3b8;
-            font-size: clamp(12px, 1.2vw, 14px);
-        }
-        .dash-card .value {
-            font-size: clamp(18px, 2vw, 24px);
-            font-weight: 700;
-            margin-top: 4px;
-        }
-        .fear-gauge {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-        }
-        .fear-gauge .bar {
-            flex: 1;
-            height: 8px;
-            background: linear-gradient(to right, #f87171, #fbbf24, #34d399);
-            border-radius: 4px;
-            max-width: 120px;
-        }
-        .fear-gauge .bar .fill {
-            height: 100%;
-            background: #4f46e5;
-            border-radius: 4px;
-            transition: width 0.5s;
-        }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 40px 0;
-        }
-        .feature-card {
-            background: #1a1f2e;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #2d3748;
-            transition: 0.3s;
-        }
-        .feature-card:hover {
-            border-color: #4f46e5;
-        }
-        .feature-card h3 {
-            font-size: clamp(16px, 1.5vw, 20px);
-        }
-        .feature-card p {
-            color: #94a3b8;
-            font-size: clamp(13px, 1.2vw, 15px);
-        }
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 24px;
-            padding: 30px 0;
-        }
-        .pricing-card {
-            background: #1a1f2e;
-            padding: 24px;
-            border-radius: 12px;
-            border: 1px solid #2d3748;
-            text-align: center;
-        }
-        .pricing-card.highlight {
-            border: 2px solid #4f46e5;
-        }
-        .pricing-card h3 {
-            font-size: clamp(18px, 1.8vw, 22px);
-        }
-        .pricing-card .price {
-            font-size: clamp(24px, 3vw, 32px);
-            font-weight: 700;
-            margin: 12px 0;
-        }
-        .pricing-card ul {
-            list-style: none;
-            color: #94a3b8;
-            font-size: clamp(13px, 1.2vw, 15px);
-            text-align: left;
-        }
-        .pricing-card ul li {
-            margin: 6px 0;
-        }
-        .footer {
-            border-top: 1px solid #1a1f2e;
-            padding: 20px 0;
-            text-align: center;
-            color: #94a3b8;
-            font-size: clamp(12px, 1.2vw, 14px);
-        }
-        .nav-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        #newsContainer {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            padding: 20px 0;
-        }
-        .news-item {
-            background: #1a1f2e;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #2d3748;
-        }
-        .news-item h4 {
-            font-size: 16px;
-            margin-bottom: 6px;
-        }
-        .news-item p {
-            color: #94a3b8;
-            font-size: 14px;
-        }
-        .news-item a {
-            color: #4f46e5;
-            font-size: 13px;
-            text-decoration: none;
-        }
-
-        @media (max-width: 768px) {
-            header {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-            .nav {
-                justify-content: center;
-            }
-            .hero {
-                flex-direction: column;
-                text-align: center;
-            }
-            .hero-card {
-                width: 100%;
-            }
-            .pricing-grid {
-                grid-template-columns: 1fr;
-            }
-            .nav-actions {
-                justify-content: center;
-            }
-            .btn-primary,
-            .btn-outline {
-                width: 100%;
-                max-width: 200px;
-            }
-            .pnl-header {
-                justify-content: center;
-            }
-        }
-        @media (max-width: 480px) {
-            .features {
-                grid-template-columns: 1fr;
-            }
-            .btn-primary,
-            .btn-outline {
-                width: 100%;
-                max-width: none;
-            }
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="logo">🤖 SMT Bot</div>
-            <div class="nav">
-                <a href="#">Главная</a>
-                <a href="#features">Функции</a>
-                <a href="#pricing">Тарифы</a>
-                <div class="nav-actions">
-                    <a href="/dashboard.html" class="pnl-header" id="pnlHeader">
-                        <span>📊</span>
-                        <span class="pnl-value" id="pnlHeaderValue">--</span>
-                    </a>
-                    <a href="/login.html" class="btn-outline" id="loginBtn">Войти</a>
-                    <a href="/login.html" class="btn-primary" id="startBtn">Начать</a>
-                </div>
-            </div>
-        </header>
-
-        <!-- КОНТЕНТ ДЛЯ НЕАВТОРИЗОВАННЫХ -->
-        <div id="unauthContent">
-            <section class="hero">
-                <div class="hero-text">
-                    <h1>Торгуй <span>умнее</span> с SMT Bot</h1>
-                    <p>Автоматический помощник для криптотрейдинга на основе RSI, MACD, Smart Money и анализа маркет-мейкера.</p>
-                    <a href="/login.html" class="btn-primary">Начать бесплатно</a>
-                </div>
-                <div class="hero-card">
-                    <div class="icon">📈</div>
-                    <h3>Пример сигнала</h3>
-                    <div class="signal-example">
-                        🟢 <strong>BONK-USDT</strong> LONG<br>
-                        💰 Вход: 0.00000452<br>
-                        🎯 Уверенность: high<br>
-                        📊 RSI: 28.5
-                    </div>
-                </div>
-            </section>
-
-            <section id="features" class="features">
-                <div class="feature-card">
-                    <h3>📊 Технический анализ</h3>
-                    <p>RSI, MACD, Bollinger Bands, ADX, Stochastic — полный набор индикаторов.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>🧠 Smart Money</h3>
-                    <p>Анализ VWAP, ликвидационных уровней и дивергенций.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>🛡️ Управление риском</h3>
-                    <p>Адаптивный риск, расчёт позиции и 4 профиля торговли.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>📱 Личный кабинет</h3>
-                    <p>Настройки, история сигналов, уведомления — всё в одном месте.</p>
-                </div>
-            </section>
-
-            <section id="pricing">
-                <h2 style="text-align:center;font-size:clamp(24px,3vw,32px);margin-bottom:24px;">💰 Выбери тариф</h2>
-                <div class="pricing-grid">
-                    <div class="pricing-card">
-                        <h3>🛡️ Базовый</h3>
-                        <div class="price">1 500 ₽</div>
-                        <ul>
-                            <li>✅ 10 сигналов/день</li>
-                            <li>✅ 10 монет</li>
-                            <li>✅ 2 стратегии</li>
-                        </ul>
-                        <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
-                    </div>
-                    <div class="pricing-card highlight">
-                        <h3>⚖️ Стандарт</h3>
-                        <div class="price">3 500 ₽</div>
-                        <ul>
-                            <li>✅ 30 сигналов/день</li>
-                            <li>✅ 30 монет</li>
-                            <li>✅ 4 стратегии</li>
-                            <li>✅ Smart Money</li>
-                        </ul>
-                        <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
-                    </div>
-                    <div class="pricing-card">
-                        <h3>⚡ Про</h3>
-                        <div class="price">7 000 ₽</div>
-                        <ul>
-                            <li>✅ ∞ сигналы</li>
-                            <li>✅ ∞ монеты</li>
-                            <li>✅ Все стратегии</li>
-                            <li>✅ Smart Money</li>
-                            <li>✅ Автоторговля</li>
-                        </ul>
-                        <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
-                    </div>
-                </div>
-            </section>
+        <h1>SMT <span>Bot</span></h1>
+        <div class="subtitle">Торговые сигналы на крипторынке</div>
+        <div class="links">
+            <a href="/login.html" class="primary">Войти</a>
+            <a href="/dashboard.html">Личный кабинет</a>
         </div>
-
-        <!-- КОНТЕНТ ДЛЯ АВТОРИЗОВАННЫХ -->
-        <div id="authContent">
-            <div class="dashboard-grid">
-                <div class="dash-card">
-                    <div class="label">😨 Fear & Greed</div>
-                    <div class="fear-gauge">
-                        <span id="fearValue" style="font-weight:700;">--</span>
-                        <div class="bar"><div class="fill" id="fearBar" style="width:50%;"></div></div>
-                    </div>
-                    <div id="fearLabel" style="font-size:12px;color:#94a3b8;">--</div>
-                </div>
-                <div class="dash-card">
-                    <div class="label">💰 Капитализация</div>
-                    <div class="value" id="totalCap">--</div>
-                </div>
-                <div class="dash-card">
-                    <div class="label">₿ BTC Price</div>
-                    <div class="value" id="btcPrice">--</div>
-                </div>
-            </div>
-
-            <section>
-                <h2 style="text-align:center;font-size:clamp(24px,3vw,32px);margin-bottom:16px;">📰 Новости рынка</h2>
-                <div id="newsContainer"><p style="color:#94a3b8;text-align:center;">Загрузка...</p></div>
-            </section>
-        </div>
-
-        <footer class="footer">
-            <p>© 2026 SMT Bot. Не является финансовой рекомендацией.</p>
-        </footer>
     </div>
-
-    <script>
-        // ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
-        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
-        const pnlHeader = document.getElementById('pnlHeader');
-        const pnlHeaderValue = document.getElementById('pnlHeaderValue');
-        const loginBtn = document.getElementById('loginBtn');
-        const startBtn = document.getElementById('startBtn');
-        const unauthContent = document.getElementById('unauthContent');
-        const authContent = document.getElementById('authContent');
-
-        if (user && user.email) {
-            // Показываем PNL в шапке
-            pnlHeader.classList.add('visible');
-
-            // Скрываем кнопки "Войти" и "Начать"
-            loginBtn.style.display = 'none';
-            startBtn.style.display = 'none';
-
-            // Показываем авторизованный контент, скрываем неавторизованный
-            authContent.classList.add('visible');
-            unauthContent.classList.add('hidden');
-
-            // Загружаем PNL
-            fetch(`/api/user/${user.email}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.user && data.user.pnl !== undefined) {
-                        const pnl = data.user.pnl;
-                        pnlHeaderValue.textContent = (pnl >= 0 ? '+' : '') + pnl + '%';
-                        pnlHeaderValue.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
-                    } else {
-                        pnlHeaderValue.textContent = '0%';
-                        pnlHeaderValue.className = 'pnl-value';
-                    }
-                })
-                .catch(() => {
-                    pnlHeaderValue.textContent = '--';
-                });
-
-            // Загружаем дашборд
-            loadDashboard();
-            loadNews();
-        } else {
-            pnlHeader.classList.remove('visible');
-            loginBtn.style.display = 'inline-block';
-            startBtn.style.display = 'inline-block';
-            authContent.classList.remove('visible');
-            unauthContent.classList.remove('hidden');
-            // Новости для неавторизованных (опционально)
-            loadNews();
-        }
-
-        // ===== НОВОСТИ =====
-        async function loadNews() {
-            try {
-                const res = await fetch('/api/news');
-                const data = await res.json();
-                const container = document.getElementById('newsContainer');
-                if (data.news && data.news.length) {
-                    container.innerHTML = data.news.map(item => `
-                        <div class="news-item">
-                            <h4>${item.title}</h4>
-                            <p>${item.description || ''}</p>
-                            <a href="${item.url}" target="_blank">Читать →</a>
-                            <div style="font-size:11px;color:#4a5568;margin-top:6px;">${new Date(item.publishedAt).toLocaleDateString()}</div>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<p style="color:#94a3b8;text-align:center;">Новости временно недоступны</p>';
-                }
-            } catch (e) {
-                document.getElementById('newsContainer').innerHTML = '<p style="color:#f87171;text-align:center;">Ошибка загрузки новостей</p>';
-            }
-        }
-
-        // ===== ДАШБОРД =====
-        async function loadDashboard() {
-            try {
-                const res = await fetch('/api/market-data');
-                const data = await res.json();
-                if (data) {
-                    const fear = data.fearGreed || 50;
-                    document.getElementById('fearValue').textContent = fear;
-                    document.getElementById('fearBar').style.width = fear + '%';
-                    const labels = ['Экстремальный страх', 'Страх', 'Нейтрально', 'Жадность', 'Экстремальная жадность'];
-                    const idx = Math.min(4, Math.floor(fear / 20));
-                    document.getElementById('fearLabel').textContent = labels[idx] || 'Нейтрально';
-
-                    document.getElementById('totalCap').textContent = data.totalCap || '--';
-                    document.getElementById('btcPrice').textContent = data.btcPrice ? '$' + data.btcPrice : '--';
-                }
-            } catch (e) {
-                console.warn('Ошибка дашборда:', e);
-            }
-        }
-
-        // Если пользователь уже авторизован, подгружаем данные
-        if (user && user.email) {
-            loadDashboard();
-            loadNews();
-        }
-    </script>
 </body>
 </html>
