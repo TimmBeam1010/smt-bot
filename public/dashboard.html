@@ -220,9 +220,38 @@
         .bot-card:hover {
             border-color: #4f46e5;
         }
+        .bot-card .bot-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .bot-card .exchange-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #1a1f2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: #4f46e5;
+            flex-shrink: 0;
+        }
+        .bot-card .exchange-logo img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
         .bot-card .bot-name {
             font-size: 18px;
             font-weight: 600;
+        }
+        .bot-card .exchange-name {
+            font-size: 14px;
+            color: #94a3b8;
         }
         .bot-card .bot-detail {
             color: #94a3b8;
@@ -356,7 +385,6 @@
                 <span class="badge" id="botCount">0</span>
             </h2>
             <div class="bot-grid" id="botGrid">
-                <!-- Карточки ботов будут добавлены через JS -->
                 <div class="add-bot-btn" id="addBotBtn">+</div>
             </div>
         </div>
@@ -432,9 +460,7 @@
                     document.getElementById('depositPnl').textContent = '$' + (deposit + pnlUsdt).toFixed(2);
                     document.getElementById('openTrades').textContent = u.openTrades || 0;
 
-                    // Загружаем ботов
                     loadBots(u.bots || []);
-                    // Загружаем сигналы
                     loadSignals();
                 }
             } catch (err) {
@@ -448,19 +474,34 @@
             const countBadge = document.getElementById('botCount');
             countBadge.textContent = bots.length;
 
-            // Удаляем все карточки, кроме кнопки "+"
             const addBtn = grid.querySelector('.add-bot-btn');
             grid.innerHTML = '';
             grid.appendChild(addBtn);
+
+            const exchangeLogos = {
+                binance: '币',
+                bybit: 'B',
+                bingx: 'B',
+                okx: 'O',
+                default: '🏦'
+            };
 
             bots.forEach((bot, index) => {
                 const card = document.createElement('div');
                 card.className = 'bot-card';
                 const isActive = bot.active !== false;
                 const hasAutoTrade = bot.services && bot.services.includes('autotrade');
+                const exchange = bot.exchange || 'bingx';
+                const logoChar = exchangeLogos[exchange.toLowerCase()] || exchangeLogos.default;
 
                 let details = `
-                    <div class="bot-name">🤖 Бот #${index + 1}</div>
+                    <div class="bot-header">
+                        <div class="exchange-logo">${logoChar}</div>
+                        <div>
+                            <div class="bot-name">🤖 Бот #${index + 1}</div>
+                            <div class="exchange-name">${exchange.charAt(0).toUpperCase() + exchange.slice(1)}</div>
+                        </div>
+                    </div>
                     <div class="bot-detail">
                         <span class="bot-status">
                             <span class="dot ${isActive ? 'online' : 'offline'}"></span>
