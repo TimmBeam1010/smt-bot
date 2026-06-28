@@ -48,16 +48,36 @@ app.post('/api/register', async (req, res) => {
     }
 
     try {
+        // Проверяем, есть ли пользователь с таким email
         const { data: existingUser } = await supabase
             .from('users')
             .select('*')
             .eq('email', email)
             .maybeSingle();
 
+        // Если пользователь существует — обновляем его сигналы (если они есть)
         if (existingUser) {
-            return res.status(400).json({ error: 'Этот email уже зарегистрирован' });
+            // Обновляем сигналы, которые могли быть привязаны к старому user_id
+            await supabase
+                .from('signals')
+                .update({ email: email })
+                .eq('user_id', existingUser.id);
+
+            // Если пароль не совпадает — обновляем его
+            const isPasswordValid = await bcrypt.compare(password, existingUser.password);
+            if (!isPasswordValid) {
+                const hashedPassword = await bcrypt.hash(password, 10);
+                await supabase
+                    .from('users')
+                    .update({ password: hashedPassword, updated_at: new Date() })
+                    .eq('email', email);
+            }
+
+            delete existingUser.password;
+            return res.status(200).json({ user: existingUser, message: 'Пользователь уже существует' });
         }
 
+        // Если пользователя нет — создаём нового
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const { data: newUser, error: createError } = await supabase
@@ -77,6 +97,12 @@ app.post('/api/register', async (req, res) => {
             console.error('Ошибка создания:', createError);
             return res.status(500).json({ error: 'Ошибка создания пользователя' });
         }
+
+        // Обновляем сигналы, которые могли быть привязаны к этому email (если были)
+        await supabase
+            .from('signals')
+            .update({ email: email })
+            .eq('email', email);
 
         delete newUser.password;
         res.status(201).json({ user: newUser });
@@ -275,26 +301,29 @@ app.get('/api/market-data', async (req, res) => {
 });
 
 // ============================================
-//  СИГНАЛЫ ПОЛЬЗОВАТЕЛЯ
+//  СИГНАЛЫ ПОЛЬЗОВАТЕЛЯ (ПО EMAIL)
 // ============================================
 
 app.get('/api/signals/user/:email', async (req, res) => {
     const { email } = req.params;
     try {
+        // Проверяем, существует ли пользователь
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('id')
             .eq('email', email)
             .single();
 
+        // Если пользователь не найден — возвращаем пустой массив
         if (userError || !user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
+            return res.json({ signals: [] });
         }
 
+        // Получаем сигналы по email
         const { data: signals, error } = await supabase
             .from('signals')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('email', email)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -653,7 +682,6 @@ app.get('/api/pnl/:email', async (req, res) => {
 
         if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
 
-        // Получаем демо-баланс
         const balance = await getDemoBalance(user.id);
         const { data: positions } = await supabase
             .from('demo_trades')
@@ -884,6 +912,7 @@ cron.schedule('*/1 * * * *', async () => {
                                     rsi: signal.rsi,
                                     macd: signal.macd,
                                     reasons: signal.reasons,
+                                    email: users[0].email // Сохраняем email
                                 });
 
                             if (insertError) {
@@ -992,14 +1021,4 @@ cron.schedule('*/1 * * * *', async () => {
     timezone: "Europe/Moscow"
 });
 
-console.log('⏰ Планировщик запущен (каждую минуту)');
-
-// ============================================
-//  ЗАПУСК СЕРВЕРА
-// ============================================
-
-app.listen(port, () => {
-    console.log(`🚀 SMT Bot запущен на порту ${port}`);
-    console.log(`🌐 Открой: http://localhost:${port}/`);
-    console.log(`📡 API: http://localhost:${port}/api/health`);
-});
+console.log('⏰ Планировщик запущен (каждую мину
