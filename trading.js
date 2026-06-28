@@ -1,7 +1,5 @@
-// trading.js — модуль для работы с BingX и анализа (ПОРОГИ МИНИМАЛЬНЫЕ ДЛЯ ТЕСТА)
 const axios = require('axios');
 
-// --- ПОЛУЧЕНИЕ ЦЕНЫ ---
 async function getPrice(symbol) {
     try {
         const formattedSymbol = symbol.replace('-', '_');
@@ -18,7 +16,6 @@ async function getPrice(symbol) {
         if (data.price) {
             return parseFloat(data.price);
         }
-        console.warn(`⚠️ Не удалось получить цену для ${symbol}:`, data);
         return null;
     } catch (error) {
         console.error(`❌ Ошибка получения цены ${symbol}:`, error.message);
@@ -26,7 +23,6 @@ async function getPrice(symbol) {
     }
 }
 
-// --- ПОЛУЧЕНИЕ НЕСКОЛЬКИХ ЦЕН ---
 async function getPrices(symbols) {
     const results = {};
     for (const symbol of symbols) {
@@ -39,7 +35,6 @@ async function getPrices(symbols) {
     return results;
 }
 
-// --- РАСЧЁТ RSI ---
 function calculateRSI(prices, period = 14) {
     if (prices.length < period + 1) return null;
     const deltas = [];
@@ -57,7 +52,6 @@ function calculateRSI(prices, period = 14) {
     return 100 - (100 / (1 + rs));
 }
 
-// --- РАСЧЁТ MACD (упрощённый) ---
 function calculateMACD(prices, fast = 12, slow = 26, signal = 9) {
     if (prices.length < slow + signal) return null;
     const emaFast = prices.slice(-fast).reduce((a, b) => a + b, 0) / fast;
@@ -71,10 +65,8 @@ function calculateMACD(prices, fast = 12, slow = 26, signal = 9) {
     };
 }
 
-// --- ГЕНЕРАЦИЯ СИГНАЛА (МИНИМАЛЬНЫЕ ПОРОГИ) ---
 function generateSignal(symbol, prices) {
-    // --- ВРЕМЕННО МЕНЯЕМ С 20 НА 5 ДЛЯ ТЕСТА ---
-    if (prices.length < 5) return null;
+    if (prices.length < 20) return null;
 
     const lastPrice = prices[prices.length - 1];
     const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
@@ -87,43 +79,40 @@ function generateSignal(symbol, prices) {
     let confidence = 'low';
     const reasons = [];
 
-    // Условия для LONG (МИНИМАЛЬНЫЙ ПОРОГ)
     let longConditions = 0;
-    if (lastPrice < avgPrice - volatility * 0.1) {
+    if (lastPrice < avgPrice - volatility * 1.2) {
         longConditions++;
         reasons.push('цена ниже средней');
     }
-    if (rsi !== null && rsi < 60) {
+    if (rsi !== null && rsi < 30) {
         longConditions++;
-        reasons.push(`RSI (${rsi.toFixed(1)}) ниже 60`);
+        reasons.push(`RSI (${rsi.toFixed(1)}) перепродан`);
     }
-    if (macd !== null && macd.histogram < 0) {
+    if (macd !== null && macd.histogram < 0 && macd.macd > macd.signal) {
         longConditions++;
-        reasons.push('MACD ниже нуля');
+        reasons.push('MACD разворачивается вверх');
     }
 
-    // Условия для SHORT (МИНИМАЛЬНЫЙ ПОРОГ)
     let shortConditions = 0;
-    if (lastPrice > avgPrice + volatility * 0.1) {
+    if (lastPrice > avgPrice + volatility * 1.2) {
         shortConditions++;
         reasons.push('цена выше средней');
     }
-    if (rsi !== null && rsi > 40) {
+    if (rsi !== null && rsi > 70) {
         shortConditions++;
-        reasons.push(`RSI (${rsi.toFixed(1)}) выше 40`);
+        reasons.push(`RSI (${rsi.toFixed(1)}) перекуплен`);
     }
-    if (macd !== null && macd.histogram > 0) {
+    if (macd !== null && macd.histogram > 0 && macd.macd < macd.signal) {
         shortConditions++;
-        reasons.push('MACD выше нуля');
+        reasons.push('MACD разворачивается вниз');
     }
 
-    // ДОСТАТОЧНО 1 УСЛОВИЯ
-    if (longConditions >= 1) {
+    if (longConditions >= 2) {
         side = 'LONG';
-        confidence = longConditions >= 2 ? 'high' : 'medium';
-    } else if (shortConditions >= 1) {
+        confidence = longConditions >= 3 ? 'high' : 'medium';
+    } else if (shortConditions >= 2) {
         side = 'SHORT';
-        confidence = shortConditions >= 2 ? 'high' : 'medium';
+        confidence = shortConditions >= 3 ? 'high' : 'medium';
     } else {
         return null;
     }
