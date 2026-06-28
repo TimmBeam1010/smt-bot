@@ -73,6 +73,67 @@
         .burger-menu a:hover {
             color: #fff;
         }
+        /* PNL в хедере */
+        .pnl-header {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: clamp(14px, 1.5vw, 18px);
+            padding: 4px 12px;
+            border-radius: 8px;
+            background: #fbbf24;
+            color: #0a0e17;
+            border: 1px solid #f59e0b;
+            transition: 0.2s;
+            cursor: default;
+        }
+        .pnl-header.visible {
+            display: flex;
+        }
+        .pnl-header .pnl-value {
+            font-weight: 700;
+        }
+        .pnl-header .pnl-value.green {
+            color: #065f46;
+        }
+        .pnl-header .pnl-value.red {
+            color: #991b1b;
+        }
+        /* Рычаг */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .toggle-switch {
+            width: 40px;
+            height: 22px;
+            background: #2d3748;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+        }
+        .toggle-switch.on {
+            background: #4f46e5;
+        }
+        .toggle-switch .knob {
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+        .toggle-switch.on .knob {
+            left: 20px;
+        }
+
         .card {
             background: #1a1f2e;
             padding: 20px;
@@ -87,6 +148,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .card h2 .badge {
             font-size: 13px;
@@ -256,48 +319,43 @@
             margin-top: 10px;
         }
         .bot-actions button {
-            padding: 6px 14px;
+            padding: 6px 12px;
             border: none;
             border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 18px;
             cursor: pointer;
             transition: 0.2s;
+            background: #1a1f2e;
+            color: #94a3b8;
+            border: 1px solid #2d3748;
+            line-height: 1;
         }
-        .btn-pause {
-            background: #fbbf24;
-            color: #0a0e17;
-        }
-        .btn-pause:hover {
-            background: #f59e0b;
-        }
-        .btn-resume {
-            background: #34d399;
-            color: #0a0e17;
-        }
-        .btn-resume:hover {
-            background: #2bcc8a;
-        }
-        .btn-stop {
-            background: #f87171;
+        .bot-actions button:hover {
+            background: #4f46e5;
             color: #fff;
+            border-color: #4f46e5;
         }
-        .btn-stop:hover {
-            background: #ef4444;
+        .bot-actions .btn-delete {
+            color: #f87171;
         }
-        .btn-start {
-            background: #34d399;
-            color: #0a0e17;
-        }
-        .btn-start:hover {
-            background: #2bcc8a;
-        }
-        .btn-delete {
+        .bot-actions .btn-delete:hover {
             background: #dc2626;
             color: #fff;
         }
-        .btn-delete:hover {
-            background: #b91c1c;
+        .bot-actions .btn-pause.active {
+            background: #fbbf24;
+            color: #0a0e17;
+        }
+        .bot-actions .btn-start.active {
+            background: #34d399;
+            color: #0a0e17;
+        }
+        .bot-card.demo-bot {
+            border: 2px solid #fbbf24;
+            background: #1f2937;
+        }
+        .bot-card.demo-bot .bot-name {
+            color: #fbbf24;
         }
 
         .add-bot-btn {
@@ -320,7 +378,6 @@
             border-color: #818cf8;
         }
 
-        /* МОДАЛКА УДАЛЕНИЯ */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -365,9 +422,6 @@
             font-size: 16px;
             margin-bottom: 12px;
         }
-        .modal input:focus {
-            outline: 2px solid #4f46e5;
-        }
         .modal-actions {
             display: flex;
             gap: 12px;
@@ -380,21 +434,14 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.2s;
         }
         .modal-actions .btn-cancel {
             background: #2d3748;
             color: #fff;
         }
-        .modal-actions .btn-cancel:hover {
-            background: #4a5568;
-        }
         .modal-actions .btn-confirm-delete {
             background: #dc2626;
             color: #fff;
-        }
-        .modal-actions .btn-confirm-delete:hover {
-            background: #b91c1c;
         }
 
         footer {
@@ -435,7 +482,6 @@
         .logout-btn:hover {
             background: #ef4444;
         }
-
         @media (max-width: 600px) {
             .grid-2 {
                 grid-template-columns: 1fr 1fr;
@@ -462,7 +508,19 @@
 
         <header>
             <a href="/" class="logo">🤖 SMT Bot</a>
-            <div class="burger" id="burgerBtn">☰</div>
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div class="pnl-header" id="pnlHeader">
+                    <span>📊 ДЕМО PNL:</span>
+                    <span class="pnl-value" id="pnlHeaderValue">+0.00%</span>
+                </div>
+                <div class="toggle-container">
+                    <span>📊</span>
+                    <div class="toggle-switch on" id="pnlToggle">
+                        <div class="knob"></div>
+                    </div>
+                </div>
+                <div class="burger" id="burgerBtn">☰</div>
+            </div>
         </header>
 
         <div class="burger-menu" id="burgerMenu">
@@ -533,7 +591,6 @@
 
     </div>
 
-    <!-- МОДАЛКА УДАЛЕНИЯ -->
     <div class="modal-overlay" id="deleteModal">
         <div class="modal">
             <h3>⚠️ Удаление бота</h3>
@@ -555,26 +612,42 @@
 
         let botsData = [];
         let deleteTargetId = null;
+        let showPnl = true;
+        let demoBotData = null;
 
-        // ===== БУРГЕР =====
-        const burgerBtn = document.getElementById('burgerBtn');
-        const burgerMenu = document.getElementById('burgerMenu');
-        burgerBtn.addEventListener('click', () => {
-            burgerMenu.classList.toggle('open');
+        // ===== Toggle PNL =====
+        const pnlToggle = document.getElementById('pnlToggle');
+        const pnlHeader = document.getElementById('pnlHeader');
+
+        pnlToggle.addEventListener('click', () => {
+            showPnl = !showPnl;
+            pnlToggle.classList.toggle('on', showPnl);
+            pnlHeader.classList.toggle('visible', showPnl);
+            localStorage.setItem('showPnl', JSON.stringify(showPnl));
         });
 
-        // ===== ВЫХОД =====
+        const savedPnl = localStorage.getItem('showPnl');
+        if (savedPnl !== null) {
+            showPnl = JSON.parse(savedPnl);
+            pnlToggle.classList.toggle('on', showPnl);
+            pnlHeader.classList.toggle('visible', showPnl);
+        }
+
+        // ===== БУРГЕР =====
+        document.getElementById('burgerBtn').addEventListener('click', () => {
+            document.getElementById('burgerMenu').classList.toggle('open');
+        });
+
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('smtUser');
             window.location.href = '/';
         });
 
-        // ===== ПЕРЕХОД НА СТРАНИЦУ СИГНАЛОВ =====
         document.getElementById('expandSignalsBtn').addEventListener('click', () => {
             window.location.href = '/signals.html';
         });
 
-        // ===== ЗАГРУЗКА ДАННЫХ =====
+        // ===== ЗАГРУЗКА =====
         async function loadDashboard() {
             try {
                 const res = await fetch(`/api/user/${user.email}`);
@@ -592,6 +665,16 @@
                     document.getElementById('depositPnl').textContent = '$' + (deposit + pnlUsdt).toFixed(2);
                     document.getElementById('openTrades').textContent = u.openTrades || 0;
 
+                    // Демо-бот
+                    const demoRes = await fetch(`/api/demo/${user.email}`);
+                    const demoData = await demoRes.json();
+                    if (demoData.ok) {
+                        demoBotData = demoData.data;
+                        const demoPnl = demoData.data.totalPnl || 0;
+                        document.getElementById('pnlHeaderValue').textContent = (demoPnl >= 0 ? '+' : '') + demoPnl.toFixed(2) + '%';
+                        document.getElementById('pnlHeaderValue').className = 'pnl-value ' + (demoPnl >= 0 ? 'green' : 'red');
+                    }
+
                     botsData = u.bots || [];
                     loadBots(botsData);
                     loadSignals();
@@ -601,11 +684,28 @@
             }
         }
 
-        // ===== БОТЫ =====
         function loadBots(bots) {
             const grid = document.getElementById('botGrid');
             const countBadge = document.getElementById('botCount');
-            countBadge.textContent = bots.length;
+
+            // Демо-бот всегда первый
+            const demoBot = {
+                id: 'demo',
+                exchange: 'demo',
+                tariff: 'Демо-бот',
+                services: ['Сигналы', 'Автоторговля'],
+                active: true,
+                paused: false,
+                tariffEnd: '∞',
+                deposit: 1000,
+                pnl: demoBotData?.totalPnl || 0,
+                openTrades: demoBotData?.positions?.filter(p => p.status === 'open').length || 0,
+                closedTrades: demoBotData?.trades?.length || 0,
+                isDemo: true
+            };
+
+            const allBots = [demoBot, ...bots];
+            countBadge.textContent = allBots.length;
 
             const addBtn = grid.querySelector('.add-bot-btn');
             grid.innerHTML = '';
@@ -616,15 +716,16 @@
                 bybit: 'B',
                 bingx: 'B',
                 okx: 'O',
+                demo: '🎯',
                 default: '🏦'
             };
 
-            bots.forEach((bot, index) => {
+            allBots.forEach((bot, index) => {
                 const card = document.createElement('div');
-                card.className = 'bot-card';
+                card.className = 'bot-card' + (bot.isDemo ? ' demo-bot' : '');
                 const isActive = bot.active !== false;
                 const isPaused = bot.paused === true;
-                const hasAutoTrade = bot.services && bot.services.includes('autotrade');
+                const isDemo = bot.isDemo === true;
                 const exchange = bot.exchange || 'bingx';
                 const logoChar = exchangeLogos[exchange.toLowerCase()] || exchangeLogos.default;
 
@@ -632,7 +733,7 @@
                 let statusText = 'Активен';
                 if (isPaused) {
                     statusClass = 'paused';
-                    statusText = 'На паузе (сигналы приостановлены)';
+                    statusText = 'На паузе';
                 } else if (!isActive) {
                     statusClass = 'offline';
                     statusText = 'Отключен';
@@ -642,8 +743,8 @@
                     <div class="bot-header">
                         <div class="exchange-logo">${logoChar}</div>
                         <div>
-                            <div class="bot-name">🤖 Бот #${index + 1}</div>
-                            <div class="exchange-name">${exchange.charAt(0).toUpperCase() + exchange.slice(1)}</div>
+                            <div class="bot-name">${isDemo ? '🎯 Демо-бот' : '🤖 Бот #' + (index)}</div>
+                            <div class="exchange-name">${isDemo ? 'Виртуальная биржа' : exchange.charAt(0).toUpperCase() + exchange.slice(1)}</div>
                         </div>
                     </div>
                     <div class="bot-detail">
@@ -657,43 +758,77 @@
                     <div class="bot-detail"><strong>До:</strong> ${bot.tariffEnd || '2026-08-01'}</div>
                 `;
 
-                if (hasAutoTrade) {
-                    details += `
-                        <div class="bot-detail"><strong>Депозит:</strong> $${(bot.deposit || 0).toFixed(2)}</div>
+                if (!isDemo) {
+                    details += `<div class="bot-detail"><strong>Депозит:</strong> $${(bot.deposit || 0).toFixed(2)}</div>
                         <div class="bot-detail"><strong>PNL:</strong> <span style="color:${bot.pnl >= 0 ? '#34d399' : '#f87171'}">${(bot.pnl || 0).toFixed(2)}%</span></div>
-                        <div class="bot-detail"><strong>Открыто:</strong> ${bot.openTrades || 0} | <strong>Закрыто:</strong> ${bot.closedTrades || 0}</div>
-                    `;
+                        <div class="bot-detail"><strong>Открыто:</strong> ${bot.openTrades || 0} | <strong>Закрыто:</strong> ${bot.closedTrades || 0}</div>`;
+                } else {
+                    details += `<div class="bot-detail"><strong>Депозит:</strong> $${(bot.deposit || 0).toFixed(2)}</div>
+                        <div class="bot-detail"><strong>PNL:</strong> <span style="color:${bot.pnl >= 0 ? '#34d399' : '#f87171'}">${(bot.pnl || 0).toFixed(2)}%</span></div>
+                        <div class="bot-detail"><strong>Открыто:</strong> ${bot.openTrades || 0} | <strong>Закрыто:</strong> ${bot.closedTrades || 0}</div>`;
                 }
 
-                // Кнопки управления
+                // Кнопки (только иконки)
                 let actions = '';
-                if (isActive && !isPaused) {
-                    actions += `<button class="btn-pause" data-id="${index}" data-action="pause">⏸ Пауза</button>`;
-                    actions += `<button class="btn-stop" data-id="${index}" data-action="stop">⏹ Отключить</button>`;
-                } else if (isActive && isPaused) {
-                    actions += `<button class="btn-resume" data-id="${index}" data-action="resume">▶️ Продолжить</button>`;
-                    actions += `<button class="btn-stop" data-id="${index}" data-action="stop">⏹ Отключить</button>`;
+                if (isDemo) {
+                    if (isActive && !isPaused) {
+                        actions += `<button class="btn-pause active" data-id="demo" data-action="pause">⏸</button>`;
+                        actions += `<button class="btn-stop" data-id="demo" data-action="stop">⏹</button>`;
+                    } else if (isActive && isPaused) {
+                        actions += `<button class="btn-start active" data-id="demo" data-action="resume">▶️</button>`;
+                        actions += `<button class="btn-stop" data-id="demo" data-action="stop">⏹</button>`;
+                    } else {
+                        actions += `<button class="btn-start active" data-id="demo" data-action="start">▶️</button>`;
+                    }
+                    // Удаление для демо-бота недоступно
                 } else {
-                    actions += `<button class="btn-start" data-id="${index}" data-action="start">▶️ Запустить</button>`;
+                    if (isActive && !isPaused) {
+                        actions += `<button class="btn-pause" data-id="${index - 1}" data-action="pause">⏸</button>`;
+                        actions += `<button class="btn-stop" data-id="${index - 1}" data-action="stop">⏹</button>`;
+                    } else if (isActive && isPaused) {
+                        actions += `<button class="btn-start active" data-id="${index - 1}" data-action="resume">▶️</button>`;
+                        actions += `<button class="btn-stop" data-id="${index - 1}" data-action="stop">⏹</button>`;
+                    } else {
+                        actions += `<button class="btn-start active" data-id="${index - 1}" data-action="start">▶️</button>`;
+                    }
+                    actions += `<button class="btn-delete" data-id="${index - 1}" data-action="delete">🗑</button>`;
                 }
-                actions += `<button class="btn-delete" data-id="${index}" data-action="delete">🗑 Удалить</button>`;
 
                 details += `<div class="bot-actions">${actions}</div>`;
                 card.innerHTML = details;
                 grid.insertBefore(card, addBtn);
             });
 
-            // Обработчики кнопок
             document.querySelectorAll('.bot-actions button').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const index = parseInt(btn.dataset.id);
+                    const id = btn.dataset.id;
                     const action = btn.dataset.action;
-                    handleBotAction(index, action);
+                    if (id === 'demo') {
+                        handleDemoAction(action);
+                    } else {
+                        handleBotAction(parseInt(id), action);
+                    }
                 });
             });
         }
 
-        // ===== ДЕЙСТВИЯ С БОТАМИ (обновлённая логика) =====
+        // ===== ДЕМО-БОТ =====
+        async function handleDemoAction(action) {
+            try {
+                const res = await fetch(`/api/demo/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user.email, action })
+                });
+                if (res.ok) {
+                    loadDashboard();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // ===== БОТЫ =====
         async function handleBotAction(index, action) {
             const bot = botsData[index];
             if (!bot) return;
@@ -707,25 +842,11 @@
 
             let updatedBot = { ...bot };
             switch (action) {
-                case 'pause':
-                    updatedBot.paused = true;
-                    // Анализ продолжается, сигналы НЕ отправляются
-                    break;
-                case 'resume':
-                    updatedBot.paused = false;
-                    // Сигналы возобновляются
-                    break;
-                case 'stop':
-                    updatedBot.active = false;
-                    updatedBot.paused = false;
-                    updatedBot.openTrades = 0; // закрываем позиции
-                    break;
-                case 'start':
-                    updatedBot.active = true;
-                    updatedBot.paused = false;
-                    break;
-                default:
-                    return;
+                case 'pause': updatedBot.paused = true; break;
+                case 'resume': updatedBot.paused = false; break;
+                case 'stop': updatedBot.active = false; updatedBot.paused = false; updatedBot.openTrades = 0; break;
+                case 'start': updatedBot.active = true; updatedBot.paused = false; break;
+                default: return;
             }
 
             botsData[index] = updatedBot;
@@ -739,17 +860,12 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ bots: botsData })
                 });
-                if (res.ok) {
-                    loadDashboard();
-                } else {
-                    alert('❌ Ошибка обновления бота');
-                }
+                if (res.ok) loadDashboard();
             } catch (err) {
-                alert('❌ Ошибка соединения');
+                alert('Ошибка');
             }
         }
 
-        // ===== УДАЛЕНИЕ =====
         document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
             document.getElementById('deleteModal').classList.remove('open');
             deleteTargetId = null;
@@ -757,26 +873,17 @@
 
         document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
             const password = document.getElementById('deletePassword').value;
-            if (!password) {
-                alert('Введите пароль');
-                return;
-            }
-
-            // Проверка пароля (имитация)
             if (password !== '88888888') {
                 alert('❌ Неверный пароль');
                 return;
             }
-
             if (deleteTargetId === null) return;
-
             botsData.splice(deleteTargetId, 1);
             await saveBots();
             document.getElementById('deleteModal').classList.remove('open');
             deleteTargetId = null;
         });
 
-        // ===== СИГНАЛЫ =====
         async function loadSignals() {
             try {
                 const res = await fetch(`/api/signals/user/${user.email}`);
@@ -815,7 +922,6 @@
             `;
         }
 
-        // ===== ЗАГЛУШКИ =====
         document.getElementById('profileLink').addEventListener('click', (e) => {
             e.preventDefault();
             alert('Личная информация (будет реализовано позже)');
