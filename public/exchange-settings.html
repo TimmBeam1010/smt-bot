@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔑 SMT Bot — Настройка биржи</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: #1a1f2e;
+            border-radius: 16px;
+            padding: 32px;
+            border: 1px solid #2d3748;
+            width: 100%;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header h1 .logo {
+            font-size: 32px;
+        }
+        .back-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: #0a0e17;
+            color: #fff;
+            border: 1px solid #2d3748;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: monospace;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        .form-group .hint {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .form-group .hint a {
+            color: #4f46e5;
+            text-decoration: none;
+        }
+        .form-group .hint a:hover {
+            text-decoration: underline;
+        }
+        .btn-save {
+            width: 100%;
+            padding: 14px;
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-save:hover {
+            background: #4338ca;
+        }
+        .btn-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-test {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: #10b981;
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 12px;
+        }
+        .btn-test:hover {
+            background: #10b981;
+            color: #fff;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .status.success {
+            display: block;
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .status.error {
+            display: block;
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        .status.info {
+            display: block;
+            background: #92400e;
+            color: #fbbf24;
+        }
+        .permissions {
+            background: #0a0e17;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        .permissions strong {
+            color: #fff;
+        }
+        .permissions ul {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0 0 0;
+        }
+        .permissions ul li {
+            padding: 4px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .permissions ul li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #10b981;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .header {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span class="logo" id="exchangeLogo">🏦</span>
+                <span id="exchangeName">Биржа</span>
+            </h1>
+            <a href="/exchanges.html" class="back-link">← Назад</a>
+        </div>
+
+        <div class="status" id="statusMessage"></div>
+
+        <div class="permissions">
+            <strong>🔑 Какие права нужны:</strong>
+            <ul>
+                <li>Чтение баланса и данных аккаунта</li>
+                <li>Создание и отмена ордеров</li>
+                <li>Просмотр истории сделок</li>
+                <li><span style="color:#fbbf24;">⚠️ НЕ давайте права на вывод средств!</span></li>
+            </ul>
+        </div>
+
+        <div class="form-group">
+            <label for="apiKey">API Key (публичный ключ)</label>
+            <input type="text" id="apiKey" placeholder="Введите API ключ">
+            <div class="hint">Как получить: <a href="#" id="docsLink" target="_blank">документация биржи</a></div>
+        </div>
+
+        <div class="form-group">
+            <label for="secretKey">Secret Key (секретный ключ)</label>
+            <input type="password" id="secretKey" placeholder="Введите секретный ключ">
+            <div class="hint">Хранится в зашифрованном виде на сервере</div>
+        </div>
+
+        <button class="btn-save" id="saveBtn" onclick="saveSettings()">💾 Сохранить настройки</button>
+        <button class="btn-test" onclick="testConnection()">🔌 Проверить подключение</button>
+    </div>
+
+    <script>
+        (function() {
+            const userEmail = localStorage.getItem('smt_user_email');
+            if (!userEmail) {
+                window.location.replace('/login.html');
+                return;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const exchangeId = urlParams.get('id');
+            
+            if (!exchangeId) {
+                alert('Ошибка: биржа не указана');
+                window.location.href = '/exchanges.html';
+                return;
+            }
+
+            let exchangeData = null;
+            let allExchanges = [];
+
+            async function loadExchangeData() {
+                try {
+                    // Загружаем список всех бирж
+                    const allResp = await fetch('/api/exchanges/list');
+                    const allData = await allResp.json();
+                    allExchanges = allData.exchanges || [];
+
+                    // Загружаем данные пользователя
+                    const userResp = await fetch(`/api/user/${userEmail}`);
+                    const userData = await userResp.json();
+                    
+                    if (userData.user && userData.user.exchanges) {
+                        exchangeData = userData.user.exchanges.find(ex => ex.id === exchangeId);
+                    }
+
+                    if (!exchangeData) {
+                        // Если биржа не найдена в пользовательских, но есть в общем списке
+                        const defaultEx = allExchanges.find(ex => ex.id === exchangeId);
+                        if (defaultEx) {
+                            exchangeData = {
+                                id: defaultEx.id,
+                                name: defaultEx.name,
+                                logo: defaultEx.logo,
+                                connected: false,
+                                api_key: '',
+                                secret_key: ''
+                            };
+                        }
+                    }
+
+                    if (exchangeData) {
+                        document.getElementById('exchangeName').textContent = exchangeData.name || 'Биржа';
+                        document.getElementById('exchangeLogo').textContent = exchangeData.logo || '🏦';
+                        document.getElementById('apiKey').value = exchangeData.api_key || '';
+                        document.getElementById('secretKey').value = exchangeData.secret_key || '';
+                        
+                        // Ссылка на документацию
+                        const docLink = allExchanges.find(ex => ex.id === exchangeId)?.docs || '#';
+                        document.getElementById('docsLink').href = docLink;
+                    } else {
+                        alert('Биржа не найдена');
+                        window.location.href = '/exchanges.html';
+                    }
+                } catch (e) {
+                    console.error('Ошибка загрузки:', e);
+                    showStatus('error', '❌ Ошибка загрузки данных');
+                }
+            }
+
+            function showStatus(type, message) {
+                const el = document.getElementById('statusMessage');
+                el.className = 'status ' + type;
+                el.textContent = message;
+                el.style.display = 'block';
+                setTimeout(() => {
+                    el.style.display = 'none';
+                }, 5000);
+            }
+
+            window.saveSettings = async function() {
+                const apiKey = document.getElementById('apiKey').value.trim();
+                const secretKey = document.getElementById('secretKey').value.trim();
+
+                if (!apiKey || !secretKey) {
+                    showStatus('error', '❌ Заполните все поля');
+                    return;
+                }
+
+                document.getElementById('saveBtn').disabled = true;
+                document.getElementById('saveBtn').textContent = '⏳ Сохранение...';
+
+                try {
+                    // Обновляем данные пользователя
+                    const userResp = await fetch(`/api/user/${userEmail}`);
+                    const userData = await userResp.json();
+                    
+                    if (!userData.user) {
+                        throw new Error('Пользователь не найден');
+                    }
+
+                    let exchanges = userData.user.exchanges || [];
+                    
+                    const existingIndex = exchanges.findIndex(ex => ex.id === exchangeId);
+                    const newExchange = {
+                        id: exchangeId,
+                        name: exchangeData.name,
+                        logo: exchangeData.logo,
+                        connected: true,
+                        api_key: apiKey,
+                        secret_key: secretKey,
+                        updated_at: new Date().toISOString()
+                    };
+
+                    if (existingIndex >= 0) {
+                        exchanges[existingIndex] = newExchange;
+                    } else {
+                        exchanges.push(newExchange);
+                    }
+
+                    const saveResp = await fetch(`/api/user/${userEmail}/exchanges`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ exchanges })
+                    });
+
+                    if (saveResp.ok) {
+                        showStatus('success', '✅ Настройки сохранены успешно!');
+                        exchangeData = newExchange;
+                    } else {
+                        showStatus('error', '❌ Ошибка сохранения настроек');
+                    }
+                } catch (e) {
+                    console.error('Ошибка:', e);
+                    showStatus('error', '❌ Ошибка: ' + e.message);
+                }
+
+                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('saveBtn').textContent = '💾 Сохранить настройки';
+            };
+
+            window.testConnection = async function() {
+                const apiKey = document.getElementById('apiKey').value.trim();
+                const secretKey = document.getElementById('secretKey').value.trim();
+
+                if (!apiKey || !secretKey) {
+                    showStatus('error', '❌ Заполните все поля для проверки');
+                    return;
+                }
+
+                showStatus('info', '⏳ Проверка подключения...');
+
+                try {
+                    const resp = await fetch('/api/exchange/test', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            exchange: exchangeId,
+                            apiKey: apiKey,
+                            secretKey: secretKey
+                        })
+                    });
+
+                    const data = await resp.json();
+
+                    if (data.success) {
+                        showStatus('success', '✅ Подключение успешно! Баланс: $' + (data.balance || '--'));
+                    } else {
+                        showStatus('error', '❌ Ошибка подключения: ' + (data.error || 'Неизвестная ошибка'));
+                    }
+                } catch (e) {
+                    console.error('Ошибка теста:', e);
+                    showStatus('error', '❌ Ошибка при проверке: ' + e.message);
+                }
+            };
+
+            loadExchangeData();
+
+        })();
+    </script>
+
+</body>
+</html>
