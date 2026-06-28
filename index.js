@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const axios = require('axios');
 const trading = require('./trading');
+const ccxt = require('ccxt');
 require('dotenv').config();
 
 const WebSocket = require('ws');
@@ -669,62 +670,6 @@ app.post('/api/signals/check/:id', async (req, res) => {
     }
 });
 
-app.post('/api/exchange/connect', async (req, res) => {
-    const { email, exchange, apiKey, secretKey } = req.body;
-    if (!email || !exchange || !apiKey || !secretKey) {
-        return res.status(400).json({ error: 'Все поля обязательны' });
-    }
-
-    try {
-        const { data: user, error } = await supabase
-            .from('users')
-            .update({
-                exchange_connected: true,
-                exchange_name: exchange,
-                exchange_api_key: apiKey,
-                exchange_secret_key: secretKey,
-                updated_at: new Date()
-            })
-            .eq('email', email)
-            .select()
-            .single();
-
-        if (error) throw error;
-        if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
-
-        const currentBots = user.bots || [];
-        const newBot = {
-            exchange: exchange,
-            tariff: 'Пользовательский',
-            services: ['Сигналы'],
-            active: true,
-            paused: false,
-            tariffEnd: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-            deposit: 0,
-            pnl: 0,
-            openTrades: 0,
-            closedTrades: 0,
-            activatedAt: new Date().toISOString()
-        };
-
-        const { data: updatedUser, error: updateError } = await supabase
-            .from('users')
-            .update({ bots: [...currentBots, newBot] })
-            .eq('email', email)
-            .select()
-            .single();
-
-        if (updateError) throw updateError;
-
-        delete updatedUser.password;
-        res.json({ success: true, user: updatedUser });
-
-    } catch (err) {
-        console.error('Ошибка подключения биржи:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
 app.get('/api/demo/:userId', async (req, res) => {
     const { userId } = req.params;
 
@@ -1006,6 +951,26 @@ app.get('/api/exchanges/list', (req, res) => {
     res.json({ exchanges });
 });
 
+// ============================================
+//  ПОЛНЫЙ МОДУЛЬ ПОДКЛЮЧЕНИЯ БИРЖ (CCXT)
+// ============================================
+
+async function getExchangeInstance(exchangeId, apiKey, secretKey) {
+    try {
+        const exchangeClass = new ccxt[exchangeId]();
+        if (!exchangeClass) {
+            throw new Error(`Биржа ${exchangeId} не поддерживается`);
+        }
+        exchangeClass.apiKey = apiKey;
+        exchangeClass.secret = secretKey;
+        exchangeClass.enableRateLimit = true;
+        exchangeClass.timeout = 30000;
+        return exchangeClass;
+    } catch (err) {
+        throw new Error(`Ошибка инициализации биржи: ${err.message}`);
+    }
+}
+
 app.post('/api/exchange/test', async (req, res) => {
     const { exchange, apiKey, secretKey } = req.body;
 
@@ -1014,16 +979,40 @@ app.post('/api/exchange/test', async (req, res) => {
     }
 
     try {
-        const balance = Math.floor(Math.random() * 10000) / 100;
+        const exchangeInstance = await getExchangeInstance(exchange, apiKey, secretKey);
         
+        // Проверяем баланс
+        const balance = await exchangeInstance.fetchBalance();
+        const totalBalance = balance.total;
+        
+        // Проверяем права на торговлю (читаем открытые ордера)
+        let hasTradingPermissions = false;
+        try {
+            const orders = await exchangeInstance.fetchOpenOrders();
+            hasTradingPermissions = Array.isArray(orders);
+        } catch (e) {
+            console.log('Нет прав на чтение ордеров:', e.message);
+        }
+
+        // Получаем список доступных активов
+        const assets = Object.keys(totalBalance).filter(key => totalBalance[key] > 0);
+
         res.json({
             success: true,
-            balance: balance,
-            message: `✅ Подключение к ${exchange} успешно`
+            balance: totalBalance,
+            total: parseFloat(Object.values(totalBalance).reduce((a, b) => a + b, 0).toFixed(2)),
+            assets: assets,
+            hasTradingPermissions: hasTradingPermissions,
+            message: `✅ Подключение к ${exchange} успешно`,
+            exchangeInfo: {
+                name: exchangeInstance.name,
+                id: exchangeInstance.id,
+                urls: exchangeInstance.urls
+            }
         });
 
     } catch (err) {
-        console.error('Ошибка проверки подключения:', err);
+        console.error('❌ Ошибка проверки подключения:', err);
         res.status(500).json({ 
             success: false,
             error: err.message || 'Ошибка подключения к бирже'
@@ -1031,45 +1020,293 @@ app.post('/api/exchange/test', async (req, res) => {
     }
 });
 
-app.get('/api/news', async (req, res) => {
+app.get('/api/exchange/balance/:email/:exchangeId', async (req, res) => {
+    const { email, exchangeId } = req.params;
+
     try {
-        const apiKey = process.env.NEWS_API_KEY || 'demo';
-        const url = `https://newsapi.org/v2/everything?q=crypto OR bitcoin OR trading&language=en&sortBy=publishedAt&apiKey=${apiKey}`;
-        const response = await axios.get(url, { timeout: 10000 });
-        const articles = response.data.articles?.slice(0, 6) || [];
-        res.json({ news: articles });
-    } catch (error) {
-        console.error('❌ Ошибка получения новостей:', error.message);
-        res.json({ news: [] });
-    }
-});
+        const { data: user } = await supabase
+            .from('users')
+            .select('exchanges')
+            .eq('email', email)
+            .single();
 
-app.get('/api/market-data', async (req, res) => {
-    try {
-        const fgRes = await axios.get('https://api.alternative.me/fng/?limit=1', { timeout: 8000 });
-        const fearGreed = parseInt(fgRes.data.data[0].value) || 50;
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
 
-        const btcRes = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', { timeout: 8000 });
-        const btcPrice = btcRes.data.bitcoin?.usd || null;
+        const exchange = user.exchanges?.find(ex => ex.id === exchangeId);
+        if (!exchange || !exchange.api_key || !exchange.secret_key) {
+            return res.status(404).json({ error: 'Биржа не найдена или не настроена' });
+        }
 
-        const capRes = await axios.get('https://api.coingecko.com/api/v3/global', { timeout: 8000 });
-        const totalCap = capRes.data.data?.total_market_cap?.usd || null;
-        const totalCapStr = totalCap ? '$' + (totalCap / 1e12).toFixed(2) + 'T' : '--';
+        const secretKey = Buffer.from(exchange.secret_key, 'base64').toString();
+        const exchangeInstance = await getExchangeInstance(exchangeId, exchange.api_key, secretKey);
+
+        const balance = await exchangeInstance.fetchBalance();
+        const totalBalance = balance.total;
+        const freeBalance = balance.free;
+        const usedBalance = balance.used;
 
         res.json({
-            fearGreed,
-            btcPrice: btcPrice ? btcPrice.toLocaleString() : '--',
-            totalCap: totalCapStr
+            success: true,
+            exchange: exchangeId,
+            balance: {
+                total: totalBalance,
+                free: freeBalance,
+                used: usedBalance
+            },
+            assets: Object.keys(totalBalance).filter(key => totalBalance[key] > 0),
+            timestamp: new Date().toISOString()
         });
-    } catch (error) {
-        console.error('❌ Ошибка получения рыночных данных:', error.message);
-        res.json({ fearGreed: 50, btcPrice: '--', totalCap: '--' });
+
+    } catch (err) {
+        console.error('❌ Ошибка получения баланса:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
-// ============================================
-//  ПУБЛИЧНЫЕ ЭНДПОИНТЫ ДЛЯ ГЛАВНОЙ СТРАНИЦЫ
-// ============================================
+app.get('/api/exchange/positions/:email/:exchangeId', async (req, res) => {
+    const { email, exchangeId } = req.params;
+
+    try {
+        const { data: user } = await supabase
+            .from('users')
+            .select('exchanges')
+            .eq('email', email)
+            .single();
+
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const exchange = user.exchanges?.find(ex => ex.id === exchangeId);
+        if (!exchange || !exchange.api_key || !exchange.secret_key) {
+            return res.status(404).json({ error: 'Биржа не найдена или не настроена' });
+        }
+
+        const secretKey = Buffer.from(exchange.secret_key, 'base64').toString();
+        const exchangeInstance = await getExchangeInstance(exchangeId, exchange.api_key, secretKey);
+
+        let positions = [];
+        let openOrders = [];
+
+        try {
+            // Получаем открытые позиции (для фьючерсов)
+            if (exchangeInstance.has['fetchPositions']) {
+                positions = await exchangeInstance.fetchPositions();
+            }
+        } catch (e) {
+            console.log('Не удалось получить позиции:', e.message);
+        }
+
+        try {
+            // Получаем открытые ордера
+            openOrders = await exchangeInstance.fetchOpenOrders();
+        } catch (e) {
+            console.log('Не удалось получить открытые ордера:', e.message);
+        }
+
+        res.json({
+            success: true,
+            exchange: exchangeId,
+            positions: positions,
+            openOrders: openOrders,
+            count: {
+                positions: positions.length,
+                orders: openOrders.length
+            },
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка получения позиций:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/exchange/trades/:email/:exchangeId', async (req, res) => {
+    const { email, exchangeId } = req.params;
+    const { symbol, limit = 50 } = req.query;
+
+    try {
+        const { data: user } = await supabase
+            .from('users')
+            .select('exchanges')
+            .eq('email', email)
+            .single();
+
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const exchange = user.exchanges?.find(ex => ex.id === exchangeId);
+        if (!exchange || !exchange.api_key || !exchange.secret_key) {
+            return res.status(404).json({ error: 'Биржа не найдена или не настроена' });
+        }
+
+        const secretKey = Buffer.from(exchange.secret_key, 'base64').toString();
+        const exchangeInstance = await getExchangeInstance(exchangeId, exchange.api_key, secretKey);
+
+        let trades = [];
+        try {
+            if (symbol) {
+                trades = await exchangeInstance.fetchMyTrades(symbol, undefined, parseInt(limit));
+            } else {
+                // Если символ не указан, получаем все сделки (может быть медленно)
+                const markets = await exchangeInstance.loadMarkets();
+                const symbols = Object.keys(markets).slice(0, 5);
+                for (const sym of symbols) {
+                    try {
+                        const t = await exchangeInstance.fetchMyTrades(sym, undefined, 10);
+                        trades = trades.concat(t);
+                    } catch (e) {}
+                }
+                trades = trades.slice(0, parseInt(limit));
+            }
+        } catch (e) {
+            console.log('Не удалось получить историю сделок:', e.message);
+        }
+
+        res.json({
+            success: true,
+            exchange: exchangeId,
+            trades: trades,
+            count: trades.length,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка получения истории сделок:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/exchange/trade', async (req, res) => {
+    const { email, exchangeId, symbol, side, amount, price, type = 'limit' } = req.body;
+
+    if (!email || !exchangeId || !symbol || !side || !amount) {
+        return res.status(400).json({ error: 'Все поля обязательны' });
+    }
+
+    try {
+        const { data: user } = await supabase
+            .from('users')
+            .select('id, exchanges')
+            .eq('email', email)
+            .single();
+
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const exchange = user.exchanges?.find(ex => ex.id === exchangeId);
+        if (!exchange || !exchange.api_key || !exchange.secret_key) {
+            return res.status(404).json({ error: 'Биржа не найдена или не настроена' });
+        }
+
+        const secretKey = Buffer.from(exchange.secret_key, 'base64').toString();
+        const exchangeInstance = await getExchangeInstance(exchangeId, exchange.api_key, secretKey);
+
+        // Проверяем баланс перед торговлей
+        const balance = await exchangeInstance.fetchBalance();
+        const freeAmount = balance.free[symbol.split('/')[0]] || 0;
+        
+        if (side === 'buy' && freeAmount < amount) {
+            return res.status(400).json({ 
+                error: 'Недостаточно средств',
+                available: freeAmount,
+                required: amount
+            });
+        }
+
+        const order = await exchangeInstance.createOrder(
+            symbol,
+            type,
+            side,
+            amount,
+            price || undefined
+        );
+
+        // Сохраняем сделку в БД
+        await supabase
+            .from('trades')
+            .insert({
+                user_id: user.id,
+                exchange_id: exchangeId,
+                symbol: symbol,
+                side: side,
+                type: type,
+                amount: amount,
+                price: order.price || price || 0,
+                order_id: order.id,
+                status: order.status || 'open',
+                created_at: new Date(),
+                raw_order: order
+            });
+
+        res.json({
+            success: true,
+            order: order,
+            message: `✅ Ордер ${side} ${symbol} создан`,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка торговли:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/exchange/trade/:email/:exchangeId/:orderId', async (req, res) => {
+    const { email, exchangeId, orderId } = req.params;
+    const { symbol } = req.query;
+
+    if (!symbol) {
+        return res.status(400).json({ error: 'Необходимо указать символ' });
+    }
+
+    try {
+        const { data: user } = await supabase
+            .from('users')
+            .select('exchanges')
+            .eq('email', email)
+            .single();
+
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const exchange = user.exchanges?.find(ex => ex.id === exchangeId);
+        if (!exchange || !exchange.api_key || !exchange.secret_key) {
+            return res.status(404).json({ error: 'Биржа не найдена или не настроена' });
+        }
+
+        const secretKey = Buffer.from(exchange.secret_key, 'base64').toString();
+        const exchangeInstance = await getExchangeInstance(exchangeId, exchange.api_key, secretKey);
+
+        const result = await exchangeInstance.cancelOrder(orderId, symbol);
+
+        // Обновляем статус в БД
+        await supabase
+            .from('trades')
+            .update({ 
+                status: 'canceled',
+                updated_at: new Date()
+            })
+            .eq('order_id', orderId);
+
+        res.json({
+            success: true,
+            message: `✅ Ордер ${orderId} отменен`,
+            result: result,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка отмены ордера:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 app.get('/api/public/market-overview', async (req, res) => {
     try {
