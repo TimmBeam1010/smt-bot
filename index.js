@@ -1067,6 +1067,185 @@ app.get('/api/market-data', async (req, res) => {
     }
 });
 
+// ============================================
+//  ПУБЛИЧНЫЕ ЭНДПОИНТЫ ДЛЯ ГЛАВНОЙ СТРАНИЦЫ
+// ============================================
+
+app.get('/api/public/market-overview', async (req, res) => {
+    try {
+        const [fgRes, priceRes, capRes, changeRes] = await Promise.all([
+            axios.get('https://api.alternative.me/fng/?limit=1', { timeout: 5000 }),
+            axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd', { timeout: 5000 }),
+            axios.get('https://api.coingecko.com/api/v3/global', { timeout: 5000 }),
+            axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true', { timeout: 5000 })
+        ]);
+
+        const fearGreed = parseInt(fgRes.data.data[0].value) || 50;
+        const btcPrice = priceRes.data.bitcoin?.usd || 0;
+        const ethPrice = priceRes.data.ethereum?.usd || 0;
+        const totalCap = capRes.data.data?.total_market_cap?.usd || 0;
+        const btcDominance = capRes.data.data?.market_cap_percentage?.btc || 0;
+        const btcChange24h = changeRes.data.bitcoin?.usd_24h_change || 0;
+        const ethChange24h = changeRes.data.ethereum?.usd_24h_change || 0;
+
+        res.json({
+            fearGreed,
+            btcPrice,
+            ethPrice,
+            totalCap,
+            btcDominance,
+            btcChange24h,
+            ethChange24h
+        });
+    } catch (error) {
+        console.error('❌ Ошибка рыночных индикаторов:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/public/top-coins', async (req, res) => {
+    try {
+        const resp = await axios.get(
+            'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=true&price_change_percentage=24h',
+            { timeout: 8000 }
+        );
+        res.json(resp.data);
+    } catch (error) {
+        console.error('❌ Ошибка топ-монет:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/public/technical-indicators', async (req, res) => {
+    try {
+        const resp = await axios.get(
+            'https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=30',
+            { timeout: 8000 }
+        );
+        
+        const prices = resp.data.map(item => item[4]);
+        const lastPrices = prices.slice(-20);
+
+        function calcRSI(prices, period = 14) {
+            if (prices.length < period + 1) return null;
+            const deltas = [];
+            for (let i = 1; i < prices.length; i++) {
+                deltas.push(prices[i] - prices[i - 1]);
+            }
+            const gains = deltas.map(d => d > 0 ? d : 0);
+            const losses = deltas.map(d => d < 0 ? -d : 0);
+            const avgGain = gains.slice(-period).reduce((a, b) => a + b, 0) / period;
+            const avgLoss = losses.slice(-period).reduce((a, b) => a + b, 0) / period;
+            if (avgLoss === 0) return 100;
+            const rs = avgGain / avgLoss;
+            return 100 - (100 / (1 + rs));
+        }
+
+        function calcMACD(prices, fast = 12, slow = 26, signal = 9) {
+            if (prices.length < slow + signal) return null;
+            const emaFast = prices.slice(-fast).reduce((a, b) => a + b, 0) / fast;
+            const emaSlow = prices.slice(-slow).reduce((a, b) => a + b, 0) / slow;
+            const macdLine = emaFast - emaSlow;
+            const signalLine = prices.slice(-signal).reduce((a, b) => a + b, 0) / signal;
+            return {
+                macd: macdLine,
+                signal: signalLine,
+                histogram: macdLine - signalLine
+            };
+        }
+
+        function calcBollinger(prices, period = 20, stdDev = 2) {
+            if (prices.length < period) return null;
+            const slice = prices.slice(-period);
+            const mean = slice.reduce((a, b) => a + b, 0) / period;
+            const variance = slice.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / period;
+            const std = Math.sqrt(variance);
+            return {
+                upper: mean + stdDev * std,
+                middle: mean,
+                lower: mean - stdDev * std,
+                bandwidth: (2 * stdDev * std / mean) * 100
+            };
+        }
+
+        const rsi = calcRSI(prices);
+        const macd = calcMACD(prices);
+        const bollinger = calcBollinger(prices);
+        const volatility = (Math.max(...lastPrices) - Math.min(...lastPrices)) / lastPrices.reduce((a, b) => a + b, 0) * 100;
+
+        res.json({
+            rsi: rsi !== null ? parseFloat(rsi.toFixed(1)) : null,
+            macd_histogram: macd !== null ? parseFloat(macd.histogram.toFixed(6)) : null,
+            bollinger_band: bollinger !== null ? parseFloat(bollinger.bandwidth.toFixed(2)) : null,
+            volatility: parseFloat(volatility.toFixed(2))
+        });
+    } catch (error) {
+        console.error('❌ Ошибка технических индикаторов:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/public/trending', async (req, res) => {
+    try {
+        const resp = await axios.get(
+            'https://api.coingecko.com/api/v3/search/trending',
+            { timeout: 5000 }
+        );
+        res.json({ coins: resp.data.coins || [] });
+    } catch (error) {
+        console.error('❌ Ошибка трендовых монет:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/public/news', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+        
+        try {
+            const resp = await axios.get(
+                `https://cryptocurrency.cv/api/news?limit=${limit}&language=en`,
+                { timeout: 5000 }
+            );
+            if (resp.data && resp.data.length > 0) {
+                return res.json({ 
+                    news: resp.data.map(item => ({
+                        title: item.title,
+                        url: item.url,
+                        source: item.source || 'Crypto',
+                        published_at: item.published_at || new Date().toISOString()
+                    }))
+                });
+            }
+        } catch (e) {
+            console.log('cryptocurrency.cv недоступен, пробуем RSS');
+        }
+
+        const rssResp = await axios.get(
+            'https://cointelegraph.com/rss',
+            { timeout: 5000 }
+        );
+        
+        const items = rssResp.data.match(/<item>[\s\S]*?<\/item>/g) || [];
+        const news = items.slice(0, limit).map(item => {
+            const title = item.match(/<title>(.*?)<\/title>/)?.[1] || '';
+            const link = item.match(/<link>(.*?)<\/link>/)?.[1] || '';
+            const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
+            return {
+                title: title.replace(/<!\[CDATA\[|\]\]>/g, '').trim(),
+                url: link,
+                source: 'CoinTelegraph',
+                published_at: new Date(pubDate).toISOString()
+            };
+        });
+
+        res.json({ news });
+    } catch (error) {
+        console.error('❌ Ошибка новостей:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 const SYMBOLS = ['BONK-USDT', 'DOGS-USDT', 'PEPE-USDT', 'SOL-USDT', 'XRP-USDT'];
 const priceHistory = {};
 
