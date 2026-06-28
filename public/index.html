@@ -82,7 +82,6 @@
         .pnl-header.visible {
             display: flex;
         }
-        /* --- --- */
         .btn-primary,
         .btn-outline {
             padding: 8px 16px;
@@ -109,6 +108,21 @@
         .btn-outline:hover {
             background: #4f46e5;
         }
+        /* --- Блоки для авторизованных --- */
+        #authContent {
+            display: none;
+        }
+        #authContent.visible {
+            display: block;
+        }
+        /* --- Блоки для неавторизованных --- */
+        #unauthContent {
+            display: block;
+        }
+        #unauthContent.hidden {
+            display: none;
+        }
+
         .hero {
             display: flex;
             align-items: center;
@@ -342,41 +356,98 @@
                 <a href="#features">Функции</a>
                 <a href="#pricing">Тарифы</a>
                 <div class="nav-actions">
-                    <!-- PNL в шапке (скрыт по умолчанию) -->
                     <a href="/dashboard.html" class="pnl-header" id="pnlHeader">
                         <span>📊</span>
                         <span class="pnl-value" id="pnlHeaderValue">--</span>
                     </a>
-                    <!-- Кнопка "Войти" (будет скрыта для авторизованных) -->
                     <a href="/login.html" class="btn-outline" id="loginBtn">Войти</a>
-                    <!-- Кнопка "Начать" (будет скрыта для авторизованных) -->
                     <a href="/login.html" class="btn-primary" id="startBtn">Начать</a>
                 </div>
             </div>
         </header>
 
-        <!-- Hero -->
-        <section class="hero">
-            <div class="hero-text">
-                <h1>Торгуй <span>умнее</span> с SMT Bot</h1>
-                <p>Автоматический помощник для криптотрейдинга на основе RSI, MACD, Smart Money и анализа маркет-мейкера.</p>
-                <a href="/login.html" class="btn-primary" id="heroStartBtn">Начать бесплатно</a>
-            </div>
-            <div class="hero-card">
-                <div class="icon">📈</div>
-                <h3>Пример сигнала</h3>
-                <div class="signal-example">
-                    🟢 <strong>BONK-USDT</strong> LONG<br>
-                    💰 Вход: 0.00000452<br>
-                    🎯 Уверенность: high<br>
-                    📊 RSI: 28.5
+        <!-- КОНТЕНТ ДЛЯ НЕАВТОРИЗОВАННЫХ -->
+        <div id="unauthContent">
+            <section class="hero">
+                <div class="hero-text">
+                    <h1>Торгуй <span>умнее</span> с SMT Bot</h1>
+                    <p>Автоматический помощник для криптотрейдинга на основе RSI, MACD, Smart Money и анализа маркет-мейкера.</p>
+                    <a href="/login.html" class="btn-primary">Начать бесплатно</a>
                 </div>
-            </div>
-        </section>
+                <div class="hero-card">
+                    <div class="icon">📈</div>
+                    <h3>Пример сигнала</h3>
+                    <div class="signal-example">
+                        🟢 <strong>BONK-USDT</strong> LONG<br>
+                        💰 Вход: 0.00000452<br>
+                        🎯 Уверенность: high<br>
+                        📊 RSI: 28.5
+                    </div>
+                </div>
+            </section>
 
-        <!-- Дашборд (индикаторы) -->
-        <section id="dashboard">
-            <div class="dashboard-grid" id="dashGrid">
+            <section id="features" class="features">
+                <div class="feature-card">
+                    <h3>📊 Технический анализ</h3>
+                    <p>RSI, MACD, Bollinger Bands, ADX, Stochastic — полный набор индикаторов.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🧠 Smart Money</h3>
+                    <p>Анализ VWAP, ликвидационных уровней и дивергенций.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🛡️ Управление риском</h3>
+                    <p>Адаптивный риск, расчёт позиции и 4 профиля торговли.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>📱 Личный кабинет</h3>
+                    <p>Настройки, история сигналов, уведомления — всё в одном месте.</p>
+                </div>
+            </section>
+
+            <section id="pricing">
+                <h2 style="text-align:center;font-size:clamp(24px,3vw,32px);margin-bottom:24px;">💰 Выбери тариф</h2>
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <h3>🛡️ Базовый</h3>
+                        <div class="price">1 500 ₽</div>
+                        <ul>
+                            <li>✅ 10 сигналов/день</li>
+                            <li>✅ 10 монет</li>
+                            <li>✅ 2 стратегии</li>
+                        </ul>
+                        <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
+                    </div>
+                    <div class="pricing-card highlight">
+                        <h3>⚖️ Стандарт</h3>
+                        <div class="price">3 500 ₽</div>
+                        <ul>
+                            <li>✅ 30 сигналов/день</li>
+                            <li>✅ 30 монет</li>
+                            <li>✅ 4 стратегии</li>
+                            <li>✅ Smart Money</li>
+                        </ul>
+                        <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
+                    </div>
+                    <div class="pricing-card">
+                        <h3>⚡ Про</h3>
+                        <div class="price">7 000 ₽</div>
+                        <ul>
+                            <li>✅ ∞ сигналы</li>
+                            <li>✅ ∞ монеты</li>
+                            <li>✅ Все стратегии</li>
+                            <li>✅ Smart Money</li>
+                            <li>✅ Автоторговля</li>
+                        </ul>
+                        <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- КОНТЕНТ ДЛЯ АВТОРИЗОВАННЫХ -->
+        <div id="authContent">
+            <div class="dashboard-grid">
                 <div class="dash-card">
                     <div class="label">😨 Fear & Greed</div>
                     <div class="fear-gauge">
@@ -394,73 +465,12 @@
                     <div class="value" id="btcPrice">--</div>
                 </div>
             </div>
-        </section>
 
-        <!-- Новости -->
-        <section>
-            <h2 style="text-align:center;font-size:clamp(24px,3vw,32px);margin-bottom:16px;">📰 Новости рынка</h2>
-            <div id="newsContainer"><p style="color:#94a3b8;text-align:center;">Загрузка...</p></div>
-        </section>
-
-        <!-- Features -->
-        <section id="features" class="features">
-            <div class="feature-card">
-                <h3>📊 Технический анализ</h3>
-                <p>RSI, MACD, Bollinger Bands, ADX, Stochastic — полный набор индикаторов.</p>
-            </div>
-            <div class="feature-card">
-                <h3>🧠 Smart Money</h3>
-                <p>Анализ VWAP, ликвидационных уровней и дивергенций.</p>
-            </div>
-            <div class="feature-card">
-                <h3>🛡️ Управление риском</h3>
-                <p>Адаптивный риск, расчёт позиции и 4 профиля торговли.</p>
-            </div>
-            <div class="feature-card">
-                <h3>📱 Личный кабинет</h3>
-                <p>Настройки, история сигналов, уведомления — всё в одном месте.</p>
-            </div>
-        </section>
-
-        <!-- Тарифы -->
-        <section id="pricing">
-            <h2 style="text-align:center;font-size:clamp(24px,3vw,32px);margin-bottom:24px;">💰 Выбери тариф</h2>
-            <div class="pricing-grid">
-                <div class="pricing-card">
-                    <h3>🛡️ Базовый</h3>
-                    <div class="price">1 500 ₽</div>
-                    <ul>
-                        <li>✅ 10 сигналов/день</li>
-                        <li>✅ 10 монет</li>
-                        <li>✅ 2 стратегии</li>
-                    </ul>
-                    <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
-                </div>
-                <div class="pricing-card highlight">
-                    <h3>⚖️ Стандарт</h3>
-                    <div class="price">3 500 ₽</div>
-                    <ul>
-                        <li>✅ 30 сигналов/день</li>
-                        <li>✅ 30 монет</li>
-                        <li>✅ 4 стратегии</li>
-                        <li>✅ Smart Money</li>
-                    </ul>
-                    <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
-                </div>
-                <div class="pricing-card">
-                    <h3>⚡ Про</h3>
-                    <div class="price">7 000 ₽</div>
-                    <ul>
-                        <li>✅ ∞ сигналы</li>
-                        <li>✅ ∞ монеты</li>
-                        <li>✅ Все стратегии</li>
-                        <li>✅ Smart Money</li>
-                        <li>✅ Автоторговля</li>
-                    </ul>
-                    <a href="/login.html" class="btn-primary" style="display:inline-block;margin-top:16px;width:100%;">Выбрать</a>
-                </div>
-            </div>
-        </section>
+            <section>
+                <h2 style="text-align:center;font-size:clamp(24px,3vw,32px);margin-bottom:16px;">📰 Новости рынка</h2>
+                <div id="newsContainer"><p style="color:#94a3b8;text-align:center;">Загрузка...</p></div>
+            </section>
+        </div>
 
         <footer class="footer">
             <p>© 2026 SMT Bot. Не является финансовой рекомендацией.</p>
@@ -474,7 +484,8 @@
         const pnlHeaderValue = document.getElementById('pnlHeaderValue');
         const loginBtn = document.getElementById('loginBtn');
         const startBtn = document.getElementById('startBtn');
-        const heroStartBtn = document.getElementById('heroStartBtn');
+        const unauthContent = document.getElementById('unauthContent');
+        const authContent = document.getElementById('authContent');
 
         if (user && user.email) {
             // Показываем PNL в шапке
@@ -484,9 +495,9 @@
             loginBtn.style.display = 'none';
             startBtn.style.display = 'none';
 
-            // Меняем кнопку "Начать бесплатно" в Hero на "Кабинет"
-            heroStartBtn.textContent = '👤 Кабинет';
-            heroStartBtn.href = '/dashboard.html';
+            // Показываем авторизованный контент, скрываем неавторизованный
+            authContent.classList.add('visible');
+            unauthContent.classList.add('hidden');
 
             // Загружаем PNL
             fetch(`/api/user/${user.email}`)
@@ -504,10 +515,18 @@
                 .catch(() => {
                     pnlHeaderValue.textContent = '--';
                 });
+
+            // Загружаем дашборд
+            loadDashboard();
+            loadNews();
         } else {
             pnlHeader.classList.remove('visible');
             loginBtn.style.display = 'inline-block';
             startBtn.style.display = 'inline-block';
+            authContent.classList.remove('visible');
+            unauthContent.classList.remove('hidden');
+            // Новости для неавторизованных (опционально)
+            loadNews();
         }
 
         // ===== НОВОСТИ =====
@@ -554,8 +573,11 @@
             }
         }
 
-        loadNews();
-        loadDashboard();
+        // Если пользователь уже авторизован, подгружаем данные
+        if (user && user.email) {
+            loadDashboard();
+            loadNews();
+        }
     </script>
 </body>
 </html>
