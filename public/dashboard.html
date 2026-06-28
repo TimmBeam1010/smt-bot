@@ -241,6 +241,22 @@
         .btn-delete:hover {
             background: #991b1b;
         }
+        .btn-outline {
+            background: transparent;
+            color: #4f46e5;
+            border: 1px solid #4f46e5;
+            padding: 4px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-outline:hover {
+            background: #4f46e5;
+            color: #fff;
+        }
         .empty {
             color: #94a3b8;
             text-align: center;
@@ -305,6 +321,39 @@
             gap: 4px;
             flex-wrap: wrap;
         }
+        .signal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .signal-item:last-child {
+            border-bottom: none;
+        }
+        .signal-item .left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .signal-item .right {
+            text-align: right;
+        }
+        .signal-time {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        .view-all-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .view-all-link:hover {
+            text-decoration: underline;
+        }
         @media (max-width: 600px) {
             .header {
                 flex-direction: column;
@@ -336,6 +385,17 @@
             .bot-actions {
                 justify-content: center;
             }
+            .signal-item {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .signal-item .right {
+                text-align: center;
+            }
+            .signal-item .left {
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -346,9 +406,7 @@
         <div class="nav">
             <span class="user-email" id="userEmail"></span>
             <a href="/index.html">Главная</a>
-            <a href="/admin.html">Админка</a>
-            <a href="/signals.html">Сигналы</a>
-            <a href="/chat.html">Чат</a>
+            <a href="/trades.html">История сделок</a>
             <button class="logout-btn" onclick="logout()">Выйти</button>
             <span class="ws-status">
                 <span class="dot disconnected" id="wsDot"></span>
@@ -399,14 +457,23 @@
 
     <div class="card">
         <div class="card-header">
-            <h3>📈 Открытые позиции (<span id="openCount">0</span>)</h3>
+            <h3>📈 Открытые позиции (последние 3)</h3>
+            <a href="/trades.html" class="view-all-link">Открыть все →</a>
         </div>
         <div id="openPositions"></div>
     </div>
 
     <div class="card">
         <div class="card-header">
-            <h3>📜 История сделок</h3>
+            <h3>📡 Последние сигналы (5)</h3>
+            <a href="/signals.html" class="view-all-link">Перейти к сигналам →</a>
+        </div>
+        <div id="recentSignals"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>📜 Последние сделки</h3>
         </div>
         <div id="tradeHistory"></div>
     </div>
@@ -545,6 +612,40 @@
                 }
             };
 
+            async function loadRecentSignals() {
+                try {
+                    const resp = await fetch(`/api/signals/user/${userEmail}`);
+                    const data = await resp.json();
+                    const signals = data.signals || [];
+                    renderRecentSignals(signals.slice(0, 5));
+                } catch (e) {
+                    console.error('Ошибка загрузки сигналов:', e);
+                    document.getElementById('recentSignals').innerHTML = '<div class="empty">Нет сигналов</div>';
+                }
+            }
+
+            function renderRecentSignals(signals) {
+                const container = document.getElementById('recentSignals');
+                if (!signals || signals.length === 0) {
+                    container.innerHTML = '<div class="empty">Нет сигналов</div>';
+                    return;
+                }
+
+                container.innerHTML = signals.map(s => `
+                    <div class="signal-item">
+                        <div class="left">
+                            <strong>${s.symbol || '--'}</strong>
+                            <span class="${s.side === 'LONG' ? 'side-long' : 'side-short'}">${s.side || '--'}</span>
+                            <span class="badge ${s.checked ? 'badge-closed' : 'badge-open'}">${s.checked ? 'проверен' : 'активен'}</span>
+                        </div>
+                        <div class="right">
+                            <div>$${(s.entry_price || 0).toFixed(4)}</div>
+                            <div class="signal-time">${s.created_at ? new Date(s.created_at).toLocaleString() : '--'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
             function connectWebSocket() {
                 if (!userEmail) return;
                 
@@ -565,6 +666,7 @@
                     document.getElementById('wsLabel').textContent = 'подключено';
                     updatePnl();
                     loadBots();
+                    loadRecentSignals();
                 };
                 
                 ws.onmessage = (event) => {
@@ -631,13 +733,14 @@
                 document.getElementById('winCount').textContent = trades.wins || 0;
                 document.getElementById('lossCount').textContent = trades.losses || 0;
                 document.getElementById('winRate').textContent = (trades.winRate || 0) + '%';
-                document.getElementById('openCount').textContent = trades.open || 0;
 
+                // Открытые позиции (только 3)
                 const positionsContainer = document.getElementById('openPositions');
-                if (!positions || positions.length === 0) {
+                const displayPositions = positions.slice(0, 3);
+                if (!displayPositions || displayPositions.length === 0) {
                     positionsContainer.innerHTML = '<div class="empty">Нет открытых позиций</div>';
                 } else {
-                    positionsContainer.innerHTML = positions.map(pos => `
+                    positionsContainer.innerHTML = displayPositions.map(pos => `
                         <div class="trade-item">
                             <div class="left">
                                 <strong>${pos.symbol || '--'}</strong>
@@ -657,8 +760,9 @@
                     `).join('');
                 }
 
+                // История сделок (последние 5)
                 const historyContainer = document.getElementById('tradeHistory');
-                const recentTrades = data.recentTrades || [];
+                const recentTrades = (data.recentTrades || []).slice(0, 5);
                 if (!recentTrades || recentTrades.length === 0) {
                     historyContainer.innerHTML = '<div class="empty">Нет завершенных сделок</div>';
                 } else {
@@ -727,6 +831,7 @@
             }, 5000);
 
             loadBots();
+            loadRecentSignals();
 
         })();
     </script>
