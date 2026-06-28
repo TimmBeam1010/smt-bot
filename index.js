@@ -576,8 +576,68 @@ app.get('/api/demo/:userId', async (req, res) => {
 app.post('/api/demo/action', async (req, res) => {
     const { userId, action } = req.body;
     // Действия теперь управляются через bots в таблице users
-    // Логика остаётся на фронтенде
     res.json({ ok: true });
+});
+
+// ============================================
+//  РУЧНОЕ ОТКРЫТИЕ ПОЗИЦИИ
+// ============================================
+
+app.post('/api/trade/open-manual', async (req, res) => {
+    const { userId, signalId, bots } = req.body;
+    if (!userId || !signalId || !bots || bots.length === 0) {
+        return res.status(400).json({ error: 'Недостаточно данных' });
+    }
+
+    try {
+        const { data: signal, error: signalError } = await supabase
+            .from('signals')
+            .select('*')
+            .eq('id', signalId)
+            .single();
+
+        if (signalError || !signal) {
+            return res.status(404).json({ error: 'Сигнал не найден' });
+        }
+
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id, bots')
+            .eq('email', userId)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const results = [];
+
+        for (const bot of bots) {
+            if (bot.exchange === 'demo') {
+                const balance = await getDemoBalance(user.id);
+                const size = Math.min(balance.balance * 0.05, 100);
+                const position = await openDemoPosition(
+                    user.id,
+                    signal.symbol,
+                    signal.side,
+                    signal.entry_price,
+                    signal.stop_loss || signal.entry_price * 0.97,
+                    signal.take_profit || signal.entry_price * 1.05,
+                    size
+                );
+                results.push({ bot: 'demo', position });
+            } else {
+                // Реальная торговля (заглушка)
+                results.push({ bot: bot.exchange, status: 'real_trade_not_implemented' });
+            }
+        }
+
+        res.json({ success: true, results });
+
+    } catch (err) {
+        console.error('Ошибка ручного открытия:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // ============================================
@@ -727,7 +787,7 @@ app.get('/api/chat/export', async (req, res) => {
 });
 
 // ============================================
-//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА (С ДЕМО-БД)
+//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА
 // ============================================
 
 const SYMBOLS = ['BONK-USDT', 'DOGS-USDT', 'PEPE-USDT', 'SOL-USDT', 'XRP-USDT'];
@@ -756,7 +816,6 @@ cron.schedule('*/1 * * * *', async () => {
                 if (signal) {
                     console.log(`📈 СИГНАЛ: ${signal.symbol} ${signal.side} (${signal.confidence})`);
 
-                    // Проверяем, есть ли активные боты у пользователя
                     const { data: users, error: userError } = await supabase
                         .from('users')
                         .select('id, bots')
@@ -772,7 +831,6 @@ cron.schedule('*/1 * * * *', async () => {
                         }
                     }
 
-                    // Сохраняем сигнал в БД (для первого пользователя)
                     try {
                         const { data: users, error: userError } = await supabase
                             .from('users')
@@ -806,7 +864,7 @@ cron.schedule('*/1 * * * *', async () => {
                         console.error('❌ Ошибка БД:', dbError.message);
                     }
 
-                    // === ДЕМО-ТОРГОВЛЯ ПО СИГНАЛУ (С БД) ===
+                    // === ДЕМО-ТОРГОВЛЯ ===
                     try {
                         const { data: user } = await supabase
                             .from('users')
@@ -850,7 +908,7 @@ cron.schedule('*/1 * * * *', async () => {
             }
         }
 
-        // === ПРИНУДИТЕЛЬНЫЙ ТЕСТОВЫЙ СИГНАЛ (ТОЛЬКО ОДИН РАЗ) ===
+        // === ТЕСТОВЫЙ СИГНАЛ ===
         try {
             const { data: user } = await supabase
                 .from('users')
@@ -871,7 +929,6 @@ cron.schedule('*/1 * * * *', async () => {
                 const bots = user.bots || [];
                 const hasDemoBot = bots.some(b => b.exchange === 'demo' && b.active === true && b.paused !== true);
 
-                // Проверяем, был ли уже открыт тестовый сигнал (храним в сессии)
                 if (!hasOpen && hasDemoBot && balance.balance >= 50) {
                     const testPrice = 0.00000420;
                     const testStop = 0.00000410;
@@ -887,7 +944,7 @@ cron.schedule('*/1 * * * *', async () => {
                         testProfit,
                         testSize
                     );
-                    console.log('🧪 ДЕМО: Тестовая позиция BONK-USDT LONG открыта (принудительно, один раз)');
+                    console.log('🧪 ДЕМО: Тестовая позиция BONK-USDT LONG открыта');
                 }
             }
         } catch (testError) {
