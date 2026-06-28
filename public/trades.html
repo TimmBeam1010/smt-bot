@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📜 SMT Bot — История сделок</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #2d3748;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        .logo span {
+            color: #fff;
+        }
+        .nav {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav a:hover {
+            color: #fff;
+            background: #1a1f2e;
+        }
+        .nav .user-email {
+            color: #4f46e5;
+            font-size: 14px;
+        }
+        .logout-btn {
+            background: #1a1f2e;
+            color: #94a3b8;
+            border: 1px solid #2d3748;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover {
+            background: #2d3748;
+            color: #fff;
+        }
+        .card {
+            background: #1a1f2e;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #2d3748;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .card-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 8px 20px;
+            background: #0a0e17;
+            color: #94a3b8;
+            border: 1px solid #2d3748;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover {
+            color: #fff;
+            border-color: #4f46e5;
+        }
+        .tab-btn.active {
+            background: #4f46e5;
+            color: #fff;
+            border-color: #4f46e5;
+        }
+        .filter-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .filter-group label {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .filter-btn {
+            padding: 6px 16px;
+            background: #0a0e17;
+            color: #94a3b8;
+            border: 1px solid #2d3748;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover {
+            color: #fff;
+            border-color: #4f46e5;
+        }
+        .filter-btn.active {
+            background: #4f46e5;
+            color: #fff;
+            border-color: #4f46e5;
+        }
+        .trade-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .trade-item:last-child {
+            border-bottom: none;
+        }
+        .trade-item .left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .trade-item .right {
+            text-align: right;
+        }
+        .side-long { color: #10b981; }
+        .side-short { color: #ef4444; }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-open {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .badge-closed {
+            background: #1e293b;
+            color: #94a3b8;
+        }
+        .positive { color: #10b981; }
+        .negative { color: #ef4444; }
+        .neutral { color: #f59e0b; }
+        .empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 40px;
+            font-size: 16px;
+        }
+        .trade-time {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        .btn-close {
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        .btn-close:hover {
+            background: #dc2626;
+        }
+        .back-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .stats-row .stat {
+            background: #0a0e17;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stats-row .stat .value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .stats-row .stat .label {
+            color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .nav {
+                justify-content: center;
+            }
+            .trade-item {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .trade-item .right {
+                text-align: center;
+            }
+            .trade-item .left {
+                justify-content: center;
+            }
+            .tabs {
+                justify-content: center;
+            }
+            .filter-group {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">SMT <span>Bot</span></div>
+        <div class="nav">
+            <span class="user-email" id="userEmail"></span>
+            <a href="/dashboard.html">📊 ЛК</a>
+            <a href="/index.html">Главная</a>
+            <button class="logout-btn" onclick="logout()">Выйти</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>📜 История сделок</h2>
+            <a href="/dashboard.html" class="back-link">← Назад в ЛК</a>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="open" onclick="switchTab('open')">🟢 Активные</button>
+            <button class="tab-btn" data-tab="closed" onclick="switchTab('closed')">🔴 Закрытые</button>
+        </div>
+
+        <div class="stats-row" id="statsRow">
+            <div class="stat">
+                <div class="value" id="statTotal">0</div>
+                <div class="label">Всего</div>
+            </div>
+            <div class="stat">
+                <div class="value positive" id="statWin">0</div>
+                <div class="label">Прибыль</div>
+            </div>
+            <div class="stat">
+                <div class="value negative" id="statLoss">0</div>
+                <div class="label">Убыток</div>
+            </div>
+            <div class="stat">
+                <div class="value" id="statPnl">$0.00</div>
+                <div class="label">Общий PNL</div>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <label>Сортировка:</label>
+            <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">Все</button>
+            <button class="filter-btn" data-filter="profit" onclick="setFilter('profit')">📈 Прибыль</button>
+            <button class="filter-btn" data-filter="loss" onclick="setFilter('loss')">📉 Убыток</button>
+        </div>
+
+        <div id="tradesContainer">
+            <div class="empty">Загрузка...</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const userEmail = localStorage.getItem('smt_user_email');
+            if (!userEmail) {
+                window.location.replace('/login.html');
+                return;
+            }
+
+            document.getElementById('userEmail').textContent = userEmail;
+
+            let currentTab = 'open';
+            let currentFilter = 'all';
+            let allTrades = [];
+            let allPositions = [];
+
+            async function loadTrades() {
+                try {
+                    const resp = await fetch(`/api/demo/${userEmail}`);
+                    const result = await resp.json();
+                    
+                    if (result.ok && result.data) {
+                        allPositions = result.data.positions || [];
+                        allTrades = result.data.recentTrades || [];
+                        renderTrades();
+                    } else {
+                        allPositions = [];
+                        allTrades = [];
+                        renderTrades();
+                    }
+                } catch (e) {
+                    console.error('Ошибка загрузки сделок:', e);
+                    allPositions = [];
+                    allTrades = [];
+                    renderTrades();
+                }
+            }
+
+            function renderTrades() {
+                let displayTrades = [];
+                let stats = { total: 0, win: 0, loss: 0, pnl: 0 };
+
+                if (currentTab === 'open') {
+                    displayTrades = allPositions;
+                    stats.total = displayTrades.length;
+                    stats.win = displayTrades.filter(t => t.pnl > 0).length;
+                    stats.loss = displayTrades.filter(t => t.pnl < 0).length;
+                    stats.pnl = displayTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+                } else {
+                    displayTrades = allTrades;
+                    stats.total = displayTrades.length;
+                    stats.win = displayTrades.filter(t => t.pnl > 0).length;
+                    stats.loss = displayTrades.filter(t => t.pnl < 0).length;
+                    stats.pnl = displayTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+                }
+
+                // Фильтр
+                if (currentFilter === 'profit') {
+                    displayTrades = displayTrades.filter(t => t.pnl > 0);
+                } else if (currentFilter === 'loss') {
+                    displayTrades = displayTrades.filter(t => t.pnl < 0);
+                }
+
+                // Статистика
+                document.getElementById('statTotal').textContent = stats.total;
+                document.getElementById('statWin').textContent = stats.win;
+                document.getElementById('statLoss').textContent = stats.loss;
+                const pnlEl = document.getElementById('statPnl');
+                pnlEl.textContent = `${stats.pnl >= 0 ? '+' : ''}$${stats.pnl.toFixed(2)}`;
+                pnlEl.className = 'value ' + (stats.pnl > 0.01 ? 'positive' : stats.pnl < -0.01 ? 'negative' : 'neutral');
+
+                // Отображение
+                const container = document.getElementById('tradesContainer');
+                if (!displayTrades || displayTrades.length === 0) {
+                    container.innerHTML = `<div class="empty">Нет ${currentTab === 'open' ? 'открытых' : 'закрытых'} сделок</div>`;
+                    return;
+                }
+
+                container.innerHTML = displayTrades.map(t => {
+                    const isOpen = currentTab === 'open';
+                    const pnl = t.pnl || 0;
+                    const pnlPercent = t.pnl_percent || 0;
+                    const entryPrice = t.entry_price || 0;
+                    const currentPrice = t.currentPrice || t.close_price || 0;
+                    
+                    return `
+                        <div class="trade-item">
+                            <div class="left">
+                                <strong>${t.symbol || '--'}</strong>
+                                <span class="${t.side === 'LONG' ? 'side-long' : 'side-short'}">${t.side || '--'}</span>
+                                <span style="color:#94a3b8;font-size:12px;">${(t.size || 0).toFixed(2)} USDT</span>
+                                <span class="badge ${isOpen ? 'badge-open' : 'badge-closed'}">${isOpen ? 'открыта' : 'закрыта'}</span>
+                                <div class="trade-time">
+                                    ${isOpen ? '🟢 Открыта: ' + (t.open_time ? new Date(t.open_time).toLocaleString() : '--') : ''}
+                                    ${!isOpen ? '🔴 Закрыта: ' + (t.close_time ? new Date(t.close_time).toLocaleString() : '--') : ''}
+                                    ${isOpen && t.open_time ? ' | ' : ''}
+                                    ${isOpen && t.open_time ? new Date(t.open_time).toLocaleString() : ''}
+                                </div>
+                            </div>
+                            <div class="right">
+                                <div style="font-size:13px;color:#94a3b8;">
+                                    Entry: $${entryPrice.toFixed(4)} → ${isOpen ? 'Current' : 'Close'}: $${currentPrice.toFixed(4)}
+                                </div>
+                                <div class="${pnl > 0.01 ? 'positive' : pnl < -0.01 ? 'negative' : 'neutral'}">
+                                    ${pnl > 0 ? '+' : ''}$${pnl.toFixed(2)} (${pnlPercent.toFixed(1)}%)
+                                </div>
+                                ${isOpen ? `<button class="btn-close" onclick="closePosition('${t.id}')" style="margin-top:4px;">Закрыть</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.switchTab = function(tab) {
+                currentTab = tab;
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.tab === tab);
+                });
+                renderTrades();
+            };
+
+            window.setFilter = function(filter) {
+                currentFilter = filter;
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.filter === filter);
+                });
+                renderTrades();
+            };
+
+            window.closePosition = async function(positionId) {
+                if (!confirm('Закрыть эту позицию?')) return;
+                
+                try {
+                    const response = await fetch('/api/trade/close', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ positionId, email: userEmail })
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert(`✅ Позиция закрыта. PNL: $${(result.pnl || 0).toFixed(2)}`);
+                        loadTrades();
+                    } else {
+                        alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                    }
+                } catch (e) {
+                    console.error('Ошибка закрытия:', e);
+                    alert('❌ Ошибка при закрытии позиции');
+                }
+            };
+
+            window.logout = function() {
+                localStorage.removeItem('smt_user_email');
+                window.location.replace('/login.html');
+            };
+
+            loadTrades();
+
+            // Автообновление каждые 10 секунд
+            setInterval(loadTrades, 10000);
+
+        })();
+    </script>
+
+</body>
+</html>
