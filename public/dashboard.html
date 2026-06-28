@@ -186,6 +186,14 @@
             background: #1e293b;
             color: #94a3b8;
         }
+        .badge-connected {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .badge-disconnected {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
         .btn-close {
             background: #ef4444;
             color: #fff;
@@ -354,6 +362,74 @@
         .view-all-link:hover {
             text-decoration: underline;
         }
+        .exchange-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #1a1f2e;
+            flex-wrap: wrap;
+            gap: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .exchange-item:hover {
+            background: #0a0e17;
+            border-radius: 8px;
+        }
+        .exchange-item .left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .exchange-item .right {
+            text-align: right;
+        }
+        .exchange-logo {
+            font-size: 24px;
+        }
+        .exchange-name {
+            font-weight: 600;
+        }
+        .exchange-status {
+            font-size: 12px;
+        }
+        .exchange-arrow {
+            color: #4f46e5;
+            font-size: 18px;
+        }
+        .exchanges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .exchange-card {
+            background: #0a0e17;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #1a1f2e;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .exchange-card:hover {
+            border-color: #4f46e5;
+            transform: translateY(-2px);
+        }
+        .exchange-card .logo {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        .exchange-card .name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .exchange-card .status {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
         @media (max-width: 600px) {
             .header {
                 flex-direction: column;
@@ -396,6 +472,20 @@
             .signal-item .left {
                 justify-content: center;
             }
+            .exchange-item {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .exchange-item .right {
+                text-align: center;
+            }
+            .exchange-item .left {
+                justify-content: center;
+            }
+            .exchanges-grid {
+                grid-template-columns: 1fr 1fr;
+            }
         }
     </style>
 </head>
@@ -407,6 +497,7 @@
             <span class="user-email" id="userEmail"></span>
             <a href="/index.html">Главная</a>
             <a href="/trades.html">История сделок</a>
+            <a href="/exchanges.html">Биржи</a>
             <button class="logout-btn" onclick="logout()">Выйти</button>
             <span class="ws-status">
                 <span class="dot disconnected" id="wsDot"></span>
@@ -445,6 +536,14 @@
                 <div class="value" id="winRate">0%</div>
             </div>
         </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>🏦 Мои биржи</h3>
+            <a href="/exchanges.html" class="view-all-link">Управлять биржами →</a>
+        </div>
+        <div id="exchangesContainer"></div>
     </div>
 
     <div class="card">
@@ -491,6 +590,54 @@
             let ws = null;
             let reconnectAttempts = 0;
             const MAX_RECONNECT = 5;
+
+            async function loadExchanges() {
+                try {
+                    const resp = await fetch(`/api/user/${userEmail}`);
+                    const data = await resp.json();
+                    if (data.user) {
+                        renderExchanges(data.user);
+                    } else {
+                        renderExchanges(null);
+                    }
+                } catch (e) {
+                    console.error('Ошибка загрузки бирж:', e);
+                    renderExchanges(null);
+                }
+            }
+
+            function renderExchanges(user) {
+                const container = document.getElementById('exchangesContainer');
+                const exchanges = user?.exchanges || [];
+                
+                if (!exchanges || exchanges.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty">
+                            Нет подключённых бирж.<br>
+                            <a href="/exchanges.html" style="color:#4f46e5;text-decoration:none;">Подключить биржу →</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = exchanges.map(ex => `
+                    <div class="exchange-item" onclick="window.location.href='/exchanges.html'">
+                        <div class="left">
+                            <span class="exchange-logo">${ex.logo || '🏦'}</span>
+                            <span class="exchange-name">${ex.name || 'Биржа'}</span>
+                            <span class="badge ${ex.connected ? 'badge-connected' : 'badge-disconnected'}">
+                                ${ex.connected ? '✅ Подключена' : '❌ Не подключена'}
+                            </span>
+                        </div>
+                        <div class="right">
+                            <span style="color:#94a3b8;font-size:12px;">
+                                ${ex.api_key ? '🔑 API установлен' : '🔑 API не установлен'}
+                            </span>
+                            <span class="exchange-arrow">›</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
 
             async function loadBots() {
                 try {
@@ -667,6 +814,7 @@
                     updatePnl();
                     loadBots();
                     loadRecentSignals();
+                    loadExchanges();
                 };
                 
                 ws.onmessage = (event) => {
@@ -734,7 +882,6 @@
                 document.getElementById('lossCount').textContent = trades.losses || 0;
                 document.getElementById('winRate').textContent = (trades.winRate || 0) + '%';
 
-                // Открытые позиции (только 3)
                 const positionsContainer = document.getElementById('openPositions');
                 const displayPositions = positions.slice(0, 3);
                 if (!displayPositions || displayPositions.length === 0) {
@@ -760,7 +907,6 @@
                     `).join('');
                 }
 
-                // История сделок (последние 5)
                 const historyContainer = document.getElementById('tradeHistory');
                 const recentTrades = (data.recentTrades || []).slice(0, 5);
                 if (!recentTrades || recentTrades.length === 0) {
@@ -832,6 +978,7 @@
 
             loadBots();
             loadRecentSignals();
+            loadExchanges();
 
         })();
     </script>
