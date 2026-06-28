@@ -5,21 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMT Bot — Сигналы</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-        body {
-            background: #0a0e17;
-            color: #fff;
-            padding: 16px;
-        }
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: #0a0e17; color: #fff; padding: 16px; }
+        .container { max-width: 1100px; margin: 0 auto; }
         header {
             display: flex;
             justify-content: space-between;
@@ -29,22 +17,9 @@
             flex-wrap: wrap;
             gap: 12px;
         }
-        .logo {
-            font-size: clamp(22px, 4vw, 28px);
-            font-weight: 700;
-            color: #4f46e5;
-            cursor: pointer;
-            text-decoration: none;
-        }
-        .back-link {
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: 16px;
-            transition: 0.2s;
-        }
-        .back-link:hover {
-            color: #fff;
-        }
+        .logo { font-size: clamp(22px, 4vw, 28px); font-weight: 700; color: #4f46e5; cursor: pointer; text-decoration: none; }
+        .back-link { color: #94a3b8; text-decoration: none; font-size: 16px; transition: 0.2s; }
+        .back-link:hover { color: #fff; }
         .filters {
             display: flex;
             flex-wrap: wrap;
@@ -56,21 +31,8 @@
             border: 1px solid #2d3748;
             align-items: center;
         }
-        .filters label {
-            color: #94a3b8;
-            font-size: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .filters select {
-            background: #2d3748;
-            color: #fff;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-        }
+        .filters label { color: #94a3b8; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+        .filters select { background: #2d3748; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 14px; }
         .signal-item {
             padding: 14px 18px;
             border-radius: 10px;
@@ -84,22 +46,11 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-        .signal-item.unread {
-            background: #2d3748;
-        }
-        .signal-item .symbol {
-            font-weight: 600;
-            font-size: clamp(15px, 1.4vw, 17px);
-        }
-        .signal-item .side {
-            font-weight: 600;
-        }
-        .signal-item .side.long {
-            color: #34d399;
-        }
-        .signal-item .side.short {
-            color: #f87171;
-        }
+        .signal-item.unread { background: #2d3748; }
+        .signal-item .symbol { font-weight: 600; font-size: clamp(15px, 1.4vw, 17px); }
+        .signal-item .side { font-weight: 600; }
+        .signal-item .side.long { color: #34d399; }
+        .signal-item .side.short { color: #f87171; }
         .signal-item .meta {
             color: #94a3b8;
             font-size: clamp(12px, 1.2vw, 14px);
@@ -108,62 +59,29 @@
             gap: 12px;
             align-items: center;
         }
-        .signal-item .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            align-items: center;
-        }
-        .btn-check {
-            background: #4f46e5;
-            color: #fff;
-            border: none;
-            padding: 4px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: 0.2s;
-        }
-        .btn-check:hover {
-            background: #4338ca;
-        }
-        .btn-open {
-            background: #34d399;
-            color: #0a0e17;
-            border: none;
-            padding: 4px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-        .btn-open:hover {
-            background: #2bcc8a;
-        }
-        .btn-open:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-        .result-box {
-            font-size: 13px;
-            padding: 4px 12px;
-            border-radius: 6px;
+        .signal-item .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .btn-check { background: #4f46e5; color: #fff; border: none; padding: 4px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .btn-check:hover { background: #4338ca; }
+        .btn-open { background: #34d399; color: #0a0e17; border: none; padding: 4px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn-open:hover { background: #2bcc8a; }
+        .btn-open:disabled { opacity: 0.4; cursor: not-allowed; }
+        .result-box { font-size: 13px; padding: 4px 12px; border-radius: 6px; background: #2d3748; display: inline-block; }
+        .result-box.profit { color: #34d399; }
+        .result-box.loss { color: #f87171; }
+        .result-box.active { color: #fbbf24; }
+        .result-box.inactive { color: #94a3b8; }
+        .debug-box {
             background: #2d3748;
-            display: inline-block;
-        }
-        .result-box.profit {
-            color: #34d399;
-        }
-        .result-box.loss {
-            color: #f87171;
-        }
-        .result-box.active {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 13px;
             color: #fbbf24;
+            border: 1px solid #4f46e5;
+            word-break: break-all;
         }
-        .result-box.inactive {
-            color: #94a3b8;
-        }
+        .debug-box .error { color: #f87171; }
+        .debug-box .success { color: #34d399; }
         footer {
             border-top: 1px solid #1a1f2e;
             padding: 20px 0;
@@ -172,8 +90,6 @@
             color: #94a3b8;
             font-size: 14px;
         }
-
-        /* Модалка выбора бота */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -187,9 +103,7 @@
             z-index: 1000;
             padding: 16px;
         }
-        .modal-overlay.open {
-            display: flex;
-        }
+        .modal-overlay.open { display: flex; }
         .modal {
             background: #1a1f2e;
             padding: 32px;
@@ -198,10 +112,7 @@
             width: 100%;
             border: 1px solid #2d3748;
         }
-        .modal h3 {
-            font-size: 20px;
-            margin-bottom: 16px;
-        }
+        .modal h3 { font-size: 20px; margin-bottom: 16px; }
         .modal .bot-option {
             display: flex;
             align-items: center;
@@ -213,61 +124,19 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .modal .bot-option:hover {
-            background: #4f46e5;
-        }
-        .modal .bot-option input[type="checkbox"] {
-            accent-color: #4f46e5;
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-        .modal .bot-option label {
-            cursor: pointer;
-            flex: 1;
-        }
-        .modal .bot-option .bot-tag {
-            font-size: 12px;
-            color: #94a3b8;
-        }
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-        }
-        .modal-actions button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-confirm-open {
-            background: #34d399;
-            color: #0a0e17;
-        }
-        .btn-confirm-open:hover {
-            background: #2bcc8a;
-        }
-        .btn-cancel {
-            background: #2d3748;
-            color: #fff;
-        }
-        .btn-cancel:hover {
-            background: #4a5568;
-        }
+        .modal .bot-option:hover { background: #4f46e5; }
+        .modal .bot-option input[type="checkbox"] { accent-color: #4f46e5; width: 18px; height: 18px; cursor: pointer; }
+        .modal .bot-option label { cursor: pointer; flex: 1; }
+        .modal .bot-option .bot-tag { font-size: 12px; color: #94a3b8; }
+        .modal-actions { display: flex; gap: 12px; margin-top: 16px; }
+        .modal-actions button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-confirm-open { background: #34d399; color: #0a0e17; }
+        .btn-confirm-open:hover { background: #2bcc8a; }
+        .btn-cancel { background: #2d3748; color: #fff; }
+        .btn-cancel:hover { background: #4a5568; }
         @media (max-width: 600px) {
-            .filters {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .signal-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+            .filters { flex-direction: column; align-items: stretch; }
+            .signal-item { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
@@ -279,7 +148,7 @@
         </header>
 
         <div class="filters">
-            <label>Тип сигнала
+            <label>Тип
                 <select id="filterType">
                     <option value="all">Все</option>
                     <option value="high">High</option>
@@ -306,10 +175,17 @@
         </div>
 
         <div id="signalsList"><p style="color:#94a3b8;">Загрузка...</p></div>
+
+        <!-- Отладочный блок -->
+        <div class="debug-box" id="debugBox">
+            <strong>📊 Отладка:</strong><br>
+            <span id="debugInfo">Загрузка...</span>
+        </div>
+
         <footer>© 2026 SMT Bot</footer>
     </div>
 
-    <!-- Модалка выбора бота -->
+    <!-- Модалка -->
     <div class="modal-overlay" id="botSelectModal">
         <div class="modal">
             <h3>🤖 Выберите бота</h3>
@@ -322,23 +198,33 @@
     </div>
 
     <script>
-        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
-        if (!user || !user.email) {
-            window.location.href = '/login.html';
+        const debug = document.getElementById('debugInfo');
+
+        // Получаем пользователя
+        let user = null;
+        try {
+            user = JSON.parse(localStorage.getItem('smtUser') || 'null');
+        } catch (e) {
+            debug.innerHTML = '❌ Ошибка чтения пользователя: ' + e.message;
         }
+
+        if (!user || !user.email) {
+            debug.innerHTML = '❌ Пользователь не найден. Перенаправление на логин...';
+            setTimeout(() => { window.location.href = '/login.html'; }, 2000);
+        }
+
+        debug.innerHTML = `✅ Пользователь: ${user.email}`;
 
         let allSignals = [];
         let selectedSignalId = null;
         let userBots = [];
 
-        // Загружаем ботов
         async function loadBots() {
             try {
                 const res = await fetch(`/api/user/${user.email}`);
                 const data = await res.json();
                 if (res.ok && data.user) {
                     userBots = data.user.bots || [];
-                    // Добавляем демо-бота, если его нет
                     if (!userBots.some(b => b.exchange === 'demo')) {
                         userBots.unshift({
                             exchange: 'demo',
@@ -349,19 +235,29 @@
                             isDemo: true
                         });
                     }
+                    debug.innerHTML += `<br>✅ Ботов загружено: ${userBots.length}`;
+                } else {
+                    debug.innerHTML += `<br>❌ Ошибка загрузки ботов: ${data.error || 'Неизвестно'}`;
                 }
             } catch (err) {
-                console.error('Ошибка загрузки ботов:', err);
+                debug.innerHTML += `<br>❌ Ошибка загрузки ботов: ${err.message}`;
             }
         }
 
         async function loadSignals() {
             try {
+                debug.innerHTML += `<br>🔄 Загрузка сигналов...`;
                 const res = await fetch(`/api/signals/user/${user.email}`);
                 const data = await res.json();
-                allSignals = data.signals || [];
-                applyFilters();
+                if (res.ok) {
+                    allSignals = data.signals || [];
+                    debug.innerHTML += `<br>✅ Сигналов загружено: ${allSignals.length}`;
+                    applyFilters();
+                } else {
+                    debug.innerHTML += `<br>❌ Ошибка загрузки сигналов: ${data.error || 'Неизвестно'}`;
+                }
             } catch (err) {
+                debug.innerHTML += `<br>❌ Ошибка загрузки сигналов: ${err.message}`;
                 document.getElementById('signalsList').innerHTML = '<p style="color:#f87171;">Ошибка загрузки</p>';
             }
         }
@@ -394,6 +290,7 @@
                 }
             }
 
+            debug.innerHTML += `<br>📊 После фильтров: ${filtered.length} сигналов`;
             renderSignals(filtered);
         }
 
@@ -428,7 +325,6 @@
                 `;
             }).join('');
 
-            // Обработчики кнопок "Проверить"
             document.querySelectorAll('.btn-check').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const id = btn.dataset.id;
@@ -436,7 +332,6 @@
                 });
             });
 
-            // Обработчики кнопок "Открыть"
             document.querySelectorAll('.btn-open').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const id = btn.dataset.id;
@@ -462,7 +357,6 @@
                                data.status === 'loss' ? 'loss' :
                                data.status === 'active' ? 'active' : 'inactive';
                     resultSpan.innerHTML = `<span class="result-box ${cls}">${data.message}</span>`;
-                    // Обновляем кнопку "Открыть", если статус стал активным
                     const signalItem = document.querySelector(`.signal-item[data-id="${id}"]`);
                     const actionsDiv = signalItem?.querySelector('.actions');
                     if (actionsDiv && data.status === 'active') {
@@ -557,8 +451,8 @@
         document.getElementById('filterPeriod').addEventListener('change', applyFilters);
         document.getElementById('filterStatus').addEventListener('change', applyFilters);
 
-        // Инициализация
-        await loadBots();
+        // Запуск
+        loadBots();
         loadSignals();
     </script>
 </body>
