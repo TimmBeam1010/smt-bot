@@ -115,10 +115,6 @@
             background: #7f1d1d;
             color: #fca5a5;
         }
-        .badge-pending {
-            background: #92400e;
-            color: #fbbf24;
-        }
         .empty {
             color: #94a3b8;
             text-align: center;
@@ -195,6 +191,27 @@
             color: #94a3b8;
             margin-top: 4px;
         }
+        .status-msg {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .status-msg.success {
+            display: block;
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .status-msg.error {
+            display: block;
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        .status-msg.info {
+            display: block;
+            background: #92400e;
+            color: #fbbf24;
+        }
         @media (max-width: 600px) {
             .header {
                 flex-direction: column;
@@ -238,6 +255,7 @@
             <h2>🏦 Мои биржи</h2>
             <a href="/dashboard.html" class="back-link">← Назад в ЛК</a>
         </div>
+        <div id="statusMessage" class="status-msg"></div>
         <div id="myExchangesContainer">
             <div class="empty">Загрузка...</div>
         </div>
@@ -260,34 +278,46 @@
 
             document.getElementById('userEmail').textContent = userEmail;
 
-            // Список всех доступных бирж с логотипами
             const ALL_EXCHANGES = [
-                { id: 'binance', name: 'Binance', logo: '🟡', url: 'https://binance.com', docs: 'https://binance-docs.github.io/apidocs/' },
-                { id: 'bybit', name: 'Bybit', logo: '🔵', url: 'https://bybit.com', docs: 'https://bybit-exchange.github.io/docs/' },
-                { id: 'okx', name: 'OKX', logo: '🔴', url: 'https://okx.com', docs: 'https://www.okx.com/docs/' },
-                { id: 'gateio', name: 'Gate.io', logo: '🟣', url: 'https://gate.io', docs: 'https://gate.io/docs' },
-                { id: 'kucoin', name: 'KuCoin', logo: '🟢', url: 'https://kucoin.com', docs: 'https://docs.kucoin.com/' },
-                { id: 'kraken', name: 'Kraken', logo: '🟠', url: 'https://kraken.com', docs: 'https://docs.kraken.com/' },
-                { id: 'bitget', name: 'Bitget', logo: '🟡', url: 'https://bitget.com', docs: 'https://bitget-docs.github.io/' },
-                { id: 'htx', name: 'HTX (Huobi)', logo: '🔵', url: 'https://htx.com', docs: 'https://www.htx.com/docs/' },
-                { id: 'mexc', name: 'MEXC', logo: '🔴', url: 'https://mexc.com', docs: 'https://mexc-docs.github.io/' },
-                { id: 'bingx', name: 'BingX', logo: '🟣', url: 'https://bingx.com', docs: 'https://bingx-api.github.io/docs/' },
-                { id: 'coinex', name: 'CoinEx', logo: '🟢', url: 'https://coinex.com', docs: 'https://coinex-docs.github.io/' },
-                { id: 'bitmex', name: 'BitMEX', logo: '🔵', url: 'https://bitmex.com', docs: 'https://www.bitmex.com/api/' },
-                { id: 'crypto_com', name: 'Crypto.com', logo: '🔴', url: 'https://crypto.com', docs: 'https://exchange-docs.crypto.com/' },
-                { id: 'upbit', name: 'Upbit', logo: '🟣', url: 'https://upbit.com', docs: 'https://docs.upbit.com/' },
-                { id: 'whitebit', name: 'WhiteBit', logo: '🟢', url: 'https://whitebit.com', docs: 'https://whitebit-exchange.github.io/api/' },
-                { id: 'exmo', name: 'EXMO', logo: '🟠', url: 'https://exmo.com', docs: 'https://exmo.com/en/api' },
-                { id: 'bitfinex', name: 'Bitfinex', logo: '🟡', url: 'https://bitfinex.com', docs: 'https://docs.bitfinex.com/' },
-                { id: 'phemex', name: 'Phemex', logo: '🔵', url: 'https://phemex.com', docs: 'https://phemex-docs.github.io/' }
+                { id: 'binance', name: 'Binance', logo: '🟡', docs: 'https://binance-docs.github.io/apidocs/' },
+                { id: 'bybit', name: 'Bybit', logo: '🔵', docs: 'https://bybit-exchange.github.io/docs/' },
+                { id: 'okx', name: 'OKX', logo: '🔴', docs: 'https://www.okx.com/docs/' },
+                { id: 'gateio', name: 'Gate.io', logo: '🟣', docs: 'https://gate.io/docs' },
+                { id: 'kucoin', name: 'KuCoin', logo: '🟢', docs: 'https://docs.kucoin.com/' },
+                { id: 'kraken', name: 'Kraken', logo: '🟠', docs: 'https://docs.kraken.com/' },
+                { id: 'bitget', name: 'Bitget', logo: '🟡', docs: 'https://bitget-docs.github.io/' },
+                { id: 'htx', name: 'HTX (Huobi)', logo: '🔵', docs: 'https://www.htx.com/docs/' },
+                { id: 'mexc', name: 'MEXC', logo: '🔴', docs: 'https://mexc-docs.github.io/' },
+                { id: 'bingx', name: 'BingX', logo: '🟣', docs: 'https://bingx-api.github.io/docs/' },
+                { id: 'coinex', name: 'CoinEx', logo: '🟢', docs: 'https://coinex-docs.github.io/' },
+                { id: 'bitmex', name: 'BitMEX', logo: '🔵', docs: 'https://www.bitmex.com/api/' },
+                { id: 'crypto_com', name: 'Crypto.com', logo: '🔴', docs: 'https://exchange-docs.crypto.com/' },
+                { id: 'upbit', name: 'Upbit', logo: '🟣', docs: 'https://docs.upbit.com/' },
+                { id: 'whitebit', name: 'WhiteBit', logo: '🟢', docs: 'https://whitebit-exchange.github.io/api/' },
+                { id: 'exmo', name: 'EXMO', logo: '🟠', docs: 'https://exmo.com/en/api' },
+                { id: 'bitfinex', name: 'Bitfinex', logo: '🟡', docs: 'https://docs.bitfinex.com/' },
+                { id: 'phemex', name: 'Phemex', logo: '🔵', docs: 'https://phemex-docs.github.io/' }
             ];
 
             let userExchanges = [];
+
+            function showStatus(type, message) {
+                const el = document.getElementById('statusMessage');
+                el.className = 'status-msg ' + type;
+                el.textContent = message;
+                el.style.display = 'block';
+                setTimeout(() => {
+                    el.style.display = 'none';
+                }, 6000);
+            }
 
             async function loadUserExchanges() {
                 try {
                     const resp = await fetch(`/api/user/${userEmail}`);
                     const data = await resp.json();
+                    
+                    console.log('📥 Данные пользователя:', data);
+                    
                     if (data.user && data.user.exchanges) {
                         userExchanges = data.user.exchanges;
                     } else {
@@ -300,6 +330,7 @@
                     userExchanges = [];
                     renderMyExchanges();
                     renderAvailableExchanges();
+                    showStatus('error', '❌ Ошибка загрузки: ' + e.message);
                 }
             }
 
@@ -316,24 +347,27 @@
                     return;
                 }
 
-                container.innerHTML = userExchanges.map(ex => `
-                    <div class="exchange-item" onclick="openExchangeSettings('${ex.id}')">
-                        <div class="left">
-                            <span class="exchange-logo">${ex.logo || '🏦'}</span>
-                            <span class="exchange-name">${ex.name || 'Биржа'}</span>
-                            <span class="badge ${ex.connected ? 'badge-connected' : 'badge-disconnected'}">
-                                ${ex.connected ? '✅ Подключена' : '❌ Не подключена'}
-                            </span>
-                            ${ex.api_key ? '<span style="color:#94a3b8;font-size:12px;">🔑 API установлен</span>' : '<span style="color:#94a3b8;font-size:12px;">🔑 API не установлен</span>'}
+                container.innerHTML = userExchanges.map(ex => {
+                    const hasKeys = ex.api_key && ex.secret_key;
+                    return `
+                        <div class="exchange-item" onclick="openExchangeSettings('${ex.id}')">
+                            <div class="left">
+                                <span class="exchange-logo">${ex.logo || '🏦'}</span>
+                                <span class="exchange-name">${ex.name || 'Биржа'}</span>
+                                <span class="badge ${hasKeys ? 'badge-connected' : 'badge-disconnected'}">
+                                    ${hasKeys ? '✅ Подключена' : '❌ Не подключена'}
+                                </span>
+                                ${hasKeys ? '<span style="color:#94a3b8;font-size:12px;">🔑 API установлен</span>' : '<span style="color:#94a3b8;font-size:12px;">🔑 API не установлен</span>'}
+                            </div>
+                            <div class="right">
+                                <button onclick="event.stopPropagation();disconnectExchange('${ex.id}')" style="background:#7f1d1d;color:#fca5a5;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;margin-right:8px;">
+                                    Отключить
+                                </button>
+                                <span class="exchange-arrow">›</span>
+                            </div>
                         </div>
-                        <div class="right">
-                            <button onclick="event.stopPropagation();disconnectExchange('${ex.id}')" style="background:#7f1d1d;color:#fca5a5;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;margin-right:8px;">
-                                Отключить
-                            </button>
-                            <span class="exchange-arrow">›</span>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
 
             function renderAvailableExchanges() {
@@ -361,14 +395,11 @@
             }
 
             window.openExchangeSettings = function(exchangeId) {
-                // Проверяем, есть ли уже эта биржа в списке пользователя
                 const existing = userExchanges.find(ex => ex.id === exchangeId);
                 
                 if (existing) {
-                    // Если уже подключена - открываем настройки
                     window.location.href = `/exchange-settings.html?id=${exchangeId}`;
                 } else {
-                    // Если новая - добавляем и открываем настройки
                     const exchangeData = ALL_EXCHANGES.find(ex => ex.id === exchangeId);
                     if (exchangeData) {
                         userExchanges.push({
@@ -380,7 +411,6 @@
                             secret_key: ''
                         });
                         
-                        // Сохраняем на сервере
                         saveExchangesToServer(() => {
                             window.location.href = `/exchange-settings.html?id=${exchangeId}`;
                         });
@@ -390,19 +420,28 @@
 
             async function saveExchangesToServer(callback) {
                 try {
+                    console.log('📤 Сохраняем биржи:', JSON.stringify(userExchanges, null, 2));
+                    
                     const resp = await fetch(`/api/user/${userEmail}/exchanges`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ exchanges: userExchanges })
                     });
+                    
+                    const data = await resp.json();
+                    console.log('📥 Ответ сервера:', data);
+                    
                     if (resp.ok) {
+                        showStatus('success', '✅ Биржи сохранены успешно');
                         if (callback) callback();
+                        loadUserExchanges();
                     } else {
-                        alert('❌ Ошибка сохранения бирж');
+                        showStatus('error', '❌ Ошибка сохранения: ' + (data.error || 'Неизвестная ошибка'));
+                        console.error('❌ Ошибка сохранения:', data);
                     }
                 } catch (e) {
                     console.error('Ошибка сохранения:', e);
-                    alert('❌ Ошибка при сохранении');
+                    showStatus('error', '❌ Ошибка при сохранении: ' + e.message);
                 }
             }
 
