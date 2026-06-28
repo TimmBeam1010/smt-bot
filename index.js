@@ -314,7 +314,6 @@ app.post('/api/signals/check/:id', async (req, res) => {
     const { userId } = req.body;
 
     try {
-        // Получаем сигнал из БД
         const { data: signal, error } = await supabase
             .from('signals')
             .select('*')
@@ -325,7 +324,6 @@ app.post('/api/signals/check/:id', async (req, res) => {
             return res.status(404).json({ error: 'Сигнал не найден' });
         }
 
-        // Получаем текущую цену
         const currentPrice = await trading.getPrice(signal.symbol);
         if (!currentPrice) {
             return res.status(500).json({ error: 'Не удалось получить текущую цену' });
@@ -336,7 +334,6 @@ app.post('/api/signals/check/:id', async (req, res) => {
 
         let status, message;
 
-        // Определяем статус сигнала
         if (signal.side === 'LONG') {
             if (priceChange > 0.5) {
                 status = 'profit';
@@ -345,14 +342,10 @@ app.post('/api/signals/check/:id', async (req, res) => {
                 status = 'loss';
                 message = `❌ Убыток: ${priceChange.toFixed(2)}% (сейчас ${currentPrice})`;
             } else {
-                // Проверяем, актуален ли тренд
-                const priceHistory = []; // Здесь нужно собрать историю цен за последние 20 свечей
-                // В реальном проекте — запрос к БД или API
-                // Пока заглушка
                 status = 'active';
                 message = `🟡 Актуально (изменение ${priceChange.toFixed(2)}%)`;
             }
-        } else { // SHORT
+        } else {
             if (priceChange < -0.5) {
                 status = 'profit';
                 message = `✅ Прибыль: ${Math.abs(priceChange).toFixed(2)}% (сейчас ${currentPrice})`;
@@ -365,7 +358,6 @@ app.post('/api/signals/check/:id', async (req, res) => {
             }
         }
 
-        // Обновляем статус сигнала в БД (опционально)
         await supabase
             .from('signals')
             .update({ checked: true, check_result: status, checked_at: new Date() })
@@ -375,6 +367,33 @@ app.post('/api/signals/check/:id', async (req, res) => {
 
     } catch (err) {
         console.error('Ошибка проверки сигнала:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
+//  ОБНОВЛЕНИЕ БОТОВ ПОЛЬЗОВАТЕЛЯ
+// ============================================
+
+app.put('/api/user/:email/bots', async (req, res) => {
+    const { email } = req.params;
+    const { bots } = req.body;
+
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .update({ bots, updated_at: new Date() })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (error) throw error;
+        if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+
+        delete user.password;
+        res.json({ user });
+    } catch (err) {
+        console.error('Ошибка обновления ботов:', err);
         res.status(500).json({ error: err.message });
     }
 });
