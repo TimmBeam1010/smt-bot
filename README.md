@@ -1,4 +1,4 @@
-# 🤖 SMT Bot (Smart Money Trading Bot)
+ # 🤖 SMT Bot (Smart Money Trading Bot)
 
 Автоматический помощник для криптотрейдинга на основе RSI, MACD и волатильности.
 
