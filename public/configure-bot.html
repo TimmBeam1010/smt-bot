@@ -1,334 +1,481 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMT Bot — Конструктор тарифа</title>
+    <title>🤖 SMT Bot — Создать бота</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
         }
         body {
             background: #0a0e17;
             color: #fff;
-            padding: 16px;
-        }
-        .container {
-            max-width: 900px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 700px;
             margin: 0 auto;
+            min-height: 100vh;
         }
-        header {
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0 16px;
-            border-bottom: 1px solid #1a1f2e;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #2d3748;
             flex-wrap: wrap;
             gap: 12px;
         }
         .logo {
-            font-size: clamp(22px, 4vw, 28px);
-            font-weight: 700;
+            font-size: 24px;
+            font-weight: bold;
             color: #4f46e5;
-            cursor: pointer;
-            text-decoration: none;
         }
-        .back-link {
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: 16px;
-            transition: 0.2s;
-        }
-        .back-link:hover {
+        .logo span {
             color: #fff;
         }
-        .page-title {
-            font-size: clamp(24px, 3vw, 32px);
-            font-weight: 700;
-            margin: 20px 0 8px;
-        }
-        .page-sub {
-            color: #94a3b8;
-            margin-bottom: 30px;
-        }
-        .config-block {
-            background: #1a1f2e;
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid #2d3748;
-            margin-bottom: 16px;
-        }
-        .config-block h3 {
-            margin-bottom: 12px;
-            color: #94a3b8;
-        }
-        .config-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center;
-        }
-        .config-row label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #2d3748;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
+        .back-link {
+            color: #4f46e5;
+            text-decoration: none;
             font-size: 14px;
         }
-        .config-row label:hover {
-            background: #4f46e5;
+        .back-link:hover {
+            text-decoration: underline;
         }
-        .config-row label input {
-            accent-color: #4f46e5;
-        }
-        .total-block {
+        .card {
             background: #1a1f2e;
-            padding: 20px;
             border-radius: 16px;
-            border: 2px solid #4f46e5;
-            text-align: center;
-            margin-top: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #2d3748;
         }
-        .total-block .price {
-            font-size: 36px;
-            font-weight: 700;
-            color: #4f46e5;
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
         }
-        .total-block .price small {
-            font-size: 18px;
+        .card-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
             color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 6px;
+            font-weight: 500;
         }
-        .btn-activate {
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: #0a0e17;
+            color: #fff;
+            border: 1px solid #2d3748;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        .form-group .hint {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .btn-save {
+            width: 100%;
+            padding: 14px;
             background: #4f46e5;
             color: #fff;
             border: none;
-            padding: 14px 32px;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: 600;
+            border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
-            transition: 0.2s;
-            margin-top: 12px;
+            transition: background 0.2s;
         }
-        .btn-activate:hover {
+        .btn-save:hover {
             background: #4338ca;
         }
-        .btn-activate:disabled {
-            opacity: 0.4;
+        .btn-save:disabled {
+            opacity: 0.5;
             cursor: not-allowed;
         }
+        .status-msg {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .status-msg.success {
+            display: block;
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .status-msg.error {
+            display: block;
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        .status-msg.info {
+            display: block;
+            background: #92400e;
+            color: #fbbf24;
+        }
+        .status-msg.auto {
+            display: block;
+            background: #1e293b;
+            color: #4f46e5;
+            border: 1px solid #4f46e5;
+        }
+        .api-section {
+            display: none;
+            border-top: 1px solid #2d3748;
+            padding-top: 16px;
+            margin-top: 16px;
+        }
+        .api-section.visible {
+            display: block;
+        }
+        .exchange-logo {
+            font-size: 32px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-connected {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .badge-disconnected {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        .exchanges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .exchange-option {
+            background: #0a0e17;
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid #1a1f2e;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .exchange-option:hover {
+            border-color: #4f46e5;
+        }
+        .exchange-option.selected {
+            border-color: #4f46e5;
+            background: #1a1f2e;
+        }
+        .exchange-option .logo {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .exchange-option .name {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .exchange-option .status {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
         @media (max-width: 600px) {
-            .config-row label {
-                flex: 1 1 100%;
+            body {
+                padding: 12px;
+            }
+            .card {
+                padding: 16px;
+            }
+            .exchanges-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <a href="/" class="logo">🤖 SMT Bot</a>
-            <a href="/activate-bot.html" class="back-link">← Назад</a>
-        </header>
 
-        <h1 class="page-title">⚙️ Конфигурация бота</h1>
-        <p class="page-sub">Выберите параметры для вашего бота</p>
+    <div class="header">
+        <div class="logo">SMT <span>Bot</span></div>
+        <a href="/dashboard.html" class="back-link">← Назад в ЛК</a>
+    </div>
 
-        <!-- 1. Биржа -->
-        <div class="config-block">
-            <h3>📊 Биржа</h3>
-            <div class="config-row" id="exchangeGroup">
-                <label><input type="radio" name="exchange" value="bingx" checked> BingX</label>
-                <label><input type="radio" name="exchange" value="bybit"> Bybit</label>
-                <label><input type="radio" name="exchange" value="binance"> Binance</label>
-                <label><input type="radio" name="exchange" value="okx"> OKX</label>
+    <div class="card">
+        <div class="card-header">
+            <h2>🤖 Создать нового бота</h2>
+        </div>
+
+        <div class="status-msg" id="statusMessage"></div>
+
+        <div class="form-group">
+            <label>Выберите биржу</label>
+            <div class="exchanges-grid" id="exchangesGrid">
+                <!-- Загружается из API -->
             </div>
         </div>
 
-        <!-- 2. Монеты -->
-        <div class="config-block">
-            <h3>🪙 Количество монет</h3>
-            <div class="config-row" id="coinsGroup">
-                <label><input type="radio" name="coins" value="5" checked> 5</label>
-                <label><input type="radio" name="coins" value="10"> 10</label>
-                <label><input type="radio" name="coins" value="20"> 20</label>
-                <label><input type="radio" name="coins" value="50"> 50</label>
-                <label><input type="radio" name="coins" value="100"> 100</label>
-                <label><input type="radio" name="coins" value="inf"> ∞</label>
+        <div class="form-group">
+            <label for="botName">Название бота</label>
+            <input type="text" id="botName" placeholder="Мой первый бот">
+        </div>
+
+        <div class="form-group">
+            <label for="strategy">Стратегия</label>
+            <select id="strategy">
+                <option value="rsi">RSI (перепроданность/перекупленность)</option>
+                <option value="macd">MACD (пересечение)</option>
+                <option value="bollinger">Bollinger Bands (отскок от границ)</option>
+                <option value="combined" selected>Комбинированная (RSI + MACD)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="deposit">Депозит ($)</label>
+            <input type="number" id="deposit" placeholder="1000" value="1000">
+        </div>
+
+        <div class="api-section" id="apiSection">
+            <div style="border-top:1px solid #2d3748;padding-top:16px;margin-top:8px;">
+                <h4 style="margin-bottom:12px;">🔑 Введите API-ключи для <span id="selectedExchangeName">выбранной биржи</span></h4>
+                <div class="form-group">
+                    <label for="apiKey">API Key</label>
+                    <input type="text" id="apiKey" placeholder="Введите API Key">
+                </div>
+                <div class="form-group">
+                    <label for="secretKey">Secret Key</label>
+                    <input type="password" id="secretKey" placeholder="Введите Secret Key">
+                </div>
+                <div class="hint" style="color:#94a3b8;font-size:12px;margin-top:-8px;margin-bottom:12px;">
+                    <a href="#" id="docsLink" target="_blank" style="color:#4f46e5;">Как получить API ключи?</a>
+                </div>
             </div>
         </div>
 
-        <!-- 3. Стратегии -->
-        <div class="config-block">
-            <h3>📈 Стратегии</h3>
-            <div class="config-row" id="strategyGroup">
-                <label><input type="radio" name="strategy" value="basic" checked> Базовая</label>
-                <label><input type="radio" name="strategy" value="standard"> Стандарт</label>
-                <label><input type="radio" name="strategy" value="pro"> Про</label>
-                <label><input type="radio" name="strategy" value="all"> Все</label>
-            </div>
-        </div>
-
-        <!-- 4. Риск -->
-        <div class="config-block">
-            <h3>🛡️ Управление риском</h3>
-            <div class="config-row" id="riskGroup">
-                <label><input type="checkbox" value="adaptive"> Адаптивный риск (+500 ₽)</label>
-                <label><input type="checkbox" value="trailing"> Трейлинг-стоп (+300 ₽)</label>
-                <label><input type="checkbox" value="profiles"> Профили риска (+500 ₽)</label>
-            </div>
-        </div>
-
-        <!-- 5. Автоторговля -->
-        <div class="config-block">
-            <h3>🤖 Автоторговля</h3>
-            <div class="config-row">
-                <label><input type="checkbox" id="autoTrade" value="autotrade"> Автоторговля (+2 000 ₽)</label>
-            </div>
-        </div>
-
-        <!-- 6. Smart Money -->
-        <div class="config-block">
-            <h3>🧠 Smart Money и анализ</h3>
-            <div class="config-row">
-                <label><input type="checkbox" value="smart"> Smart Money (+1 000 ₽)</label>
-                <label><input type="checkbox" value="mm"> Маркет-мейкер (+1 000 ₽)</label>
-            </div>
-        </div>
-
-        <!-- 7. Уведомления -->
-        <div class="config-block">
-            <h3>📬 Уведомления</h3>
-            <div class="config-row">
-                <label><input type="checkbox" value="telegram"> Telegram (+300 ₽)</label>
-                <label><input type="checkbox" value="email"> Email (+200 ₽)</label>
-                <label><input type="checkbox" value="all"> Все каналы (+500 ₽)</label>
-            </div>
-        </div>
-
-        <!-- 8. Поддержка -->
-        <div class="config-block">
-            <h3>🆘 Поддержка</h3>
-            <div class="config-row">
-                <label><input type="checkbox" value="priority"> Приоритетная 24/7 (+1 000 ₽)</label>
-            </div>
-        </div>
-
-        <!-- 9. Дополнительно -->
-        <div class="config-block">
-            <h3>📦 Дополнительно</h3>
-            <div class="config-row">
-                <label><input type="checkbox" value="export"> Экспорт данных (+300 ₽)</label>
-                <label><input type="checkbox" value="api"> API-доступ (+1 000 ₽)</label>
-            </div>
-        </div>
-
-        <!-- ИТОГО -->
-        <div class="total-block">
-            <div style="font-size:18px;color:#94a3b8;">Итоговая стоимость</div>
-            <div class="price" id="totalPrice">500 ₽</div>
-            <div style="font-size:14px;color:#94a3b8;">включая подключение к бирже (500 ₽)</div>
-            <button class="btn-activate" id="activateBtn">Продолжить →</button>
-        </div>
+        <button class="btn-save" id="saveBtn" onclick="createBot()">🚀 Создать бота</button>
     </div>
 
     <script>
-        const PRICES = {
-            exchange: 500,
-            coins: { 5: 0, 10: 500, 20: 1000, 50: 1800, 100: 2800, inf: 4000 },
-            strategy: { basic: 0, standard: 500, pro: 1000, all: 1800 },
-            adaptive: 500,
-            trailing: 300,
-            profiles: 500,
-            autotrade: 2000,
-            smart: 1000,
-            mm: 1000,
-            telegram: 300,
-            email: 200,
-            allnotify: 500,
-            priority: 1000,
-            export: 300,
-            api: 1000
-        };
+        (function() {
+            const userEmail = localStorage.getItem('smt_user_email');
+            if (!userEmail) {
+                window.location.replace('/login.html');
+                return;
+            }
 
-        const user = JSON.parse(localStorage.getItem('smtUser') || 'null');
-        if (!user || !user.email) {
-            window.location.href = '/login.html';
-        }
+            let allExchanges = [];
+            let userExchanges = [];
+            let selectedExchangeId = null;
+            let isAutoFilled = false;
 
-        function calcTotal() {
-            let total = PRICES.exchange;
-
-            const coins = document.querySelector('input[name="coins"]:checked');
-            if (coins) total += PRICES.coins[coins.value] || 0;
-
-            const strategy = document.querySelector('input[name="strategy"]:checked');
-            if (strategy) total += PRICES.strategy[strategy.value] || 0;
-
-            document.querySelectorAll('#riskGroup input[type="checkbox"]:checked').forEach(el => {
-                if (el.value === 'adaptive') total += PRICES.adaptive;
-                if (el.value === 'trailing') total += PRICES.trailing;
-                if (el.value === 'profiles') total += PRICES.profiles;
-            });
-
-            if (document.getElementById('autoTrade').checked) total += PRICES.autotrade;
-
-            document.querySelectorAll('input[type="checkbox"]').forEach(el => {
-                if (el.value === 'smart' && el.checked) total += PRICES.smart;
-                if (el.value === 'mm' && el.checked) total += PRICES.mm;
-                if (el.value === 'telegram' && el.checked) total += PRICES.telegram;
-                if (el.value === 'email' && el.checked) total += PRICES.email;
-                if (el.value === 'all' && el.checked) total += PRICES.allnotify;
-                if (el.value === 'priority' && el.checked) total += PRICES.priority;
-                if (el.value === 'export' && el.checked) total += PRICES.export;
-                if (el.value === 'api' && el.checked) total += PRICES.api;
-            });
-
-            document.getElementById('totalPrice').textContent = total.toLocaleString() + ' ₽';
-            return total;
-        }
-
-        document.querySelectorAll('input').forEach(el => {
-            el.addEventListener('change', calcTotal);
-        });
-
-        document.getElementById('activateBtn').addEventListener('click', () => {
-            const total = calcTotal();
-            // Сохраняем конфигурацию в localStorage для следующего шага
-            const config = {
-                exchange: document.querySelector('input[name="exchange"]:checked')?.value || 'bingx',
-                coins: document.querySelector('input[name="coins"]:checked')?.value || '5',
-                strategy: document.querySelector('input[name="strategy"]:checked')?.value || 'basic',
-                risk: {
-                    adaptive: document.querySelector('#riskGroup input[value="adaptive"]')?.checked || false,
-                    trailing: document.querySelector('#riskGroup input[value="trailing"]')?.checked || false,
-                    profiles: document.querySelector('#riskGroup input[value="profiles"]')?.checked || false
-                },
-                autotrade: document.getElementById('autoTrade').checked,
-                smart: document.querySelector('input[value="smart"]')?.checked || false,
-                mm: document.querySelector('input[value="mm"]')?.checked || false,
-                notifications: {
-                    telegram: document.querySelector('input[value="telegram"]')?.checked || false,
-                    email: document.querySelector('input[value="email"]')?.checked || false,
-                    all: document.querySelector('input[value="all"]')?.checked || false
-                },
-                priority: document.querySelector('input[value="priority"]')?.checked || false,
-                export: document.querySelector('input[value="export"]')?.checked || false,
-                api: document.querySelector('input[value="api"]')?.checked || false,
-                total: total
+            const EXCHANGE_LOGOS = {
+                'binance': '🟡',
+                'bybit': '🔵',
+                'okx': '🔴',
+                'gateio': '🟣',
+                'kucoin': '🟢',
+                'kraken': '🟠',
+                'bitget': '🟡',
+                'htx': '🔵',
+                'mexc': '🔴',
+                'bingx': '🟣',
+                'coinex': '🟢',
+                'bitmex': '🔵',
+                'crypto_com': '🔴',
+                'upbit': '🟣',
+                'whitebit': '🟢',
+                'exmo': '🟠',
+                'bitfinex': '🟡',
+                'phemex': '🔵'
             };
-            localStorage.setItem('botConfig', JSON.stringify(config));
-            window.location.href = '/connect-exchange.html';
-        });
 
-        calcTotal();
+            function showStatus(type, message) {
+                const el = document.getElementById('statusMessage');
+                el.className = 'status-msg ' + type;
+                el.textContent = message;
+                el.style.display = 'block';
+                setTimeout(() => {
+                    el.style.display = 'none';
+                }, 8000);
+            }
+
+            async function loadData() {
+                try {
+                    const allResp = await fetch('/api/exchanges/list');
+                    const allData = await allResp.json();
+                    allExchanges = allData.exchanges || [];
+
+                    const userResp = await fetch(`/api/user/${userEmail}`);
+                    const userData = await userResp.json();
+                    userExchanges = userData.user?.exchanges || [];
+
+                    renderExchanges();
+                } catch (e) {
+                    console.error('Ошибка загрузки:', e);
+                    showStatus('error', '❌ Ошибка загрузки данных');
+                }
+            }
+
+            function renderExchanges() {
+                const container = document.getElementById('exchangesGrid');
+                
+                container.innerHTML = allExchanges.map(ex => {
+                    const userEx = userExchanges.find(ue => ue.id === ex.id);
+                    const isConnected = userEx && userEx.api_key && userEx.secret_key;
+                    const logo = EXCHANGE_LOGOS[ex.id] || ex.logo || '🏦';
+                    
+                    return `
+                        <div class="exchange-option" data-id="${ex.id}" onclick="selectExchange('${ex.id}')">
+                            <span class="logo">${logo}</span>
+                            <div class="name">${ex.name}</div>
+                            <div class="status">
+                                ${isConnected ? '✅ Подключена' : '❌ Не подключена'}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.selectExchange = function(exchangeId) {
+                selectedExchangeId = exchangeId;
+                
+                document.querySelectorAll('.exchange-option').forEach(el => {
+                    el.classList.toggle('selected', el.dataset.id === exchangeId);
+                });
+
+                const exchange = allExchanges.find(ex => ex.id === exchangeId);
+                const userEx = userExchanges.find(ue => ue.id === exchangeId);
+                const isConnected = userEx && userEx.api_key && userEx.secret_key;
+                const logo = EXCHANGE_LOGOS[exchangeId] || exchange?.logo || '🏦';
+
+                document.getElementById('selectedExchangeName').textContent = exchange?.name || 'биржи';
+                document.getElementById('docsLink').href = exchange?.docs || '#';
+
+                const apiSection = document.getElementById('apiSection');
+                const apiKeyInput = document.getElementById('apiKey');
+                const secretKeyInput = document.getElementById('secretKey');
+
+                if (isConnected) {
+                    apiSection.classList.add('visible');
+                    apiKeyInput.value = '••••••••••••••••';
+                    secretKeyInput.value = '••••••••••••••••';
+                    apiKeyInput.disabled = true;
+                    secretKeyInput.disabled = true;
+                    isAutoFilled = true;
+                    showStatus('auto', `✅ Биржа "${exchange?.name}" уже подключена. API-ключи будут взяты из сохранённых.`);
+                } else {
+                    apiSection.classList.add('visible');
+                    apiKeyInput.value = '';
+                    secretKeyInput.value = '';
+                    apiKeyInput.disabled = false;
+                    secretKeyInput.disabled = false;
+                    isAutoFilled = false;
+                    showStatus('info', `🔑 Введите API-ключи для "${exchange?.name}"`);
+                }
+            };
+
+            window.createBot = async function() {
+                if (!selectedExchangeId) {
+                    showStatus('error', '❌ Выберите биржу');
+                    return;
+                }
+
+                const botName = document.getElementById('botName').value.trim();
+                if (!botName) {
+                    showStatus('error', '❌ Введите название бота');
+                    return;
+                }
+
+                const strategy = document.getElementById('strategy').value;
+                const deposit = parseFloat(document.getElementById('deposit').value);
+                if (!deposit || deposit <= 0) {
+                    showStatus('error', '❌ Введите корректный депозит');
+                    return;
+                }
+
+                const apiKey = document.getElementById('apiKey').value.trim();
+                const secretKey = document.getElementById('secretKey').value.trim();
+
+                if (!isAutoFilled && (!apiKey || !secretKey)) {
+                    showStatus('error', '❌ Введите API-ключи для выбранной биржи');
+                    return;
+                }
+
+                document.getElementById('saveBtn').disabled = true;
+                document.getElementById('saveBtn').textContent = '⏳ Создание...';
+
+                try {
+                    const payload = {
+                        email: userEmail,
+                        exchangeId: selectedExchangeId,
+                        name: botName,
+                        strategy: strategy,
+                        deposit: deposit,
+                        apiKey: isAutoFilled ? null : apiKey,
+                        secretKey: isAutoFilled ? null : secretKey,
+                        autoUseExisting: isAutoFilled
+                    };
+
+                    console.log('📤 Отправка:', payload);
+
+                    const resp = await fetch('/api/bot/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await resp.json();
+                    console.log('📥 Ответ:', data);
+
+                    if (resp.ok) {
+                        showStatus('success', `✅ Бот "${botName}" создан успешно!`);
+                        setTimeout(() => {
+                            window.location.href = '/dashboard.html';
+                        }, 1500);
+                    } else {
+                        showStatus('error', '❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    }
+                } catch (e) {
+                    console.error('Ошибка создания бота:', e);
+                    showStatus('error', '❌ Ошибка: ' + e.message);
+                }
+
+                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('saveBtn').textContent = '🚀 Создать бота';
+            };
+
+            loadData();
+
+        })();
     </script>
+
 </body>
 </html>
