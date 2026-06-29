@@ -15,7 +15,7 @@
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             padding: 20px;
-            max-width: 700px;
+            max-width: 800px;
             margin: 0 auto;
             min-height: 100vh;
         }
@@ -64,54 +64,95 @@
             font-size: 20px;
             font-weight: 600;
         }
-        .form-group {
-            margin-bottom: 20px;
+        .tariffs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
         }
-        .form-group label {
-            display: block;
-            color: #94a3b8;
-            font-size: 14px;
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-        .form-group select,
-        .form-group input {
-            width: 100%;
-            padding: 12px;
+        .tariff-card {
             background: #0a0e17;
-            color: #fff;
-            border: 1px solid #2d3748;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #1a1f2e;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
         }
-        .form-group select:focus,
-        .form-group input:focus {
-            outline: none;
+        .tariff-card:hover {
             border-color: #4f46e5;
+            transform: translateY(-2px);
         }
-        .form-group .hint {
+        .tariff-card.selected {
+            border-color: #4f46e5;
+            background: #1a1f2e;
+        }
+        .tariff-card .name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .tariff-card .price {
+            font-size: 28px;
+            font-weight: 700;
+            color: #4f46e5;
+            margin: 8px 0;
+        }
+        .tariff-card .price span {
+            font-size: 14px;
             color: #94a3b8;
-            font-size: 12px;
-            margin-top: 4px;
+            font-weight: 400;
         }
-        .btn-save {
-            width: 100%;
-            padding: 14px;
+        .tariff-card .features {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+        .tariff-card .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #f59e0b;
+            color: #000;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .tariff-card .badge.popular {
+            background: #4f46e5;
+            color: #fff;
+        }
+        .btn-select {
+            margin-top: 12px;
+            padding: 8px 24px;
             background: #4f46e5;
             color: #fff;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
             cursor: pointer;
+            font-size: 14px;
             transition: background 0.2s;
+            width: 100%;
         }
-        .btn-save:hover {
+        .btn-select:hover {
             background: #4338ca;
         }
-        .btn-save:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .btn-custom {
+            margin-top: 12px;
+            padding: 8px 24px;
+            background: transparent;
+            color: #4f46e5;
+            border: 2px solid #4f46e5;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn-custom:hover {
+            background: #4f46e5;
+            color: #fff;
         }
         .status-msg {
             padding: 12px;
@@ -134,80 +175,51 @@
             background: #92400e;
             color: #fbbf24;
         }
-        .status-msg.auto {
-            display: block;
-            background: #1e293b;
-            color: #4f46e5;
-            border: 1px solid #4f46e5;
-        }
-        .api-section {
-            display: none;
-            border-top: 1px solid #2d3748;
-            padding-top: 16px;
-            margin-top: 16px;
-        }
-        .api-section.visible {
-            display: block;
-        }
-        .exchange-logo {
-            font-size: 32px;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-        .badge-connected {
-            background: #065f46;
-            color: #6ee7b7;
-        }
-        .badge-disconnected {
-            background: #7f1d1d;
-            color: #fca5a5;
-        }
-        .exchanges-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
-            margin-top: 12px;
-        }
-        .exchange-option {
+        .bot-preview {
             background: #0a0e17;
             padding: 16px;
             border-radius: 12px;
-            border: 2px solid #1a1f2e;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
+            margin-top: 16px;
+            display: none;
         }
-        .exchange-option:hover {
-            border-color: #4f46e5;
-        }
-        .exchange-option.selected {
-            border-color: #4f46e5;
-            background: #1a1f2e;
-        }
-        .exchange-option .logo {
-            font-size: 32px;
+        .bot-preview.visible {
             display: block;
-            margin-bottom: 4px;
         }
-        .exchange-option .name {
-            font-size: 13px;
-            font-weight: 500;
-        }
-        .exchange-option .status {
-            font-size: 11px;
-            color: #94a3b8;
-        }
-        .flex-between {
+        .bot-preview .row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid #1a1f2e;
+            font-size: 14px;
+        }
+        .bot-preview .row:last-child {
+            border-bottom: none;
+        }
+        .bot-preview .label {
+            color: #94a3b8;
+        }
+        .bot-preview .value {
+            color: #fff;
+            font-weight: 500;
+        }
+        .btn-payment {
+            width: 100%;
+            padding: 14px;
+            background: #10b981;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 16px;
+            display: none;
+        }
+        .btn-payment:hover {
+            background: #059669;
+        }
+        .btn-payment.visible {
+            display: block;
         }
         @media (max-width: 600px) {
             body {
@@ -216,8 +228,8 @@
             .card {
                 padding: 16px;
             }
-            .exchanges-grid {
-                grid-template-columns: repeat(3, 1fr);
+            .tariffs-grid {
+                grid-template-columns: 1fr 1fr;
             }
         }
     </style>
@@ -231,56 +243,78 @@
 
     <div class="card">
         <div class="card-header">
-            <h2>🤖 Создать нового бота</h2>
+            <h2>🤖 Выберите тариф бота</h2>
         </div>
 
         <div class="status-msg" id="statusMessage"></div>
 
-        <div class="form-group">
-            <label>Выберите биржу</label>
-            <div class="exchanges-grid" id="exchangesGrid">
-                <!-- Загружается из API -->
+        <div class="tariffs-grid" id="tariffsGrid">
+            <div class="tariff-card" data-id="basic" onclick="selectTariff('basic')">
+                <div class="name">Basic</div>
+                <div class="price">$19<span>/мес</span></div>
+                <div class="features">
+                    ✅ 3 сигнала/день<br>
+                    ✅ 1 бот<br>
+                    ✅ Демо-торговля<br>
+                    ❌ AI-сигналы<br>
+                    ❌ Реальная торговля
+                </div>
+                <button class="btn-select">Выбрать</button>
+            </div>
+
+            <div class="tariff-card" data-id="pro" onclick="selectTariff('pro')">
+                <div class="badge popular">🔥 Популярный</div>
+                <div class="name">Pro</div>
+                <div class="price">$49<span>/мес</span></div>
+                <div class="features">
+                    ✅ 20 сигналов/день<br>
+                    ✅ 3 бота<br>
+                    ✅ Демо-торговля<br>
+                    ✅ AI-сигналы<br>
+                    ❌ Реальная торговля
+                </div>
+                <button class="btn-select">Выбрать</button>
+            </div>
+
+            <div class="tariff-card" data-id="premium" onclick="selectTariff('premium')">
+                <div class="name">Premium</div>
+                <div class="price">$99<span>/мес</span></div>
+                <div class="features">
+                    ✅ ∞ сигналов/день<br>
+                    ✅ ∞ ботов<br>
+                    ✅ Демо-торговля<br>
+                    ✅ AI-сигналы<br>
+                    ✅ Реальная торговля
+                </div>
+                <button class="btn-select">Выбрать</button>
+            </div>
+
+            <div class="tariff-card" data-id="custom" onclick="selectTariff('custom')">
+                <div class="name">⚙️ Своя конфигурация</div>
+                <div class="price">От $5</div>
+                <div class="features">
+                    🛠️ Настройте бота под себя<br>
+                    Выберите нужные функции<br>
+                    Формируйте свою цену
+                </div>
+                <button class="btn-custom">Настроить →</button>
             </div>
         </div>
 
-        <div class="form-group">
-            <label for="botName">Название бота</label>
-            <input type="text" id="botName" placeholder="Мой первый бот">
-        </div>
+        <div class="bot-preview" id="botPreview">
+            <h4 style="margin-bottom:12px;">📋 Предпросмотр бота</h4>
+            <div class="row"><span class="label">Название</span><span class="value" id="previewName">--</span></div>
+            <div class="row"><span class="label">Тариф</span><span class="value" id="previewTariff">--</span></div>
+            <div class="row"><span class="label">Цена</span><span class="value" id="previewPrice">--</span></div>
+            <div class="row"><span class="label">Сигналы</span><span class="value" id="previewSignals">--</span></div>
+            <div class="row"><span class="label">Ботов</span><span class="value" id="previewBots">--</span></div>
+            <div class="row"><span class="label">AI-сигналы</span><span class="value" id="previewAI">--</span></div>
+            <div class="row"><span class="label">Реальная торговля</span><span class="value" id="previewReal">--</span></div>
 
-        <div class="form-group">
-            <label for="strategy">Стратегия</label>
-            <select id="strategy">
-                <option value="rsi">RSI (перепроданность/перекупленность)</option>
-                <option value="macd">MACD (пересечение)</option>
-                <option value="bollinger">Bollinger Bands (отскок от границ)</option>
-                <option value="combined" selected>Комбинированная (RSI + MACD)</option>
-            </select>
+            <button class="btn-payment" id="paymentBtn" onclick="proceedToPayment()">
+                💳 Оплатить и создать бота
+            </button>
         </div>
-
-        <div class="form-group">
-            <label for="deposit">Депозит ($)</label>
-            <input type="number" id="deposit" placeholder="1000" value="1000">
-        </div>
-
-        <div class="api-section" id="apiSection">
-            <div style="border-top:1px solid #2d3748;padding-top:16px;margin-top:8px;">
-                <h4 style="margin-bottom:12px;">🔑 Введите API-ключи для <span id="selectedExchangeName">выбранной биржи</span></h4>
-                <div class="form-group">
-                    <label for="apiKey">API Key</label>
-                    <input type="text" id="apiKey" placeholder="Введите API Key">
-                </div>
-                <div class="form-group">
-                    <label for="secretKey">Secret Key</label>
-                    <input type="password" id="secretKey" placeholder="Введите Secret Key">
-                </div>
-                <div class="hint" style="color:#94a3b8;font-size:12px;margin-top:-8px;margin-bottom:12px;">
-                    <a href="#" id="docsLink" target="_blank" style="color:#4f46e5;">Как получить API ключи?</a>
-                </div>
-            </div>
-        </div>
-
-        <button class="btn-save" id="saveBtn" onclick="createBot()">🚀 Создать бота</button>
     </div>
 
     <script>
@@ -291,30 +325,47 @@
                 return;
             }
 
-            let allExchanges = [];
-            let userExchanges = [];
-            let selectedExchangeId = null;
-            let isAutoFilled = false;
+            let selectedTariffId = null;
+            let tariffData = null;
 
-            const EXCHANGE_LOGOS = {
-                'binance': '🟡',
-                'bybit': '🔵',
-                'okx': '🔴',
-                'gateio': '🟣',
-                'kucoin': '🟢',
-                'kraken': '🟠',
-                'bitget': '🟡',
-                'htx': '🔵',
-                'mexc': '🔴',
-                'bingx': '🟣',
-                'coinex': '🟢',
-                'bitmex': '🔵',
-                'crypto_com': '🔴',
-                'upbit': '🟣',
-                'whitebit': '🟢',
-                'exmo': '🟠',
-                'bitfinex': '🟡',
-                'phemex': '🔵'
+            const TARIFFS = {
+                'basic': {
+                    name: 'Basic',
+                    price: 19,
+                    signals: 3,
+                    bots: 1,
+                    ai: false,
+                    realTrading: false,
+                    demo: true
+                },
+                'pro': {
+                    name: 'Pro',
+                    price: 49,
+                    signals: 20,
+                    bots: 3,
+                    ai: true,
+                    realTrading: false,
+                    demo: true
+                },
+                'premium': {
+                    name: 'Premium',
+                    price: 99,
+                    signals: '∞',
+                    bots: '∞',
+                    ai: true,
+                    realTrading: true,
+                    demo: true
+                },
+                'custom': {
+                    name: 'Своя конфигурация',
+                    price: 'от $5',
+                    signals: 'по выбору',
+                    bots: 'по выбору',
+                    ai: 'по выбору',
+                    realTrading: 'по выбору',
+                    demo: true,
+                    isCustom: true
+                }
             };
 
             function showStatus(type, message) {
@@ -324,155 +375,73 @@
                 el.style.display = 'block';
                 setTimeout(() => {
                     el.style.display = 'none';
-                }, 8000);
+                }, 5000);
             }
 
-            async function loadData() {
-                try {
-                    const allResp = await fetch('/api/exchanges/list');
-                    const allData = await allResp.json();
-                    allExchanges = allData.exchanges || [];
+            window.selectTariff = function(id) {
+                selectedTariffId = id;
+                tariffData = TARIFFS[id];
 
-                    const userResp = await fetch(`/api/user/${userEmail}`);
-                    const userData = await userResp.json();
-                    userExchanges = userData.user?.exchanges || [];
-
-                    renderExchanges();
-                } catch (e) {
-                    console.error('Ошибка загрузки:', e);
-                    showStatus('error', '❌ Ошибка загрузки данных');
+                if (id === 'custom') {
+                    window.location.href = '/configure-custom.html';
+                    return;
                 }
-            }
 
-            function renderExchanges() {
-                const container = document.getElementById('exchangesGrid');
-                
-                container.innerHTML = allExchanges.map(ex => {
-                    const userEx = userExchanges.find(ue => ue.id === ex.id);
-                    const isConnected = userEx && userEx.api_key && userEx.secret_key;
-                    const logo = EXCHANGE_LOGOS[ex.id] || ex.logo || '🏦';
-                    
-                    return `
-                        <div class="exchange-option" data-id="${ex.id}" onclick="selectExchange('${ex.id}')">
-                            <span class="logo">${logo}</span>
-                            <div class="name">${ex.name}</div>
-                            <div class="status">
-                                ${isConnected ? '✅ Подключена' : '❌ Не подключена'}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            window.selectExchange = function(exchangeId) {
-                selectedExchangeId = exchangeId;
-                
-                document.querySelectorAll('.exchange-option').forEach(el => {
-                    el.classList.toggle('selected', el.dataset.id === exchangeId);
+                // Подсветка выбранного
+                document.querySelectorAll('.tariff-card').forEach(el => {
+                    el.classList.toggle('selected', el.dataset.id === id);
                 });
 
-                const exchange = allExchanges.find(ex => ex.id === exchangeId);
-                const userEx = userExchanges.find(ue => ue.id === exchangeId);
-                const isConnected = userEx && userEx.api_key && userEx.secret_key;
-                const logo = EXCHANGE_LOGOS[exchangeId] || exchange?.logo || '🏦';
+                // Показываем предпросмотр
+                const preview = document.getElementById('botPreview');
+                preview.classList.add('visible');
 
-                document.getElementById('selectedExchangeName').textContent = exchange?.name || 'биржи';
-                document.getElementById('docsLink').href = exchange?.docs || '#';
+                document.getElementById('previewName').textContent = 'Мой бот (' + tariffData.name + ')';
+                document.getElementById('previewTariff').textContent = tariffData.name;
+                document.getElementById('previewPrice').textContent = '$' + tariffData.price + '/мес';
+                document.getElementById('previewSignals').textContent = tariffData.signals;
+                document.getElementById('previewBots').textContent = tariffData.bots;
+                document.getElementById('previewAI').textContent = tariffData.ai ? '✅ Да' : '❌ Нет';
+                document.getElementById('previewReal').textContent = tariffData.realTrading ? '✅ Да' : '❌ Нет';
 
-                const apiSection = document.getElementById('apiSection');
-                const apiKeyInput = document.getElementById('apiKey');
-                const secretKeyInput = document.getElementById('secretKey');
+                document.getElementById('paymentBtn').classList.add('visible');
 
-                if (isConnected) {
-                    apiSection.classList.add('visible');
-                    apiKeyInput.value = '••••••••••••••••';
-                    secretKeyInput.value = '••••••••••••••••';
-                    apiKeyInput.disabled = true;
-                    secretKeyInput.disabled = true;
-                    isAutoFilled = true;
-                    showStatus('auto', `✅ Биржа "${exchange?.name}" уже подключена. API-ключи будут взяты из сохранённых.`);
-                } else {
-                    apiSection.classList.add('visible');
-                    apiKeyInput.value = '';
-                    secretKeyInput.value = '';
-                    apiKeyInput.disabled = false;
-                    secretKeyInput.disabled = false;
-                    isAutoFilled = false;
-                    showStatus('info', `🔑 Введите API-ключи для "${exchange?.name}"`);
-                }
+                showStatus('info', `✅ Выбран тариф "${tariffData.name}". Нажмите "Оплатить" для создания бота.`);
             };
 
-            window.createBot = async function() {
-                if (!selectedExchangeId) {
-                    showStatus('error', '❌ Выберите биржу');
+            window.proceedToPayment = async function() {
+                if (!selectedTariffId || !tariffData) {
+                    showStatus('error', '❌ Выберите тариф');
                     return;
                 }
 
-                const botName = document.getElementById('botName').value.trim();
-                if (!botName) {
-                    showStatus('error', '❌ Введите название бота');
-                    return;
-                }
+                // Сохраняем выбранный тариф в localStorage
+                localStorage.setItem('smt_selected_tariff', JSON.stringify({
+                    id: selectedTariffId,
+                    name: tariffData.name,
+                    price: tariffData.price,
+                    signals: tariffData.signals,
+                    bots: tariffData.bots,
+                    ai: tariffData.ai,
+                    realTrading: tariffData.realTrading
+                }));
 
-                const strategy = document.getElementById('strategy').value;
-                const deposit = parseFloat(document.getElementById('deposit').value);
-                if (!deposit || deposit <= 0) {
-                    showStatus('error', '❌ Введите корректный депозит');
-                    return;
-                }
+                // Переходим на страницу выбора биржи
+                window.location.href = '/select-exchange.html';
+            };
 
-                const apiKey = document.getElementById('apiKey').value.trim();
-                const secretKey = document.getElementById('secretKey').value.trim();
-
-                if (!isAutoFilled && (!apiKey || !secretKey)) {
-                    showStatus('error', '❌ Введите API-ключи для выбранной биржи');
-                    return;
-                }
-
-                document.getElementById('saveBtn').disabled = true;
-                document.getElementById('saveBtn').textContent = '⏳ Создание...';
-
+            // Проверка, если тариф уже выбран (возврат с оплаты)
+            const savedTariff = localStorage.getItem('smt_selected_tariff');
+            if (savedTariff) {
                 try {
-                    const payload = {
-                        email: userEmail,
-                        exchangeId: selectedExchangeId,
-                        name: botName,
-                        strategy: strategy,
-                        deposit: deposit,
-                        apiKey: isAutoFilled ? null : apiKey,
-                        secretKey: isAutoFilled ? null : secretKey,
-                        autoUseExisting: isAutoFilled
-                    };
-
-                    console.log('📤 Отправка:', payload);
-
-                    const resp = await fetch('/api/bot/create', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await resp.json();
-                    console.log('📥 Ответ:', data);
-
-                    if (resp.ok) {
-                        showStatus('success', `✅ Бот "${botName}" создан успешно!`);
-                        setTimeout(() => {
-                            window.location.href = '/dashboard.html';
-                        }, 1500);
-                    } else {
-                        showStatus('error', '❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    const data = JSON.parse(savedTariff);
+                    // Восстанавливаем выбор
+                    const tariffCard = document.querySelector(`.tariff-card[data-id="${data.id}"]`);
+                    if (tariffCard) {
+                        tariffCard.click();
                     }
-                } catch (e) {
-                    console.error('Ошибка создания бота:', e);
-                    showStatus('error', '❌ Ошибка: ' + e.message);
-                }
-
-                document.getElementById('saveBtn').disabled = false;
-                document.getElementById('saveBtn').textContent = '🚀 Создать бота';
-            };
-
-            loadData();
+                } catch (e) {}
+            }
 
         })();
     </script>
