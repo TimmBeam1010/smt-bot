@@ -4,13 +4,11 @@ const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const axios = require('axios');
-const crypto = require('crypto');
+const crypto = require('crypto'); // <--- ЭТО ДОБАВЛЕНО
 const trading = require('./trading');
 const { encrypt, decrypt, testExchangeCredentials, forceConnectExchange } = require('./exchange');
 const { executeSignal } = require('./executor');
 require('dotenv').config();
-
-const crypto = require('crypto');
 
 // === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
 const WebSocket = require('ws');
