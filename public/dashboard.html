@@ -914,29 +914,7 @@
                     try {
                         const data = JSON.parse(event.data);
                         updatePnlUI(data);
-                        
-                        if (data.bots && data.bots.length > 0) {
-                            fetch(`/api/user/${userEmail}`)
-                                .then(res => res.json())
-                                .then(userData => {
-                                    if (userData.user && userData.user.bots) {
-                                        const updatedBots = userData.user.bots.map((bot, index) => {
-                                            const botData = data.bots.find(b => b.id === bot.id) || data.bots[index];
-                                            if (botData) {
-                                                return {
-                                                    ...bot,
-                                                    pnl: botData.pnl || 0,
-                                                    openTrades: botData.openTrades || 0,
-                                                    closedTrades: botData.closedTrades || 0
-                                                };
-                                            }
-                                            return bot;
-                                        });
-                                        renderBots(updatedBots);
-                                    }
-                                })
-                                .catch(e => console.error('Ошибка обновления ботов:', e));
-                        }
+                        updateBotsPnlFromWS(data);
                     } catch (e) {
                         console.error('Ошибка парсинга WebSocket:', e);
                     }
@@ -963,6 +941,7 @@
                     const result = await response.json();
                     if (result.success) {
                         updatePnlUI(result.data);
+                        updateBotsPnlFromWS(result.data);
                     }
                 } catch (e) {
                     console.error('Ошибка загрузки PNL:', e);
@@ -1049,6 +1028,34 @@
                         </div>
                     `).join('');
                 }
+            }
+
+            function updateBotsPnlFromWS(data) {
+                if (!data || !data.bots) return;
+                
+                const userEmail = localStorage.getItem('smt_user_email');
+                if (!userEmail) return;
+                
+                fetch(`/api/user/${userEmail}`)
+                    .then(res => res.json())
+                    .then(userData => {
+                        if (userData.user && userData.user.bots) {
+                            const updatedBots = userData.user.bots.map((bot, index) => {
+                                const botData = data.bots.find(b => b.id === bot.id) || data.bots[index];
+                                if (botData) {
+                                    return {
+                                        ...bot,
+                                        pnl: botData.pnl || 0,
+                                        openTrades: botData.openTrades || 0,
+                                        closedTrades: botData.closedTrades || 0
+                                    };
+                                }
+                                return bot;
+                            });
+                            renderBots(updatedBots);
+                        }
+                    })
+                    .catch(e => console.error('Ошибка обновления ботов:', e));
             }
 
             window.closePosition = async function(positionId) {
