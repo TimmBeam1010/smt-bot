@@ -42,7 +42,7 @@ async function testExchangeCredentials(exchange, apiKey, secretKey) {
             case 'okx':
                 return await testOKX(apiKey, secretKey);
             case 'bingx':
-                return await testBingX(apiKey, secretKey);
+                return await testBingXFutures(apiKey, secretKey);
             default:
                 return false;
         }
@@ -99,13 +99,13 @@ async function testOKX(apiKey, secretKey) {
     return response.status === 200 && response.data.code === '0';
 }
 
-async function testBingX(apiKey, secretKey) {
+async function testBingXFutures(apiKey, secretKey) {
     const timestamp = Date.now().toString();
     const signature = crypto.createHmac('sha256', secretKey)
         .update(timestamp)
         .digest('hex');
     const response = await axios.get(
-        `https://open-api.bingx.com/openApi/spot/v1/account`,
+        'https://open-api.bingx.com/openApi/swap/v3/user/balance',
         {
             headers: {
                 'X-BX-APIKEY': apiKey,
@@ -115,7 +115,7 @@ async function testBingX(apiKey, secretKey) {
             timeout: 10000
         }
     );
-    return response.status === 200;
+    return response.status === 200 && response.data.code === 0;
 }
 
 // ============================================
