@@ -28,7 +28,7 @@
             padding: 0 16px;
         }
 
-        /* --- HEADER (ОБНОВЛЁННЫЙ) --- */
+        /* --- HEADER --- */
         .header {
             display: flex;
             justify-content: space-between;
@@ -85,7 +85,7 @@
             margin: 16px auto 24px;
         }
 
-        /* --- WIDGET: DEMO BOT --- */
+        /* --- WIDGET: DEMO BOT (ОБНОВЛЁННЫЙ) --- */
         .bot-widget {
             background: #111827;
             border: 1px solid #1e293b;
@@ -286,7 +286,7 @@
 
     <div class="container">
 
-        <!-- HEADER (ОБНОВЛЁННЫЙ) -->
+        <!-- HEADER -->
         <header class="header">
             <a href="/" class="logo">SMT <span>Bot</span></a>
             <a href="/dashboard.html" class="btn-primary">Терминал</a>
@@ -298,20 +298,20 @@
             <p>Индексы, новости, сигналы и автоматическая торговля — всё в одном месте. Начните с демо-бота прямо сейчас.</p>
         </section>
 
-        <!-- BOT WIDGET (демо-бот) -->
+        <!-- BOT WIDGET (ОБНОВЛЁННЫЙ - ЖИВЫЕ ДАННЫЕ) -->
         <section class="bot-widget" id="botWidget">
             <div class="status">
-                <span class="dot"></span> <span>Бот активен</span>
+                <span class="dot"></span> <span id="botStatus">Бот активен</span>
             </div>
             <div class="balance">
                 $<span id="demoBalance">1000.00</span>
                 <small>баланс</small>
             </div>
             <div class="pnl" id="demoPnl">
-                PNL: <span class="positive">+0.00%</span>
+                PNL: <span class="positive" id="pnlValue">+0.00%</span>
             </div>
             <div class="trade-info" id="demoTrade">
-                <strong>SOL/USDT</strong> · LONG · +1.8%
+                <span id="tradeInfo">Ожидание сигнала...</span>
             </div>
             <a href="/dashboard.html" class="btn-primary" style="padding:6px 16px; font-size:14px;">Мой бот</a>
         </section>
@@ -455,29 +455,50 @@
             }
         }
 
-        // --- ДЕМО-ВИДЖЕТ (имитация работы бота) ---
-        // В будущем здесь будет запрос к /api/public/demo/status
-        function updateDemoWidget() {
-            const balanceEl = document.getElementById('demoBalance');
-            const pnlEl = document.getElementById('demoPnl');
-            const currentBalance = parseFloat(balanceEl.textContent);
-            if (!isNaN(currentBalance)) {
-                const change = (Math.random() * 2 - 1) * 0.5;
-                const newBalance = currentBalance * (1 + change / 100);
-                balanceEl.textContent = newBalance.toFixed(2);
-                const pnl = ((newBalance - 1000) / 1000 * 100).toFixed(2);
-                const isPositive = pnl >= 0;
-                pnlEl.innerHTML = `PNL: <span class="${isPositive ? 'positive' : 'negative'}">${isPositive ? '+' : ''}${pnl}%</span>`;
+        // --- ЗАГРУЗКА ДАННЫХ ПУБЛИЧНОГО ДЕМО-БОТА (НОВЫЙ ЭНДПОИНТ) ---
+        async function loadDemoBotStatus() {
+            try {
+                const res = await fetch('/api/public/demo/status');
+                const data = await res.json();
+                if (data.status === 'ok' && data.data) {
+                    const demo = data.data;
+                    // Баланс
+                    document.getElementById('demoBalance').textContent = demo.balance.toFixed(2);
+                    // PNL
+                    const pnl = ((demo.balance - 1000) / 1000 * 100);
+                    const pnlEl = document.getElementById('pnlValue');
+                    pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + '%';
+                    pnlEl.className = pnl >= 0 ? 'positive' : 'negative';
+                    // Информация о позиции
+                    const tradeInfo = document.getElementById('tradeInfo');
+                    if (demo.positions && demo.positions.length > 0) {
+                        const pos = demo.positions[0];
+                        tradeInfo.innerHTML = `<strong>${pos.symbol}</strong> · ${pos.side} · ${pos.pnl ? (pos.pnl > 0 ? '+' : '') + pos.pnl.toFixed(2) + '%' : '0%'}`;
+                    } else {
+                        tradeInfo.textContent = 'Нет открытых позиций';
+                    }
+                    // Статус бота
+                    document.getElementById('botStatus').textContent = 'Бот активен';
+                } else {
+                    console.warn('Данные демо-бота не получены');
+                }
+            } catch (e) {
+                console.warn('Ошибка загрузки демо-бота:', e);
+                document.getElementById('botStatus').textContent = 'Ожидание данных...';
             }
         }
 
-        // --- ЗАПУСК ---
+        // --- ЗАПУСК ВСЕХ ФУНКЦИЙ ---
         loadMarketData();
         loadNews();
-        updateDemoWidget();
+        loadDemoBotStatus();
 
-        setInterval(updateDemoWidget, 5000);
+        // Обновлять демо-бота каждые 5 секунд
+        setInterval(loadDemoBotStatus, 5000);
+        // Обновлять рыночные данные каждые 60 секунд
         setInterval(loadMarketData, 60000);
+        // Обновлять новости каждые 5 минут
+        setInterval(loadNews, 300000);
     </script>
 
 </body>
