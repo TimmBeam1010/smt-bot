@@ -91,7 +91,7 @@ async function broadcastPnlUpdate(email) {
     try {
         const { data: user } = await supabase
             .from('users')
-            .select('id')
+            .select('id, bots')
             .eq('email', email)
             .single();
 
@@ -140,6 +140,38 @@ async function broadcastPnlUpdate(email) {
         const lossTrades = (closedTrades || []).filter(t => t.pnl < 0).length;
         const winRate = (closedTrades || []).length > 0 ? (winTrades / (closedTrades || []).length * 100).toFixed(1) : 0;
 
+        const botsPnl = (user.bots || []).map(bot => {
+            let botPnl = 0;
+            let botOpenTrades = 0;
+            let botClosedTrades = 0;
+
+            (openPositions || []).forEach(pos => {
+                if (pos.bot_id === bot.id || bot.exchange === 'demo') {
+                    const pnl = pos.pnl || 0;
+                    botPnl += pnl;
+                    botOpenTrades++;
+                }
+            });
+
+            (closedTrades || []).forEach(trade => {
+                if (trade.bot_id === bot.id || bot.exchange === 'demo') {
+                    botPnl += trade.pnl || 0;
+                    botClosedTrades++;
+                }
+            });
+
+            return {
+                id: bot.id,
+                name: bot.name,
+                exchange: bot.exchange,
+                pnl: botPnl,
+                openTrades: botOpenTrades,
+                closedTrades: botClosedTrades,
+                active: bot.active,
+                paused: bot.paused
+            };
+        });
+
         const pnlData = {
             userId: user.id,
             email: email,
@@ -160,6 +192,7 @@ async function broadcastPnlUpdate(email) {
                 totalPnl: (closedTrades || []).reduce((sum, t) => sum + (t.pnl || 0), 0)
             },
             recentTrades: (closedTrades || []).slice(0, 10),
+            bots: botsPnl,
             timestamp: new Date().toISOString()
         };
 
@@ -378,7 +411,6 @@ app.put('/api/user/:email/exchanges', async (req, res) => {
     const { exchanges } = req.body;
 
     console.log('📥 Запрос на сохранение бирж для:', email);
-    console.log('📦 Данные:', JSON.stringify(exchanges, null, 2));
 
     if (!exchanges || !Array.isArray(exchanges)) {
         console.log('❌ Ошибка: exchanges не массив');
@@ -393,8 +425,6 @@ app.put('/api/user/:email/exchanges', async (req, res) => {
             }
             return newEx;
         });
-
-        console.log('🔐 Зашифрованные данные:', JSON.stringify(encryptedExchanges, null, 2));
 
         const { data: user, error: userError } = await supabase
             .from('users')
@@ -441,6 +471,55 @@ app.put('/api/user/:email/exchanges', async (req, res) => {
     } catch (err) {
         console.error('❌ Непредвиденная ошибка:', err);
         res.status(500).json({ error: 'Внутренняя ошибка сервера: ' + err.message });
+    }
+});
+
+app.put('/api/user/toggle-vip', async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ error: 'Email обязателен' });
+    }
+
+    try {
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('is_vip, email')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const newVipStatus = !user.is_vip;
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ 
+                is_vip: newVipStatus,
+                vip_since: newVipStatus ? new Date().toISOString() : null,
+                updated_at: new Date().toISOString()
+            })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) {
+            console.error('Ошибка обновления VIP:', updateError);
+            return res.status(500).json({ error: 'Ошибка обновления VIP-статуса' });
+        }
+
+        delete updatedUser.password;
+        res.json({ 
+            success: true, 
+            user: updatedUser,
+            message: `VIP ${newVipStatus ? 'включён' : 'выключен'}`
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка переключения VIP:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -500,6 +579,40 @@ app.put('/api/admin/users/:id', async (req, res) => {
     } catch (err) {
         console.error('Непредвиденная ошибка:', err);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+app.put('/api/admin/users/:id/vip', async (req, res) => {
+    const { id } = req.params;
+    const { is_vip } = req.body;
+
+    if (typeof is_vip !== 'boolean') {
+        return res.status(400).json({ error: 'is_vip должен быть boolean' });
+    }
+
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .update({ 
+                is_vip, 
+                vip_since: is_vip ? new Date().toISOString() : null,
+                updated_at: new Date() 
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Ошибка обновления VIP:', error);
+            return res.status(500).json({ error: 'Ошибка обновления VIP-статуса' });
+        }
+
+        delete user.password;
+        res.json({ user });
+
+    } catch (err) {
+        console.error('Непредвиденная ошибка:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -920,13 +1033,31 @@ app.post('/api/trade/close', async (req, res) => {
 
         const { data: user } = await supabase
             .from('users')
-            .select('id')
+            .select('id, bots')
             .eq('email', email)
             .single();
 
         if (user) {
             const balance = await getDemoBalance(user.id);
             await updateDemoBalance(user.id, balance.balance + pnl);
+
+            if (user.bots && user.bots.length > 0) {
+                const updatedBots = user.bots.map(bot => {
+                    if (bot.exchange === position.exchange || bot.id === position.bot_id) {
+                        return {
+                            ...bot,
+                            pnl: (bot.pnl || 0) + pnl,
+                            closedTrades: (bot.closedTrades || 0) + 1
+                        };
+                    }
+                    return bot;
+                });
+
+                await supabase
+                    .from('users')
+                    .update({ bots: updatedBots, updated_at: new Date().toISOString() })
+                    .eq('id', user.id);
+            }
         }
 
         await broadcastPnlUpdate(email);
@@ -1353,7 +1484,6 @@ app.post('/api/bot/create', async (req, res) => {
     const { email, exchangeId, name, strategy, deposit, apiKey, secretKey, autoUseExisting, tariff, price, config } = req.body;
 
     console.log('📥 Создание бота для:', email);
-    console.log('📦 Данные:', { exchangeId, name, strategy, deposit, autoUseExisting, tariff, price });
 
     if (!email || !exchangeId || !name) {
         return res.status(400).json({ error: 'email, exchangeId и name обязательны' });
