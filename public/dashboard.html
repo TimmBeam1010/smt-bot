@@ -58,6 +58,7 @@
         .nav .user-email {
             color: #4f46e5;
             font-size: 14px;
+            cursor: pointer;
         }
         .logout-btn {
             background: #1a1f2e;
@@ -70,6 +71,31 @@
             transition: all 0.2s;
         }
         .logout-btn:hover {
+            background: #2d3748;
+            color: #fff;
+        }
+        .vip-toggle {
+            padding: 6px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .vip-toggle.active {
+            background: #10b981;
+            color: #fff;
+        }
+        .vip-toggle.active:hover {
+            background: #059669;
+        }
+        .vip-toggle.inactive {
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #2d3748;
+        }
+        .vip-toggle.inactive:hover {
             background: #2d3748;
             color: #fff;
         }
@@ -495,6 +521,9 @@
         <div class="logo">SMT <span>Bot</span></div>
         <div class="nav">
             <span class="user-email" id="userEmail"></span>
+            <button id="vipToggleBtn" class="vip-toggle" onclick="toggleVip()" style="display:none;">
+                🌟 VIP: Вкл
+            </button>
             <a href="/index.html">Главная</a>
             <a href="/trades.html">История сделок</a>
             <a href="/exchanges.html">Биржи</a>
@@ -591,6 +620,69 @@
             let reconnectAttempts = 0;
             const MAX_RECONNECT = 5;
 
+            // VIP проверка и переключение
+            async function checkVipStatus() {
+                try {
+                    const userEmail = localStorage.getItem('smt_user_email');
+                    if (!userEmail) return;
+
+                    const resp = await fetch(`/api/user/${userEmail}`);
+                    const data = await resp.json();
+                    
+                    if (data.user) {
+                        const isVip = data.user.is_vip || false;
+                        const isAdmin = userEmail === 'trnabiev@gmail.com';
+                        
+                        const vipBtn = document.getElementById('vipToggleBtn');
+                        if (vipBtn && isAdmin) {
+                            vipBtn.style.display = 'inline-block';
+                            vipBtn.textContent = isVip ? '🌟 VIP: Вкл' : '⭐ VIP: Выкл';
+                            vipBtn.className = 'vip-toggle ' + (isVip ? 'active' : 'inactive');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Ошибка проверки VIP:', e);
+                }
+            }
+
+            window.toggleVip = async function() {
+                const userEmail = localStorage.getItem('smt_user_email');
+                if (!userEmail) {
+                    alert('❌ Пользователь не авторизован');
+                    return;
+                }
+
+                if (userEmail !== 'trnabiev@gmail.com') {
+                    alert('❌ Доступ только для администратора');
+                    return;
+                }
+
+                try {
+                    const resp = await fetch('/api/user/toggle-vip', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: userEmail })
+                    });
+
+                    const data = await resp.json();
+
+                    if (data.success) {
+                        const isVip = data.user.is_vip;
+                        const vipBtn = document.getElementById('vipToggleBtn');
+                        vipBtn.textContent = isVip ? '🌟 VIP: Вкл' : '⭐ VIP: Выкл';
+                        vipBtn.className = 'vip-toggle ' + (isVip ? 'active' : 'inactive');
+                        
+                        alert(`✅ VIP ${isVip ? 'включён' : 'выключен'}`);
+                        location.reload();
+                    } else {
+                        alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    }
+                } catch (e) {
+                    console.error('Ошибка переключения VIP:', e);
+                    alert('❌ Ошибка при переключении VIP');
+                }
+            };
+
             async function loadExchanges() {
                 try {
                     const resp = await fetch(`/api/user/${userEmail}`);
@@ -669,13 +761,15 @@
                 container.innerHTML = bots.map((bot, index) => {
                     const statusClass = bot.active ? (bot.paused ? 'badge-paused' : 'badge-active') : 'badge-inactive';
                     const statusText = bot.active ? (bot.paused ? '⏸ Пауза' : '✅ Активен') : '⛔ Отключён';
+                    const pnl = bot.pnl || 0;
                     
                     return `
                         <div class="bot-item">
                             <div class="bot-header">
                                 <div>
-                                    <span class="bot-name">${bot.exchange || 'Демо-бот'}</span>
+                                    <span class="bot-name">${bot.name || bot.exchange || 'Бот'}</span>
                                     <span class="badge ${statusClass}" style="margin-left:8px;">${statusText}</span>
+                                    ${bot.active ? '<span style="color:#10b981;font-size:12px;">🟢 активен</span>' : '<span style="color:#94a3b8;font-size:12px;">⭕ неактивен</span>'}
                                 </div>
                                 <div class="bot-actions">
                                     ${bot.active ? `
@@ -691,7 +785,7 @@
                             </div>
                             <div class="bot-details">
                                 <span>💰 Депозит: $${(bot.deposit || 0).toFixed(2)}</span>
-                                <span>📈 PNL: ${(bot.pnl || 0) >= 0 ? '+' : ''}$${(bot.pnl || 0).toFixed(2)}</span>
+                                <span>📈 PNL: <span class="${pnl >= 0 ? 'positive' : 'negative'}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span></span>
                                 <span>📊 Сделки: ${(bot.openTrades || 0)} открыто / ${(bot.closedTrades || 0)} закрыто</span>
                                 <span>📅 До: ${bot.tariffEnd || '--'}</span>
                             </div>
@@ -821,6 +915,29 @@
                     try {
                         const data = JSON.parse(event.data);
                         updatePnlUI(data);
+                        
+                        if (data.bots && data.bots.length > 0) {
+                            fetch(`/api/user/${userEmail}`)
+                                .then(res => res.json())
+                                .then(userData => {
+                                    if (userData.user && userData.user.bots) {
+                                        const updatedBots = userData.user.bots.map(bot => {
+                                            const botData = data.bots.find(b => b.id === bot.id);
+                                            if (botData) {
+                                                return {
+                                                    ...bot,
+                                                    pnl: botData.pnl || 0,
+                                                    openTrades: botData.openTrades || 0,
+                                                    closedTrades: botData.closedTrades || 0
+                                                };
+                                            }
+                                            return bot;
+                                        });
+                                        renderBots(updatedBots);
+                                    }
+                                })
+                                .catch(e => console.error('Ошибка обновления ботов:', e));
+                        }
                     } catch (e) {
                         console.error('Ошибка парсинга WebSocket:', e);
                     }
@@ -968,6 +1085,7 @@
                 window.location.replace('/login.html');
             };
 
+            checkVipStatus();
             connectWebSocket();
             
             setInterval(() => {
