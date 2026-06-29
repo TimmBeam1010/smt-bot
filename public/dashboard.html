@@ -620,7 +620,6 @@
             let reconnectAttempts = 0;
             const MAX_RECONNECT = 5;
 
-            // VIP проверка и переключение
             async function checkVipStatus() {
                 try {
                     const userEmail = localStorage.getItem('smt_user_email');
@@ -921,8 +920,8 @@
                                 .then(res => res.json())
                                 .then(userData => {
                                     if (userData.user && userData.user.bots) {
-                                        const updatedBots = userData.user.bots.map(bot => {
-                                            const botData = data.bots.find(b => b.id === bot.id);
+                                        const updatedBots = userData.user.bots.map((bot, index) => {
+                                            const botData = data.bots.find(b => b.id === bot.id) || data.bots[index];
                                             if (botData) {
                                                 return {
                                                     ...bot,
