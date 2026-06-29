@@ -42,6 +42,7 @@
             color: #fff;
             cursor: pointer;
             transition: opacity 0.2s;
+            line-height: 1.2;
         }
         .logo:hover {
             opacity: 0.8;
@@ -64,39 +65,24 @@
             background: #4338ca;
         }
 
-        /* --- БЛОК PNL В ШАПКЕ (НОВЫЙ) --- */
+        /* --- БЛОК PNL В ШАПКЕ (ОБНОВЛЁННЫЙ) --- */
         .pnl-block {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             background: #111827;
-            padding: 6px 16px 6px 20px;
+            padding: 4px 16px 4px 20px;
             border-radius: 40px;
             border: 1px solid #1e293b;
             cursor: pointer;
             transition: border-color 0.3s, background 0.3s;
+            height: 40px;
+            /* Фиксированная высота под логотип */
+            white-space: nowrap;
         }
         .pnl-block:hover {
             border-color: #4f46e5;
             background: #1a2035;
-        }
-        .pnl-block .label {
-            font-size: 12px;
-            color: #94a3b8;
-        }
-        .pnl-block .value {
-            font-weight: 700;
-            font-size: 16px;
-        }
-        .pnl-block .value.positive {
-            color: #22c55e;
-        }
-        .pnl-block .value.negative {
-            color: #ef4444;
-        }
-        .pnl-block .arrow {
-            color: #64748b;
-            font-size: 18px;
         }
         .pnl-block .email-label {
             font-size: 12px;
@@ -105,6 +91,20 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        .pnl-block .value {
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .pnl-block .value.positive {
+            color: #22c55e;
+        }
+        .pnl-block .value.negative {
+            color: #ef4444;
+        }
+        .pnl-block .balance-label {
+            font-size: 13px;
+            color: #94a3b8;
         }
 
         /* --- HERO --- */
@@ -323,8 +323,8 @@
             .header { flex-wrap: wrap; gap: 12px; }
             .bot-widget { flex-direction: column; align-items: flex-start; gap: 12px; }
             .pnl-block .email-label { display: none; }
-            .pnl-block .label { font-size: 10px; }
-            .pnl-block .value { font-size: 14px; }
+            .pnl-block .balance-label { display: none; }
+            .pnl-block { padding: 4px 12px; }
         }
     </style>
 </head>
@@ -332,7 +332,7 @@
 
     <div class="container">
 
-        <!-- HEADER (ОБНОВЛЁННЫЙ) -->
+        <!-- HEADER -->
         <header class="header">
             <a href="/" class="logo">SMT <span>Bot</span></a>
             <div id="headerRight">
@@ -482,7 +482,6 @@
             const user = getUser();
 
             if (user && user.email) {
-                // Пользователь залогинен — показываем блок PNL
                 try {
                     const res = await fetch(`/api/user/quick-stats?email=${encodeURIComponent(user.email)}`);
                     if (res.ok) {
@@ -495,15 +494,12 @@
                             <a href="/dashboard.html" style="text-decoration: none;">
                                 <div class="pnl-block">
                                     <span class="email-label">${user.email}</span>
-                                    <span class="label">PNL</span>
                                     <span class="value ${pnlClass}">${pnlSign}${pnl.toFixed(2)}%</span>
-                                    <span class="label">($${data.balance?.toFixed(2) || '0.00'})</span>
-                                    <span class="arrow">→</span>
+                                    <span class="balance-label">$${data.balance?.toFixed(2) || '0.00'}</span>
                                 </div>
                             </a>
                         `;
                     } else {
-                        // Если API не ответил — показываем кнопку
                         headerRight.innerHTML = `<a href="/dashboard.html" class="btn-primary">Терминал</a>`;
                     }
                 } catch (e) {
@@ -511,7 +507,6 @@
                     headerRight.innerHTML = `<a href="/dashboard.html" class="btn-primary">Терминал</a>`;
                 }
             } else {
-                // Пользователь не залогинен — кнопка "Терминал"
                 headerRight.innerHTML = `<a href="/dashboard.html" class="btn-primary">Терминал</a>`;
             }
         }
