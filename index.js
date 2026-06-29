@@ -817,6 +817,112 @@ app.get('/api/user/quick-stats', async (req, res) => {
 });
 
 // ============================================
+//  УПРАВЛЕНИЕ БОТАМИ (ОБНОВЛЕНИЕ И УДАЛЕНИЕ)
+// ============================================
+
+// Обновление статуса бота (пауза/активация/отключение)
+app.put('/api/user/bots/:email/:botIndex', async (req, res) => {
+    const { email, botIndex } = req.params;
+    const { active, paused } = req.body;
+    
+    if (botIndex === undefined || isNaN(botIndex)) {
+        return res.status(400).json({ error: 'Неверный индекс бота' });
+    }
+
+    try {
+        // Получаем пользователя
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('bots')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const bots = user.bots || [];
+        const index = parseInt(botIndex);
+        
+        if (index < 0 || index >= bots.length) {
+            return res.status(404).json({ error: 'Бот не найден' });
+        }
+
+        // Обновляем статусы
+        if (active !== undefined) {
+            bots[index].active = active;
+        }
+        if (paused !== undefined) {
+            bots[index].paused = paused;
+        }
+
+        // Сохраняем
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ bots, updated_at: new Date() })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        delete updatedUser.password;
+        res.json({ success: true, user: updatedUser });
+
+    } catch (err) {
+        console.error('Ошибка обновления бота:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Удаление бота
+app.delete('/api/user/bots/:email/:botIndex', async (req, res) => {
+    const { email, botIndex } = req.params;
+
+    if (botIndex === undefined || isNaN(botIndex)) {
+        return res.status(400).json({ error: 'Неверный индекс бота' });
+    }
+
+    try {
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('bots')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const bots = user.bots || [];
+        const index = parseInt(botIndex);
+
+        if (index < 0 || index >= bots.length) {
+            return res.status(404).json({ error: 'Бот не найден' });
+        }
+
+        // Удаляем бота
+        bots.splice(index, 1);
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ bots, updated_at: new Date() })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        delete updatedUser.password;
+        res.json({ success: true, user: updatedUser });
+
+    } catch (err) {
+        console.error('Ошибка удаления бота:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
 //  ЗАПУСК СЕРВЕРА
 // ============================================
 
