@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏦 SMT Bot — Выбор биржи</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 700px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #2d3748;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        .logo span {
+            color: #fff;
+        }
+        .back-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .card {
+            background: #1a1f2e;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #2d3748;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .card-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .exchange-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid #1a1f2e;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: 8px;
+        }
+        .exchange-item:hover {
+            background: #0a0e17;
+        }
+        .exchange-item .left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .exchange-item .logo {
+            font-size: 28px;
+        }
+        .exchange-item .name {
+            font-weight: 600;
+        }
+        .exchange-item .status {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .exchange-item .badge {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-connected {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .badge-disconnected {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        .exchange-item .arrow {
+            color: #4f46e5;
+            font-size: 18px;
+        }
+        .btn-other {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            color: #4f46e5;
+            border: 2px dashed #4f46e5;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            margin-top: 16px;
+        }
+        .btn-other:hover {
+            background: #4f46e5;
+            color: #fff;
+        }
+        .empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 24px;
+        }
+        .status-msg {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .status-msg.success {
+            display: block;
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .status-msg.error {
+            display: block;
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        .status-msg.info {
+            display: block;
+            background: #92400e;
+            color: #fbbf24;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+            .card {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">SMT <span>Bot</span></div>
+        <a href="/configure-bot.html" class="back-link">← Назад к тарифам</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>🏦 Выберите биржу для бота</h2>
+            <span style="color:#94a3b8;font-size:14px;">Цена: <span id="displayPrice">$--</span></span>
+        </div>
+
+        <div class="status-msg" id="statusMessage"></div>
+
+        <div id="exchangesContainer">
+            <div class="empty">Загрузка...</div>
+        </div>
+
+        <button class="btn-other" onclick="addOtherExchange()">➕ Другая биржа</button>
+    </div>
+
+    <script>
+        (function() {
+            const userEmail = localStorage.getItem('smt_user_email');
+            if (!userEmail) {
+                window.location.replace('/login.html');
+                return;
+            }
+
+            let userExchanges = [];
+            let selectedExchange = null;
+
+            const tariffData = JSON.parse(localStorage.getItem('smt_selected_tariff') || '{}');
+            document.getElementById('displayPrice').textContent = '$' + (tariffData.price || '--');
+
+            const ALL_EXCHANGES = [
+                { id: 'binance', name: 'Binance', logo: '🟡' },
+                { id: 'bybit', name: 'Bybit', logo: '🔵' },
+                { id: 'okx', name: 'OKX', logo: '🔴' },
+                { id: 'gateio', name: 'Gate.io', logo: '🟣' },
+                { id: 'kucoin', name: 'KuCoin', logo: '🟢' },
+                { id: 'kraken', name: 'Kraken', logo: '🟠' },
+                { id: 'bitget', name: 'Bitget', logo: '🟡' },
+                { id: 'htx', name: 'HTX (Huobi)', logo: '🔵' },
+                { id: 'mexc', name: 'MEXC', logo: '🔴' },
+                { id: 'bingx', name: 'BingX', logo: '🟣' },
+                { id: 'coinex', name: 'CoinEx', logo: '🟢' },
+                { id: 'bitmex', name: 'BitMEX', logo: '🔵' },
+                { id: 'crypto_com', name: 'Crypto.com', logo: '🔴' },
+                { id: 'upbit', name: 'Upbit', logo: '🟣' },
+                { id: 'whitebit', name: 'WhiteBit', logo: '🟢' },
+                { id: 'exmo', name: 'EXMO', logo: '🟠' }
+            ];
+
+            function showStatus(type, message) {
+                const el = document.getElementById('statusMessage');
+                el.className = 'status-msg ' + type;
+                el.textContent = message;
+                el.style.display = 'block';
+                setTimeout(() => {
+                    el.style.display = 'none';
+                }, 5000);
+            }
+
+            async function loadExchanges() {
+                try {
+                    const resp = await fetch(`/api/user/${userEmail}`);
+                    const data = await resp.json();
+                    userExchanges = data.user?.exchanges || [];
+
+                    renderExchanges();
+                } catch (e) {
+                    console.error('Ошибка загрузки:', e);
+                    document.getElementById('exchangesContainer').innerHTML = '<div class="empty">❌ Ошибка загрузки</div>';
+                }
+            }
+
+            function renderExchanges() {
+                const container = document.getElementById('exchangesContainer');
+                
+                if (!userExchanges || userExchanges.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty">
+                            Нет подключённых бирж.<br>
+                            <span style="color:#94a3b8;font-size:13px;">Нажмите "Другая биржа" для подключения</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = userExchanges.map(ex => {
+                    const isConnected = ex.api_key && ex.secret_key;
+                    const exchangeInfo = ALL_EXCHANGES.find(e => e.id === ex.id);
+                    const logo = exchangeInfo?.logo || ex.logo || '🏦';
+                    const name = exchangeInfo?.name || ex.name || 'Биржа';
+
+                    return `
+                        <div class="exchange-item" onclick="selectExchange('${ex.id}')">
+                            <div class="left">
+                                <span class="logo">${logo}</span>
+                                <div>
+                                    <div class="name">${name}</div>
+                                    <div class="status">
+                                        <span class="badge ${isConnected ? 'badge-connected' : 'badge-disconnected'}">
+                                            ${isConnected ? '✅ Подключена' : '❌ Не подключена'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="arrow">›</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.selectExchange = function(exchangeId) {
+                const exchange = userExchanges.find(ex => ex.id === exchangeId);
+                
+                if (!exchange || !exchange.api_key || !exchange.secret_key) {
+                    showStatus('error', '❌ Биржа не настроена. Нажмите "Другая биржа" для подключения.');
+                    return;
+                }
+
+                selectedExchange = exchange;
+
+                // Переходим на страницу оплаты
+                const tariffData = JSON.parse(localStorage.getItem('smt_selected_tariff') || '{}');
+                
+                const botData = {
+                    name: tariffData.config?.name || 'Мой бот',
+                    tariff: tariffData.name || 'Custom',
+                    price: tariffData.price || 0,
+                    exchange: exchange.id,
+                    exchangeName: exchange.name,
+                    exchangeLogo: exchange.logo,
+                    config: tariffData.config || {},
+                    tariffId: tariffData.id || 'custom'
+                };
+
+                localStorage.setItem('smt_bot_for_payment', JSON.stringify(botData));
+
+                window.location.href = '/payment.html';
+            };
+
+            window.addOtherExchange = function() {
+                // Сохраняем текущий тариф и переходим на страницу добавления биржи
+                window.location.href = '/exchange-settings.html?return=payment';
+            };
+
+            loadExchanges();
+
+        })();
+    </script>
+
+</body>
+</html>
