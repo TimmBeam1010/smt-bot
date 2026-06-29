@@ -10,6 +10,8 @@ const { encrypt, decrypt, testExchangeCredentials, forceConnectExchange } = requ
 const { executeSignal } = require('./executor');
 require('dotenv').config();
 
+const crypto = require('crypto');
+
 // === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
 const WebSocket = require('ws');
 global.WebSocket = WebSocket;
