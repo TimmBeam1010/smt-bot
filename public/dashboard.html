@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📊 SMT Bot — Личный кабинет</title>
+    <title>SMT Bot — Личный кабинет</title>
     <style>
+        /* --- RESET & BASE --- */
         * {
             margin: 0;
             padding: 0;
@@ -12,1099 +13,473 @@
         }
         body {
             background: #0a0e17;
-            color: #fff;
+            color: #e2e8f0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-            min-height: 100vh;
+            line-height: 1.6;
+            padding: 0 20px;
         }
+        a {
+            color: #4f46e5;
+            text-decoration: none;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        /* --- HEADER --- */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #2d3748;
+            padding: 20px 0;
+            border-bottom: 1px solid #1e293b;
             flex-wrap: wrap;
             gap: 12px;
         }
         .logo {
             font-size: 24px;
-            font-weight: bold;
-            color: #4f46e5;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .logo:hover {
+            opacity: 0.8;
         }
         .logo span {
-            color: #fff;
-        }
-        .nav {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .nav a {
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: 14px;
-            padding: 6px 12px;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-        .nav a:hover {
-            color: #fff;
-            background: #1a1f2e;
-        }
-        .nav .user-email {
             color: #4f46e5;
-            font-size: 14px;
-            cursor: pointer;
         }
-        .logout-btn {
-            background: #1a1f2e;
-            color: #94a3b8;
-            border: 1px solid #2d3748;
-            padding: 6px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        .logout-btn:hover {
-            background: #2d3748;
-            color: #fff;
-        }
-        .vip-toggle {
-            padding: 6px 16px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        .vip-toggle.active {
-            background: #10b981;
-            color: #fff;
-        }
-        .vip-toggle.active:hover {
-            background: #059669;
-        }
-        .vip-toggle.inactive {
-            background: #1e293b;
-            color: #94a3b8;
-            border: 1px solid #2d3748;
-        }
-        .vip-toggle.inactive:hover {
-            background: #2d3748;
-            color: #fff;
-        }
-        .card {
-            background: #1a1f2e;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            border: 1px solid #2d3748;
-        }
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        .card-header h2, .card-header h3 {
-            font-size: 18px;
-            font-weight: 600;
-        }
-        .refresh-btn {
+        .btn-primary {
             background: #4f46e5;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
+            color: #fff !important;
+            padding: 8px 20px;
             border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.2s;
+            border: none;
             cursor: pointer;
             font-size: 14px;
-            transition: background 0.2s;
         }
-        .refresh-btn:hover {
+        .btn-primary:hover {
             background: #4338ca;
         }
-        .grid {
+        .btn-danger {
+            background: #dc2626;
+            color: #fff !important;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+        .user-email {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        /* --- DASHBOARD GRID --- */
+        .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
         }
-        .stat {
-            background: #0a0e17;
-            padding: 16px;
+        .card {
+            background: #111827;
+            border: 1px solid #1e293b;
             border-radius: 12px;
-            text-align: center;
-            border: 1px solid #1a1f2e;
+            padding: 20px;
         }
-        .stat .value {
-            font-size: 26px;
+        .card h3 {
+            font-size: 16px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+        .card .value {
+            font-size: 28px;
             font-weight: 700;
+        }
+        .card .value.positive { color: #22c55e; }
+        .card .value.negative { color: #ef4444; }
+        .card .sub {
+            font-size: 14px;
+            color: #64748b;
             margin-top: 4px;
         }
-        .stat .label {
-            color: #94a3b8;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+
+        /* --- SIGNALS TABLE --- */
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 40px 0 16px;
         }
-        .stat .sub {
-            font-size: 13px;
-            color: #94a3b8;
-            margin-top: 4px;
+        .table-wrap {
+            overflow-x: auto;
+            background: #111827;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
+            margin-bottom: 30px;
         }
-        .positive { color: #10b981; }
-        .negative { color: #ef4444; }
-        .neutral { color: #f59e0b; }
-        .trade-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            text-align: left;
             padding: 12px 16px;
-            border-bottom: 1px solid #1a1f2e;
-            flex-wrap: wrap;
-            gap: 8px;
+            background: #0f172a;
+            color: #94a3b8;
+            font-weight: 600;
         }
-        .trade-item:last-child {
-            border-bottom: none;
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid #1e293b;
         }
-        .trade-item .left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .trade-item .right {
-            text-align: right;
-        }
-        .side-long { color: #10b981; }
-        .side-short { color: #ef4444; }
         .badge {
             display: inline-block;
             padding: 2px 10px;
             border-radius: 12px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-        .badge-open {
-            background: #065f46;
-            color: #6ee7b7;
-        }
-        .badge-closed {
-            background: #1e293b;
-            color: #94a3b8;
-        }
-        .badge-active {
-            background: #065f46;
-            color: #6ee7b7;
-        }
-        .badge-paused {
-            background: #92400e;
-            color: #fbbf24;
-        }
-        .badge-inactive {
-            background: #1e293b;
-            color: #94a3b8;
-        }
-        .badge-connected {
-            background: #065f46;
-            color: #6ee7b7;
-        }
-        .badge-disconnected {
-            background: #7f1d1d;
-            color: #fca5a5;
-        }
-        .btn-close {
-            background: #ef4444;
-            color: #fff;
-            border: none;
-            padding: 4px 14px;
-            border-radius: 6px;
-            cursor: pointer;
             font-size: 12px;
-            transition: background 0.2s;
+            font-weight: 600;
         }
-        .btn-close:hover {
-            background: #dc2626;
-        }
-        .btn-pause {
-            background: #f59e0b;
-            color: #fff;
-            border: none;
-            padding: 4px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background 0.2s;
-            margin-left: 4px;
-        }
-        .btn-pause:hover {
-            background: #d97706;
-        }
-        .btn-resume {
-            background: #10b981;
-            color: #fff;
-            border: none;
-            padding: 4px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background 0.2s;
-            margin-left: 4px;
-        }
-        .btn-resume:hover {
-            background: #059669;
-        }
-        .btn-delete {
-            background: #7f1d1d;
-            color: #fca5a5;
-            border: none;
-            padding: 4px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background 0.2s;
-            margin-left: 4px;
-        }
-        .btn-delete:hover {
-            background: #991b1b;
-        }
-        .btn-outline {
-            background: transparent;
-            color: #4f46e5;
-            border: 1px solid #4f46e5;
-            padding: 4px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .btn-outline:hover {
-            background: #4f46e5;
-            color: #fff;
-        }
-        .empty {
-            color: #94a3b8;
-            text-align: center;
-            padding: 24px;
-            font-size: 14px;
-        }
-        .ws-status {
-            font-size: 12px;
-            color: #94a3b8;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .ws-status .dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-        .ws-status .dot.connected {
-            background: #10b981;
-        }
-        .ws-status .dot.disconnected {
-            background: #ef4444;
-        }
+        .badge.long { background: #22c55e20; color: #22c55e; }
+        .badge.short { background: #ef444420; color: #ef4444; }
+        .badge.profit { background: #22c55e20; color: #22c55e; }
+        .badge.loss { background: #ef444420; color: #ef4444; }
+        .badge.active { background: #f59e0b20; color: #f59e0b; }
+
+        /* --- BOTS LIST --- */
         .bot-item {
-            background: #0a0e17;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #1a1f2e;
-            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #1e293b;
         }
         .bot-item:last-child {
-            margin-bottom: 0;
-        }
-        .bot-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .bot-name {
-            font-weight: 600;
-            font-size: 16px;
-        }
-        .bot-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 8px;
-            margin-top: 8px;
-            font-size: 13px;
-            color: #94a3b8;
-        }
-        .bot-details span {
-            background: #1a1f2e;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-        .bot-actions {
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-        }
-        .signal-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 16px;
-            border-bottom: 1px solid #1a1f2e;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .signal-item:last-child {
             border-bottom: none;
         }
-        .signal-item .left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .signal-item .right {
-            text-align: right;
-        }
-        .signal-time {
-            color: #94a3b8;
-            font-size: 12px;
-        }
-        .view-all-link {
-            color: #4f46e5;
-            text-decoration: none;
-            font-size: 14px;
-        }
-        .view-all-link:hover {
-            text-decoration: underline;
-        }
-        .exchange-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            border-bottom: 1px solid #1a1f2e;
-            flex-wrap: wrap;
-            gap: 8px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .exchange-item:hover {
-            background: #0a0e17;
-            border-radius: 8px;
-        }
-        .exchange-item .left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .exchange-item .right {
-            text-align: right;
-        }
-        .exchange-logo {
-            font-size: 24px;
-        }
-        .exchange-name {
+        .bot-item .name {
             font-weight: 600;
         }
-        .exchange-status {
-            font-size: 12px;
+        .bot-item .status {
+            font-size: 14px;
         }
-        .exchange-arrow {
-            color: #4f46e5;
-            font-size: 18px;
+        .status.active { color: #22c55e; }
+        .status.paused { color: #f59e0b; }
+        .status.inactive { color: #64748b; }
+
+        /* --- LOGIN FORM (если не авторизован) --- */
+        .login-form {
+            max-width: 400px;
+            margin: 60px auto;
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 16px;
+            padding: 40px;
         }
-        .exchanges-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
-        }
-        .exchange-card {
-            background: #0a0e17;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #1a1f2e;
+        .login-form h2 {
+            margin-bottom: 20px;
             text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
         }
-        .exchange-card:hover {
-            border-color: #4f46e5;
-            transform: translateY(-2px);
-        }
-        .exchange-card .logo {
-            font-size: 32px;
-            margin-bottom: 8px;
-        }
-        .exchange-card .name {
-            font-weight: 600;
+        .login-form input {
+            width: 100%;
+            padding: 12px;
+            background: #0a0e17;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            color: #fff;
+            margin-bottom: 12px;
             font-size: 14px;
         }
-        .exchange-card .status {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 4px;
+        .login-form input:focus {
+            outline: none;
+            border-color: #4f46e5;
         }
-        @media (max-width: 600px) {
-            .header {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-            .nav {
-                justify-content: center;
-            }
-            .grid {
-                grid-template-columns: 1fr 1fr;
-            }
-            .trade-item {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-            .trade-item .right {
-                text-align: center;
-            }
-            .trade-item .left {
-                justify-content: center;
-            }
-            .bot-header {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-            .bot-actions {
-                justify-content: center;
-            }
-            .signal-item {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-            .signal-item .right {
-                text-align: center;
-            }
-            .signal-item .left {
-                justify-content: center;
-            }
-            .exchange-item {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-            .exchange-item .right {
-                text-align: center;
-            }
-            .exchange-item .left {
-                justify-content: center;
-            }
-            .exchanges-grid {
-                grid-template-columns: 1fr 1fr;
-            }
+        .login-form button {
+            width: 100%;
+            padding: 12px;
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .login-form button:hover {
+            background: #4338ca;
+        }
+        .login-form .error {
+            color: #ef4444;
+            font-size: 14px;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .login-form .register-link {
+            text-align: center;
+            margin-top: 16px;
+            color: #94a3b8;
+        }
+        .login-form .register-link a {
+            color: #4f46e5;
+        }
+
+        /* --- FOOTER --- */
+        .footer {
+            border-top: 1px solid #1e293b;
+            padding: 24px 0;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            margin-top: 40px;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .header { flex-direction: column; align-items: stretch; text-align: center; }
+            .dashboard-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="logo">SMT <span>Bot</span></div>
-        <div class="nav">
-            <span class="user-email" id="userEmail"></span>
-            <button id="vipToggleBtn" class="vip-toggle" onclick="toggleVip()" style="display:none;">
-                🌟 VIP: Вкл
-            </button>
-            <a href="/index.html">Главная</a>
-            <a href="/trades.html">История сделок</a>
-            <a href="/exchanges.html">Биржи</a>
-            <button class="logout-btn" onclick="logout()">Выйти</button>
-            <span class="ws-status">
-                <span class="dot disconnected" id="wsDot"></span>
-                <span id="wsLabel">отключено</span>
-            </span>
-        </div>
-    </div>
+    <div class="container">
 
-    <div class="card">
-        <div class="card-header">
-            <h2>📊 Портфель в реальном времени</h2>
-            <button class="refresh-btn" onclick="updatePnl()">🔄 Обновить</button>
-        </div>
-        <div class="grid" id="pnlGrid">
-            <div class="stat">
-                <div class="label">Баланс</div>
-                <div class="value" id="currentBalance">$0.00</div>
-                <div class="sub">
-                    <span id="initialBalance">$0.00</span>
-                    <span id="balanceChange"></span>
-                </div>
+        <!-- HEADER -->
+        <header class="header">
+            <a href="/" class="logo">SMT <span>Bot</span></a>
+            <div>
+                <span class="user-email" id="userEmail"></span>
+                <button class="btn-danger" id="logoutBtn" style="margin-left:12px;">Выйти</button>
             </div>
-            <div class="stat">
-                <div class="label">Общий PNL</div>
-                <div class="value" id="totalPnl">$0.00</div>
-            </div>
-            <div class="stat">
-                <div class="label">Сделки</div>
-                <div class="value" id="tradeStats">0</div>
-                <div class="sub">
-                    🟢 <span id="winCount">0</span> | 🔴 <span id="lossCount">0</span>
-                </div>
-            </div>
-            <div class="stat">
-                <div class="label">Win Rate</div>
-                <div class="value" id="winRate">0%</div>
-            </div>
-        </div>
-    </div>
+        </header>
 
-    <div class="card">
-        <div class="card-header">
-            <h3>🏦 Мои биржи</h3>
-            <a href="/exchanges.html" class="view-all-link">Управлять биржами →</a>
+        <!-- ОСНОВНОЙ КОНТЕНТ -->
+        <div id="mainContent">
+            <!-- Сюда будет вставлен либо дашборд, либо форма входа -->
         </div>
-        <div id="exchangesContainer"></div>
-    </div>
 
-    <div class="card">
-        <div class="card-header">
-            <h3>🤖 Мои боты</h3>
-            <a href="/configure-bot.html" style="color:#4f46e5;text-decoration:none;font-size:14px;">+ Создать бота</a>
-        </div>
-        <div id="botsContainer"></div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h3>📈 Открытые позиции (последние 3)</h3>
-            <a href="/trades.html" class="view-all-link">Открыть все →</a>
-        </div>
-        <div id="openPositions"></div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h3>📡 Последние сигналы (5)</h3>
-            <a href="/signals.html" class="view-all-link">Перейти к сигналам →</a>
-        </div>
-        <div id="recentSignals"></div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h3>📜 Последние сделки</h3>
-        </div>
-        <div id="tradeHistory"></div>
+        <!-- FOOTER -->
+        <footer class="footer">
+            &copy; 2026 SMT Bot. Не является инвестиционной рекомендацией.
+        </footer>
     </div>
 
     <script>
-        (function() {
-            const userEmail = localStorage.getItem('smt_user_email');
-            if (!userEmail) {
-                window.location.replace('/login.html');
-                return;
+        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+        function getUser() {
+            try {
+                const user = JSON.parse(localStorage.getItem('smt_user'));
+                return user;
+            } catch (e) {
+                return null;
             }
+        }
 
-            document.getElementById('userEmail').textContent = userEmail;
+        function saveUser(user) {
+            localStorage.setItem('smt_user', JSON.stringify(user));
+        }
 
-            let ws = null;
-            let reconnectAttempts = 0;
-            const MAX_RECONNECT = 5;
+        function clearUser() {
+            localStorage.removeItem('smt_user');
+        }
 
-            async function checkVipStatus() {
-                try {
-                    const userEmail = localStorage.getItem('smt_user_email');
-                    if (!userEmail) return;
+        // --- ВЫХОД ---
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            clearUser();
+            window.location.href = '/';
+        });
 
-                    const resp = await fetch(`/api/user/${userEmail}`);
-                    const data = await resp.json();
-                    
-                    if (data.user) {
-                        const isVip = data.user.is_vip || false;
-                        const isAdmin = userEmail === 'trnabiev@gmail.com';
-                        
-                        const vipBtn = document.getElementById('vipToggleBtn');
-                        if (vipBtn && isAdmin) {
-                            vipBtn.style.display = 'inline-block';
-                            vipBtn.textContent = isVip ? '🌟 VIP: Вкл' : '⭐ VIP: Выкл';
-                            vipBtn.className = 'vip-toggle ' + (isVip ? 'active' : 'inactive');
-                        }
-                    }
-                } catch (e) {
-                    console.error('Ошибка проверки VIP:', e);
+        // --- ОТОБРАЖЕНИЕ ДАШБОРДА ---
+        async function renderDashboard(user) {
+            const container = document.getElementById('mainContent');
+            document.getElementById('userEmail').textContent = user.email || '';
+
+            try {
+                // Загружаем данные демо-счета
+                const res = await fetch(`/api/demo/${encodeURIComponent(user.email)}`);
+                const data = await res.json();
+
+                // Загружаем сигналы
+                const signalsRes = await fetch(`/api/signals/user/${encodeURIComponent(user.email)}`);
+                const signalsData = await signalsRes.json();
+
+                let balance = 0;
+                let equity = 0;
+                let totalPnl = 0;
+                let positions = [];
+                let trades = [];
+
+                if (data.ok && data.data) {
+                    balance = data.data.balance || 0;
+                    equity = data.data.equity || 0;
+                    totalPnl = data.data.totalPnl || 0;
+                    positions = data.data.positions || [];
+                    trades = data.data.trades || [];
                 }
-            }
 
-            window.toggleVip = async function() {
-                const userEmail = localStorage.getItem('smt_user_email');
-                if (!userEmail) {
-                    alert('❌ Пользователь не авторизован');
-                    return;
-                }
+                const signals = signalsData.signals || [];
 
-                if (userEmail !== 'trnabiev@gmail.com') {
-                    alert('❌ Доступ только для администратора');
-                    return;
-                }
-
-                try {
-                    const resp = await fetch('/api/user/toggle-vip', {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: userEmail })
-                    });
-
-                    const data = await resp.json();
-
-                    if (data.success) {
-                        const isVip = data.user.is_vip;
-                        const vipBtn = document.getElementById('vipToggleBtn');
-                        vipBtn.textContent = isVip ? '🌟 VIP: Вкл' : '⭐ VIP: Выкл';
-                        vipBtn.className = 'vip-toggle ' + (isVip ? 'active' : 'inactive');
-                        
-                        alert(`✅ VIP ${isVip ? 'включён' : 'выключен'}`);
-                        location.reload();
-                    } else {
-                        alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-                    }
-                } catch (e) {
-                    console.error('Ошибка переключения VIP:', e);
-                    alert('❌ Ошибка при переключении VIP');
-                }
-            };
-
-            async function loadExchanges() {
-                try {
-                    const resp = await fetch(`/api/user/${userEmail}`);
-                    const data = await resp.json();
-                    if (data.user) {
-                        renderExchanges(data.user);
-                    } else {
-                        renderExchanges(null);
-                    }
-                } catch (e) {
-                    console.error('Ошибка загрузки бирж:', e);
-                    renderExchanges(null);
-                }
-            }
-
-            function renderExchanges(user) {
-                const container = document.getElementById('exchangesContainer');
-                const exchanges = user?.exchanges || [];
-                
-                if (!exchanges || exchanges.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty">
-                            Нет подключённых бирж.<br>
-                            <a href="/exchanges.html" style="color:#4f46e5;text-decoration:none;">Подключить биржу →</a>
+                // --- Строим HTML ---
+                let html = `
+                    <!-- СТАТИСТИКА -->
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <h3>💰 Баланс</h3>
+                            <div class="value">$${balance.toFixed(2)}</div>
+                            <div class="sub">Демо-счет</div>
                         </div>
-                    `;
-                    return;
-                }
-
-                container.innerHTML = exchanges.map(ex => `
-                    <div class="exchange-item" onclick="window.location.href='/exchanges.html'">
-                        <div class="left">
-                            <span class="exchange-logo">${ex.logo || '🏦'}</span>
-                            <span class="exchange-name">${ex.name || 'Биржа'}</span>
-                            <span class="badge ${ex.connected ? 'badge-connected' : 'badge-disconnected'}">
-                                ${ex.connected ? '✅ Подключена' : '❌ Не подключена'}
-                            </span>
+                        <div class="card">
+                            <h3>📈 Капитал</h3>
+                            <div class="value">$${equity.toFixed(2)}</div>
+                            <div class="sub">${positions.length} открытых позиций</div>
                         </div>
-                        <div class="right">
-                            <span style="color:#94a3b8;font-size:12px;">
-                                ${ex.api_key ? '🔑 API установлен' : '🔑 API не установлен'}
-                            </span>
-                            <span class="exchange-arrow">›</span>
+                        <div class="card">
+                            <h3>📊 PNL</h3>
+                            <div class="value ${totalPnl >= 0 ? 'positive' : 'negative'}">${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}$</div>
+                            <div class="sub">${balance > 0 ? ((totalPnl / balance) * 100).toFixed(2) : 0}% от депозита</div>
+                        </div>
+                        <div class="card">
+                            <h3>📊 Сигналов</h3>
+                            <div class="value">${signals.length}</div>
+                            <div class="sub">за все время</div>
                         </div>
                     </div>
-                `).join('');
-            }
+                `;
 
-            async function loadBots() {
-                try {
-                    const resp = await fetch(`/api/user/${userEmail}`);
-                    const data = await resp.json();
-                    if (data.user && data.user.bots) {
-                        renderBots(data.user.bots);
-                    } else {
-                        renderBots([]);
-                    }
-                } catch (e) {
-                    console.error('Ошибка загрузки ботов:', e);
-                    renderBots([]);
-                }
-            }
-
-            function renderBots(bots) {
-                const container = document.getElementById('botsContainer');
-                if (!bots || bots.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty">
-                            У вас ещё нет ботов.<br>
-                            <a href="/configure-bot.html" style="color:#4f46e5;text-decoration:none;">Создать первого бота →</a>
-                        </div>
-                    `;
-                    return;
-                }
-
-                container.innerHTML = bots.map((bot, index) => {
-                    const statusClass = bot.active ? (bot.paused ? 'badge-paused' : 'badge-active') : 'badge-inactive';
-                    const statusText = bot.active ? (bot.paused ? '⏸ Пауза' : '✅ Активен') : '⛔ Отключён';
-                    const pnl = bot.pnl || 0;
-                    
-                    return `
-                        <div class="bot-item">
-                            <div class="bot-header">
-                                <div>
-                                    <span class="bot-name">${bot.name || bot.exchange || 'Бот'}</span>
-                                    <span class="badge ${statusClass}" style="margin-left:8px;">${statusText}</span>
-                                    ${bot.active ? '<span style="color:#10b981;font-size:12px;">🟢 активен</span>' : '<span style="color:#94a3b8;font-size:12px;">⭕ неактивен</span>'}
-                                </div>
-                                <div class="bot-actions">
-                                    ${bot.active ? `
-                                        ${bot.paused ? 
-                                            `<button class="btn-resume" onclick="toggleBot(${index}, false)">▶ Возобновить</button>` :
-                                            `<button class="btn-pause" onclick="toggleBot(${index}, true)">⏸ Пауза</button>`
-                                        }
-                                    ` : `
-                                        <button class="btn-resume" onclick="toggleBot(${index}, false, true)">▶ Активировать</button>
-                                    `}
-                                    <button class="btn-delete" onclick="deleteBot(${index})">🗑 Удалить</button>
-                                </div>
-                            </div>
-                            <div class="bot-details">
-                                <span>💰 Депозит: $${(bot.deposit || 0).toFixed(2)}</span>
-                                <span>📈 PNL: <span class="${pnl >= 0 ? 'positive' : 'negative'}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span></span>
-                                <span>📊 Сделки: ${(bot.openTrades || 0)} открыто / ${(bot.closedTrades || 0)} закрыто</span>
-                                <span>📅 До: ${bot.tariffEnd || '--'}</span>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            window.toggleBot = async function(index, pause, activate = false) {
-                try {
-                    const resp = await fetch(`/api/user/${userEmail}`);
-                    const data = await resp.json();
-                    if (!data.user) return;
-
-                    const bots = data.user.bots || [];
-                    if (index >= bots.length) return;
-
-                    if (activate) {
-                        bots[index].active = true;
-                        bots[index].paused = false;
-                    } else {
-                        bots[index].paused = pause;
-                    }
-
-                    const updateResp = await fetch(`/api/user/${userEmail}/bots`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ bots })
+                // --- СИГНАЛЫ ---
+                html += `<h2 class="section-title">📡 Последние сигналы</h2>`;
+                if (signals.length === 0) {
+                    html += `<div class="table-wrap"><div class="placeholder" style="padding:20px;text-align:center;color:#64748b;">Нет сигналов</div></div>`;
+                } else {
+                    html += `<div class="table-wrap"><table>
+                        <thead><tr><th>Актив</th><th>Тип</th><th>Цена входа</th><th>Уверенность</th><th>Дата</th></tr></thead>
+                        <tbody>`;
+                    signals.slice(0, 10).forEach(s => {
+                        html += `<tr>
+                            <td><strong>${s.symbol}</strong></td>
+                            <td><span class="badge ${s.side === 'LONG' ? 'long' : 'short'}">${s.side}</span></td>
+                            <td>$${parseFloat(s.entry_price).toFixed(4)}</td>
+                            <td>${s.confidence || 'medium'}</td>
+                            <td>${new Date(s.created_at).toLocaleString()}</td>
+                        </tr>`;
                     });
-
-                    if (updateResp.ok) {
-                        loadBots();
-                    }
-                } catch (e) {
-                    console.error('Ошибка управления ботом:', e);
-                    alert('Ошибка при управлении ботом');
+                    html += `</tbody></table></div>`;
                 }
-            };
 
-            window.deleteBot = async function(index) {
-                if (!confirm('Удалить этого бота?')) return;
-
-                try {
-                    const resp = await fetch(`/api/user/${userEmail}`);
-                    const data = await resp.json();
-                    if (!data.user) return;
-
-                    const bots = data.user.bots || [];
-                    if (index >= bots.length) return;
-
-                    bots.splice(index, 1);
-
-                    const updateResp = await fetch(`/api/user/${userEmail}/bots`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ bots })
+                // --- ОТКРЫТЫЕ ПОЗИЦИИ ---
+                html += `<h2 class="section-title">🔓 Открытые позиции</h2>`;
+                if (positions.length === 0) {
+                    html += `<div class="table-wrap"><div class="placeholder" style="padding:20px;text-align:center;color:#64748b;">Нет открытых позиций</div></div>`;
+                } else {
+                    html += `<div class="table-wrap"><table>
+                        <thead><tr><th>Актив</th><th>Тип</th><th>Цена входа</th><th>Размер</th><th>PNL</th></tr></thead>
+                        <tbody>`;
+                    positions.forEach(p => {
+                        const pnl = p.pnl || 0;
+                        html += `<tr>
+                            <td><strong>${p.symbol}</strong></td>
+                            <td><span class="badge ${p.side === 'LONG' ? 'long' : 'short'}">${p.side}</span></td>
+                            <td>$${parseFloat(p.entry_price).toFixed(4)}</td>
+                            <td>${p.size || 0}</td>
+                            <td class="${pnl >= 0 ? 'positive' : 'negative'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}$</td>
+                        </tr>`;
                     });
-
-                    if (updateResp.ok) {
-                        loadBots();
-                    }
-                } catch (e) {
-                    console.error('Ошибка удаления бота:', e);
-                    alert('Ошибка при удалении бота');
+                    html += `</tbody></table></div>`;
                 }
-            };
 
-            async function loadRecentSignals() {
-                try {
-                    const resp = await fetch(`/api/signals/user/${userEmail}`);
-                    const data = await resp.json();
-                    const signals = data.signals || [];
-                    renderRecentSignals(signals.slice(0, 5));
-                } catch (e) {
-                    console.error('Ошибка загрузки сигналов:', e);
-                    document.getElementById('recentSignals').innerHTML = '<div class="empty">Нет сигналов</div>';
+                // --- БОТЫ ---
+                html += `<h2 class="section-title">🤖 Мои боты</h2>`;
+                const bots = user.bots || [];
+                if (bots.length === 0) {
+                    html += `<div class="table-wrap"><div class="placeholder" style="padding:20px;text-align:center;color:#64748b;">Нет подключенных ботов</div></div>`;
+                } else {
+                    html += `<div class="table-wrap"><table>
+                        <thead><tr><th>Биржа</th><th>Тариф</th><th>Депозит</th><th>PNL</th><th>Статус</th></tr></thead>
+                        <tbody>`;
+                    bots.forEach(b => {
+                        const statusClass = b.active ? (b.paused ? 'paused' : 'active') : 'inactive';
+                        const statusText = b.active ? (b.paused ? '⏸ Пауза' : '✅ Активен') : '⛔ Отключен';
+                        html += `<tr>
+                            <td>${b.exchange || 'demo'}</td>
+                            <td>${b.tariff || 'Базовый'}</td>
+                            <td>$${b.deposit || 0}</td>
+                            <td class="${(b.pnl || 0) >= 0 ? 'positive' : 'negative'}">${(b.pnl || 0) >= 0 ? '+' : ''}${(b.pnl || 0).toFixed(2)}$</td>
+                            <td><span class="status ${statusClass}">${statusText}</span></td>
+                        </tr>`;
+                    });
+                    html += `</tbody></table></div>`;
                 }
+
+                container.innerHTML = html;
+
+            } catch (err) {
+                console.error('Ошибка загрузки дашборда:', err);
+                container.innerHTML = `<div class="card" style="margin-top:30px;text-align:center;padding:40px;"><h3>❌ Ошибка загрузки данных</h3><p style="color:#94a3b8;">${err.message}</p></div>`;
             }
+        }
 
-            function renderRecentSignals(signals) {
-                const container = document.getElementById('recentSignals');
-                if (!signals || signals.length === 0) {
-                    container.innerHTML = '<div class="empty">Нет сигналов</div>';
-                    return;
-                }
-
-                container.innerHTML = signals.map(s => `
-                    <div class="signal-item">
-                        <div class="left">
-                            <strong>${s.symbol || '--'}</strong>
-                            <span class="${s.side === 'LONG' ? 'side-long' : 'side-short'}">${s.side || '--'}</span>
-                            <span class="badge ${s.checked ? 'badge-closed' : 'badge-open'}">${s.checked ? 'проверен' : 'активен'}</span>
-                        </div>
-                        <div class="right">
-                            <div>$${(s.entry_price || 0).toFixed(4)}</div>
-                            <div class="signal-time">${s.created_at ? new Date(s.created_at).toLocaleString() : '--'}</div>
-                        </div>
+        // --- ОТОБРАЖЕНИЕ ФОРМЫ ВХОДА ---
+        function renderLoginForm() {
+            const container = document.getElementById('mainContent');
+            document.getElementById('userEmail').textContent = '';
+            container.innerHTML = `
+                <div class="login-form">
+                    <h2>🔐 Вход в терминал</h2>
+                    <form id="loginForm">
+                        <input type="email" id="loginEmail" placeholder="Email" required>
+                        <input type="password" id="loginPassword" placeholder="Пароль" required>
+                        <button type="submit">Войти</button>
+                        <div id="loginError" class="error"></div>
+                    </form>
+                    <div class="register-link">
+                        Нет аккаунта? <a href="/login.html">Зарегистрироваться</a>
                     </div>
-                `).join('');
-            }
+                </div>
+            `;
 
-            function connectWebSocket() {
-                if (!userEmail) return;
-                
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${protocol}//${window.location.host}/ws?userId=${encodeURIComponent(userEmail)}`;
-                
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                const errorEl = document.getElementById('loginError');
+
                 try {
-                    ws = new WebSocket(wsUrl);
-                } catch (e) {
-                    console.error('WS create error:', e);
-                    return;
-                }
-                
-                ws.onopen = () => {
-                    console.log('✅ WebSocket подключен');
-                    reconnectAttempts = 0;
-                    document.getElementById('wsDot').className = 'dot connected';
-                    document.getElementById('wsLabel').textContent = 'подключено';
-                    updatePnl();
-                    loadBots();
-                    loadRecentSignals();
-                    loadExchanges();
-                };
-                
-                ws.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        updatePnlUI(data);
-                        updateBotsPnlFromWS(data);
-                    } catch (e) {
-                        console.error('Ошибка парсинга WebSocket:', e);
-                    }
-                };
-                
-                ws.onclose = () => {
-                    console.log('❌ WebSocket отключен');
-                    document.getElementById('wsDot').className = 'dot disconnected';
-                    document.getElementById('wsLabel').textContent = 'отключено';
-                    if (reconnectAttempts < MAX_RECONNECT) {
-                        reconnectAttempts++;
-                        setTimeout(connectWebSocket, 3000 * reconnectAttempts);
-                    }
-                };
-                
-                ws.onerror = (error) => {
-                    console.error('WebSocket ошибка:', error);
-                };
-            }
-
-            async function updatePnl() {
-                try {
-                    const response = await fetch(`/api/pnl/realtime/${userEmail}`);
-                    const result = await response.json();
-                    if (result.success) {
-                        updatePnlUI(result.data);
-                        updateBotsPnlFromWS(result.data);
-                    }
-                } catch (e) {
-                    console.error('Ошибка загрузки PNL:', e);
-                }
-            }
-
-            function updatePnlUI(data) {
-                if (!data) return;
-
-                const balance = data.balance || { initial: 0, current: 0, change: 0, changePercent: 0 };
-                document.getElementById('currentBalance').textContent = `$${balance.current.toFixed(2)}`;
-                document.getElementById('initialBalance').textContent = `$${balance.initial.toFixed(2)}`;
-                
-                const changeEl = document.getElementById('balanceChange');
-                if (balance.change > 0.01) {
-                    changeEl.innerHTML = `<span class="positive">+$${balance.change.toFixed(2)} (+${balance.changePercent.toFixed(1)}%)</span>`;
-                } else if (balance.change < -0.01) {
-                    changeEl.innerHTML = `<span class="negative">-$${Math.abs(balance.change).toFixed(2)} (${balance.changePercent.toFixed(1)}%)</span>`;
-                } else {
-                    changeEl.innerHTML = `<span class="neutral">$0.00 (0%)</span>`;
-                }
-
-                const positions = data.positions || [];
-                const trades = data.trades || { total: 0, open: 0, closed: 0, wins: 0, losses: 0, winRate: 0, totalPnl: 0 };
-                
-                const totalPnl = trades.totalPnl + positions.reduce((sum, p) => sum + (p.pnl || 0), 0);
-                const pnlEl = document.getElementById('totalPnl');
-                pnlEl.textContent = `$${totalPnl.toFixed(2)}`;
-                pnlEl.className = 'value ' + (totalPnl > 0.01 ? 'positive' : totalPnl < -0.01 ? 'negative' : 'neutral');
-
-                document.getElementById('tradeStats').textContent = trades.total || 0;
-                document.getElementById('winCount').textContent = trades.wins || 0;
-                document.getElementById('lossCount').textContent = trades.losses || 0;
-                document.getElementById('winRate').textContent = (trades.winRate || 0) + '%';
-
-                const positionsContainer = document.getElementById('openPositions');
-                const displayPositions = positions.slice(0, 3);
-                if (!displayPositions || displayPositions.length === 0) {
-                    positionsContainer.innerHTML = '<div class="empty">Нет открытых позиций</div>';
-                } else {
-                    positionsContainer.innerHTML = displayPositions.map(pos => `
-                        <div class="trade-item">
-                            <div class="left">
-                                <strong>${pos.symbol || '--'}</strong>
-                                <span class="${pos.side === 'LONG' ? 'side-long' : 'side-short'}">${pos.side || '--'}</span>
-                                <span style="color:#94a3b8;font-size:12px;">${(pos.size || 0).toFixed(2)} USDT</span>
-                                <span class="badge badge-open">открыта</span>
-                            </div>
-                            <div class="right">
-                                <div>Entry: $${(pos.entry_price || 0).toFixed(4)}</div>
-                                <div>Current: $${pos.currentPrice ? pos.currentPrice.toFixed(4) : '--'}</div>
-                                <div class="${(pos.pnl || 0) > 0.01 ? 'positive' : (pos.pnl || 0) < -0.01 ? 'negative' : 'neutral'}">
-                                    ${(pos.pnl || 0) > 0 ? '+' : ''}$${(pos.pnl || 0).toFixed(2)} (${(pos.pnlPercent || 0).toFixed(1)}%)
-                                </div>
-                                <button class="btn-close" onclick="closePosition('${pos.id}')">Закрыть</button>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-
-                const historyContainer = document.getElementById('tradeHistory');
-                const recentTrades = (data.recentTrades || []).slice(0, 5);
-                if (!recentTrades || recentTrades.length === 0) {
-                    historyContainer.innerHTML = '<div class="empty">Нет завершенных сделок</div>';
-                } else {
-                    historyContainer.innerHTML = recentTrades.map(trade => `
-                        <div class="trade-item">
-                            <div class="left">
-                                <strong>${trade.symbol || '--'}</strong>
-                                <span class="${trade.side === 'LONG' ? 'side-long' : 'side-short'}">${trade.side || '--'}</span>
-                                <span style="color:#94a3b8;font-size:12px;">
-                                    ${trade.close_time ? new Date(trade.close_time).toLocaleString() : '--'}
-                                </span>
-                                <span class="badge badge-closed">закрыта</span>
-                            </div>
-                            <div class="right">
-                                <div style="font-size:13px;color:#94a3b8;">
-                                    ${(trade.entry_price || 0).toFixed(4)} → ${(trade.close_price || 0).toFixed(4)}
-                                </div>
-                                <div class="${(trade.pnl || 0) > 0.01 ? 'positive' : (trade.pnl || 0) < -0.01 ? 'negative' : 'neutral'}">
-                                    ${(trade.pnl || 0) > 0 ? '+' : ''}$${(trade.pnl || 0).toFixed(2)} (${(trade.pnl_percent || 0).toFixed(1)}%)
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            }
-
-            function updateBotsPnlFromWS(data) {
-                if (!data || !data.bots) return;
-                
-                const userEmail = localStorage.getItem('smt_user_email');
-                if (!userEmail) return;
-                
-                fetch(`/api/user/${userEmail}`)
-                    .then(res => res.json())
-                    .then(userData => {
-                        if (userData.user && userData.user.bots) {
-                            const updatedBots = userData.user.bots.map((bot, index) => {
-                                const botData = data.bots.find(b => b.id === bot.id) || data.bots[index];
-                                if (botData) {
-                                    return {
-                                        ...bot,
-                                        pnl: botData.pnl || 0,
-                                        openTrades: botData.openTrades || 0,
-                                        closedTrades: botData.closedTrades || 0
-                                    };
-                                }
-                                return bot;
-                            });
-                            renderBots(updatedBots);
-                        }
-                    })
-                    .catch(e => console.error('Ошибка обновления ботов:', e));
-            }
-
-            window.closePosition = async function(positionId) {
-                if (!confirm('Закрыть эту позицию?')) return;
-                
-                try {
-                    const response = await fetch('/api/trade/close', {
+                    const res = await fetch('/api/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ positionId, email: userEmail })
+                        body: JSON.stringify({ email, password })
                     });
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        alert(`✅ Позиция закрыта. PNL: $${(result.pnl || 0).toFixed(2)}`);
-                        updatePnl();
+                    const data = await res.json();
+                    if (res.ok && data.user) {
+                        // === ГЛАВНОЕ: СОХРАНЯЕМ ПОЛЬЗОВАТЕЛЯ ===
+                        saveUser(data.user);
+                        window.location.reload();
                     } else {
-                        alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                        errorEl.textContent = data.error || 'Ошибка входа';
                     }
-                } catch (e) {
-                    console.error('Ошибка закрытия:', e);
-                    alert('❌ Ошибка при закрытии позиции');
+                } catch (err) {
+                    errorEl.textContent = 'Ошибка соединения с сервером';
                 }
-            };
+            });
+        }
 
-            window.updatePnl = updatePnl;
-
-            window.logout = function() {
-                localStorage.removeItem('smt_user_email');
-                if (ws) {
-                    try { ws.close(); } catch(e) {}
-                }
-                window.location.replace('/login.html');
-            };
-
-            checkVipStatus();
-            connectWebSocket();
-            
-            setInterval(() => {
-                if (!ws || ws.readyState !== WebSocket.OPEN) {
-                    updatePnl();
-                }
-            }, 5000);
-
-            loadBots();
-            loadRecentSignals();
-            loadExchanges();
-
-        })();
+        // --- ГЛАВНАЯ ЛОГИКА ---
+        const user = getUser();
+        if (user && user.email) {
+            renderDashboard(user);
+        } else {
+            renderLoginForm();
+        }
     </script>
 
 </body>
