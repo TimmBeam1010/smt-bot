@@ -1350,10 +1350,10 @@ app.delete('/api/exchange/trade/:email/:exchangeId/:orderId', async (req, res) =
 });
 
 app.post('/api/bot/create', async (req, res) => {
-    const { email, exchangeId, name, strategy, deposit, apiKey, secretKey, autoUseExisting } = req.body;
+    const { email, exchangeId, name, strategy, deposit, apiKey, secretKey, autoUseExisting, tariff, price, config } = req.body;
 
     console.log('📥 Создание бота для:', email);
-    console.log('📦 Данные:', { exchangeId, name, strategy, deposit, autoUseExisting });
+    console.log('📦 Данные:', { exchangeId, name, strategy, deposit, autoUseExisting, tariff, price });
 
     if (!email || !exchangeId || !name) {
         return res.status(400).json({ error: 'email, exchangeId и name обязательны' });
@@ -1434,13 +1434,15 @@ app.post('/api/bot/create', async (req, res) => {
             id: Date.now().toString(),
             exchange: exchangeId,
             name: name,
-            strategy: strategy,
-            deposit: deposit,
+            strategy: strategy || 'combined',
+            deposit: deposit || 1000,
             apiKey: finalApiKey ? '***' : null,
             active: true,
             paused: false,
             createdAt: new Date().toISOString(),
-            tariff: 'Пользовательский',
+            tariff: tariff || 'Пользовательский',
+            price: price || 0,
+            config: config || {},
             services: ['Сигналы'],
             tariffEnd: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
             pnl: 0,
