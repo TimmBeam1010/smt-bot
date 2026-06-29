@@ -59,16 +59,6 @@
             font-size: 13px;
         }
         .btn-secondary:hover { background: #2d3748; }
-        .btn-danger-sm {
-            background: #dc262620;
-            color: #ef4444 !important;
-            padding: 4px 12px;
-            border-radius: 6px;
-            border: 1px solid #ef444440;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .btn-danger-sm:hover { background: #dc262640; }
         .btn-success-sm {
             background: #22c55e20;
             color: #22c55e !important;
@@ -79,6 +69,16 @@
             font-size: 12px;
         }
         .btn-success-sm:hover { background: #22c55e40; }
+        .btn-danger-sm {
+            background: #dc262620;
+            color: #ef4444 !important;
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid #ef444440;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-danger-sm:hover { background: #dc262640; }
 
         /* --- CARDS & SECTIONS --- */
         .section {
@@ -140,6 +140,8 @@
             align-items: center;
             padding: 12px 0;
             border-bottom: 1px solid #1e293b;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .exchange-item:last-child { border-bottom: none; }
         .exchange-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -147,7 +149,16 @@
         .exchange-item .status { font-size: 13px; }
         .status.active { color: #22c55e; }
         .status.inactive { color: #64748b; }
-        .exchange-item .actions { display: flex; gap: 8px; }
+        .exchange-item .balance { 
+            font-size: 14px; 
+            color: #94a3b8;
+            background: #0a0e17;
+            padding: 2px 12px;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
+        }
+        .exchange-item .balance strong { color: #e2e8f0; }
+        .exchange-item .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
         /* --- BOT LIST --- */
         .bot-item {
@@ -344,7 +355,7 @@
                     </div>
                 `;
 
-                // --- БЛОК: МОИ БИРЖИ ---
+                // --- БЛОК: МОИ БИРЖИ (С БАЛАНСОМ) ---
                 html += `
                     <div class="section">
                         <div class="section-title">🏦 Мои биржи <small>(${connectedExchanges.length})</small></div>
@@ -363,9 +374,12 @@
                                 <div class="info">
                                     <span class="name">${ex.exchange.toUpperCase()}</span>
                                     <span class="status ${statusClass}">${statusText}</span>
-                                    ${ex.last_checked ? `<span style="font-size:12px;color:#64748b;">(проверено: ${new Date(ex.last_checked).toLocaleDateString()})</span>` : ''}
+                                    <span class="balance" id="balance-${ex.exchange}">
+                                        💰 Баланс: <strong>...</strong>
+                                    </span>
                                 </div>
                                 <div class="actions">
+                                    <button class="btn-success-sm" onclick="refreshBalance('${user.email}','${ex.exchange}')">🔄 Обновить</button>
                                     <button class="btn-danger-sm" onclick="disconnectExchange('${user.email}','${ex.exchange}')">❌ Отключить</button>
                                 </div>
                             </div>
@@ -485,6 +499,13 @@
                     }
                 });
 
+                // --- ЗАГРУЗКА БАЛАНСОВ ---
+                for (const ex of connectedExchanges) {
+                    if (ex.enabled) {
+                        loadBalance(user.email, ex.exchange);
+                    }
+                }
+
             } catch (err) {
                 console.error('Ошибка загрузки дашборда:', err);
                 container.innerHTML = `
@@ -498,7 +519,34 @@
         }
 
         // ============================================
-        //  УПРАВЛЕНИЕ БОТАМИ (ЧЕРЕЗ API)
+        //  ЗАГРУЗКА БАЛАНСА БИРЖИ
+        // ============================================
+        window.loadBalance = async function(email, exchange) {
+            const balanceEl = document.getElementById(`balance-${exchange}`);
+            if (!balanceEl) return;
+
+            try {
+                balanceEl.innerHTML = '💰 Баланс: <strong>⏳</strong>';
+                const res = await fetch(`${API_BASE}/exchange/balance/${encodeURIComponent(email)}/${exchange}`);
+                const data = await res.json();
+
+                if (data.balance !== undefined) {
+                    balanceEl.innerHTML = `💰 Баланс: <strong>$${data.balance.toFixed(2)}</strong>`;
+                } else {
+                    balanceEl.innerHTML = `💰 Баланс: <strong style="color:#ef4444;">Ошибка</strong>`;
+                }
+            } catch (err) {
+                console.error(`Ошибка загрузки баланса ${exchange}:`, err);
+                balanceEl.innerHTML = `💰 Баланс: <strong style="color:#ef4444;">Ошибка</strong>`;
+            }
+        };
+
+        window.refreshBalance = function(email, exchange) {
+            loadBalance(email, exchange);
+        };
+
+        // ============================================
+        //  УПРАВЛЕНИЕ БОТАМИ
         // ============================================
         window.toggleBotPause = async function(email, index) {
             const user = getUser();
