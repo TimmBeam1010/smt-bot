@@ -4,7 +4,7 @@ const axios = require('axios');
 //  КЕШИРОВАНИЕ ЦЕН (В ПАМЯТИ)
 // ============================================
 const priceCache = new Map();
-const CACHE_TTL = 10000; // 10 секунд
+const CACHE_TTL = 10000;
 
 function getCachedPrice(symbol, exchange) {
     const key = `${exchange}:${symbol}`;
@@ -51,32 +51,71 @@ const SYMBOLS_COLD = [
 const SYMBOLS = [...SYMBOLS_HOT, ...SYMBOLS_COLD];
 
 // ============================================
-//  КОНФИГУРАЦИЯ БИРЖ
+//  КОНФИГУРАЦИЯ БИРЖ (ИСПРАВЛЕННАЯ)
 // ============================================
 const EXCHANGES = {
     binance: {
         name: 'Binance',
         url: (symbol) => `https://api.binance.com/api/v3/ticker/price?symbol=${symbol.replace('-', '')}`,
-        parse: (data) => parseFloat(data.price)
+        parse: (data) => {
+            if (data && data.price) {
+                return parseFloat(data.price);
+            }
+            return null;
+        }
     },
     bybit: {
         name: 'Bybit',
         url: (symbol) => `https://api.bybit.com/v5/market/tickers?category=spot&symbol=${symbol.replace('-', '')}`,
-        parse: (data) => parseFloat(data.result.list[0].lastPrice)
+        parse: (data) => {
+            try {
+                if (data?.result?.list?.length > 0) {
+                    const ticker = data.result.list[0];
+                    if (ticker?.lastPrice) {
+                        return parseFloat(ticker.lastPrice);
+                    }
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
     },
     okx: {
         name: 'OKX',
         url: (symbol) => `https://www.okx.com/api/v5/market/ticker?instId=${symbol.replace('-', '')}`,
-        parse: (data) => parseFloat(data.data[0].last)
+        parse: (data) => {
+            try {
+                if (data?.data?.length > 0) {
+                    const ticker = data.data[0];
+                    if (ticker?.last) {
+                        return parseFloat(ticker.last);
+                    }
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
     },
     bingx: {
         name: 'BingX',
         url: (symbol) => `https://open-api.bingx.com/openApi/spot/v1/ticker/price?symbol=${symbol.replace('-', '_')}`,
         parse: (data) => {
-            if (data.data && data.data.length > 0) {
-                return parseFloat(data.data[0].trades[0].price);
+            try {
+                if (data?.data?.length > 0) {
+                    const trades = data.data[0]?.trades;
+                    if (trades?.length > 0 && trades[0]?.price) {
+                        return parseFloat(trades[0].price);
+                    }
+                }
+                if (data?.price) {
+                    return parseFloat(data.price);
+                }
+                return null;
+            } catch (e) {
+                return null;
             }
-            return parseFloat(data.price);
         }
     }
 };
@@ -195,7 +234,7 @@ async function getPrices(symbols) {
 }
 
 // ============================================
-//  ИНДИКАТОРЫ
+//  ВСЕ ИНДИКАТОРЫ
 // ============================================
 function calculateRSI(prices, period = 14) {
     if (prices.length < period + 1) return null;
@@ -650,7 +689,12 @@ async function getAllUserExchanges(supabase) {
         for (const user of users) {
             const exchanges = user.connected_exchanges || [];
             if (Array.isArray(exchanges) && exchanges.length > 0) {
-                userExchangesCache.set(user.id, exchanges);
+                const cleanExchanges = exchanges.map(e => e.trim()).filter(e => e.length > 0);
+                if (cleanExchanges.length > 0) {
+                    userExchangesCache.set(user.id, cleanExchanges);
+                } else {
+                    userExchangesCache.set(user.id, ['binance', 'bybit', 'okx']);
+                }
             } else {
                 userExchangesCache.set(user.id, ['binance', 'bybit', 'okx']);
             }
@@ -688,6 +732,10 @@ async function getUserAggregatedPrice(userId, symbol, supabase, defaultExchanges
         return getAggregatedPrice(symbol, defaultExchanges, 'median', true);
     }
 }
+
+// ============================================
+//  ЭКСПОРТ
+// ============================================
 
 module.exports = {
     SYMBOLS,
