@@ -1328,11 +1328,10 @@ app.get('/api/user/pnl-history/:email', async (req, res) => {
 });
 
 // ============================================
-//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА (МНОГОПОЛЬЗОВАТЕЛЬСКИЙ)
+//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА (С ПОДДЕРЖКОЙ СИМВОЛОВ БОТА)
 // ============================================
 
 const {
-    SYMBOLS_HOT,
     getUserAggregatedPrice,
     getAllUserExchanges,
     generateSignal
@@ -1367,54 +1366,80 @@ cron.schedule('*/1 * * * *', async () => {
 
         for (const userId of userIds) {
             try {
-                const exchanges = userExchangesMap.get(userId) || ['binance', 'bybit', 'okx'];
-                
-                const hotPrices = {};
-                for (const symbol of SYMBOLS_HOT) {
-                    const result = await getUserAggregatedPrice(userId, symbol, supabase);
-                    if (result) {
-                        hotPrices[symbol] = result.price;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                const { data: user, error: userError } = await supabase
+                    .from('users')
+                    .select('bots')
+                    .eq('id', userId)
+                    .single();
+
+                if (userError || !user) {
+                    console.error(`❌ Ошибка получения пользователя ${userId}:`, userError);
+                    continue;
                 }
 
-                for (const symbol of SYMBOLS_HOT) {
-                    if (hotPrices[symbol] !== undefined) {
-                        const history = getUserPriceHistory(userId, symbol);
-                        history.push(hotPrices[symbol]);
-                        if (history.length > 60) {
-                            history.shift();
+                const bots = user.bots || [];
+                const activeBots = bots.filter(bot => bot.active && !bot.paused);
+
+                if (activeBots.length === 0) {
+                    continue;
+                }
+
+                const exchanges = userExchangesMap.get(userId) || ['binance', 'bybit', 'okx'];
+
+                for (const bot of activeBots) {
+                    let symbols = bot.symbols || [];
+                    if (symbols.length === 0) {
+                        symbols = ['BTC-USDT', 'ETH-USDT', 'BNB-USDT', 'SOL-USDT', 'XRP-USDT'];
+                        console.log(`⚠️ У бота ${bot.name || 'без названия'} нет символов, используем дефолтные`);
+                    }
+
+                    const prices = {};
+                    for (const symbol of symbols) {
+                        const result = await getUserAggregatedPrice(userId, symbol, supabase);
+                        if (result) {
+                            prices[symbol] = result.price;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+
+                    for (const symbol of symbols) {
+                        if (prices[symbol] !== undefined) {
+                            const history = getUserPriceHistory(userId, symbol);
+                            history.push(prices[symbol]);
+                            if (history.length > 60) {
+                                history.shift();
+                            }
                         }
                     }
-                }
 
-                for (const symbol of SYMBOLS_HOT) {
-                    const history = getUserPriceHistory(userId, symbol);
-                    if (history.length >= 20) {
-                        const signal = generateSignal(symbol, history);
-                        if (signal) {
-                            console.log(`📈 СИГНАЛ для ${userId} (${symbol}): ${signal.side} (${signal.confidence})`);
-                            
-                            try {
-                                const { error: insertError } = await supabase
-                                    .from('signals')
-                                    .insert({
-                                        user_id: userId,
-                                        symbol: signal.symbol,
-                                        side: signal.side,
-                                        entry_price: signal.entry,
-                                        confidence: signal.confidence,
-                                        reasons: signal.reasons,
-                                        rsi: signal.rsi,
-                                        macd: signal.macd,
-                                        created_at: new Date()
-                                    });
+                    for (const symbol of symbols) {
+                        const history = getUserPriceHistory(userId, symbol);
+                        if (history.length >= 20) {
+                            const signal = generateSignal(symbol, history);
+                            if (signal) {
+                                console.log(`📈 СИГНАЛ для ${userId} (${symbol}): ${signal.side} (${signal.confidence})`);
 
-                                if (insertError) {
-                                    console.error(`❌ Ошибка сохранения сигнала для ${userId}:`, insertError);
+                                try {
+                                    const { error: insertError } = await supabase
+                                        .from('signals')
+                                        .insert({
+                                            user_id: userId,
+                                            symbol: signal.symbol,
+                                            side: signal.side,
+                                            entry_price: signal.entry,
+                                            confidence: signal.confidence,
+                                            reasons: signal.reasons,
+                                            rsi: signal.rsi,
+                                            macd: signal.macd,
+                                            created_at: new Date()
+                                        });
+
+                                    if (insertError) {
+                                        console.error(`❌ Ошибка сохранения сигнала для ${userId}:`, insertError);
+                                    }
+                                } catch (dbError) {
+                                    console.error(`❌ Ошибка БД для ${userId}:`, dbError.message);
                                 }
-                            } catch (dbError) {
-                                console.error(`❌ Ошибка БД для ${userId}:`, dbError.message);
                             }
                         }
                     }
