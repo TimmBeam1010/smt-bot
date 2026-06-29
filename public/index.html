@@ -16,7 +16,7 @@
             color: #e2e8f0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            padding: 0 20px;
+            padding: 0 16px;
         }
         a {
             color: #4f46e5;
@@ -33,11 +33,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 0;
+            padding: 16px 0;
             border-bottom: 1px solid #1e293b;
         }
         .logo {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             color: #fff;
             cursor: pointer;
@@ -53,48 +53,44 @@
         .btn-primary {
             background: #4f46e5;
             color: #fff !important;
-            padding: 8px 20px;
+            padding: 8px 16px;
             border-radius: 8px;
             font-weight: 600;
             transition: background 0.2s;
             border: none;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
+            white-space: nowrap;
         }
         .btn-primary:hover {
             background: #4338ca;
         }
 
-        /* --- БЛОК PNL В ШАПКЕ (ОБНОВЛЁННЫЙ) --- */
+        /* --- БЛОК PNL В ШАПКЕ (МОБИЛЬНЫЙ ПРИОРИТЕТ) --- */
         .pnl-block {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             background: #111827;
-            padding: 4px 16px 4px 20px;
+            padding: 4px 12px 4px 16px;
             border-radius: 40px;
             border: 1px solid #1e293b;
             cursor: pointer;
             transition: border-color 0.3s, background 0.3s;
-            height: 40px;
-            /* Фиксированная высота под логотип */
+            height: 36px;
             white-space: nowrap;
         }
         .pnl-block:hover {
             border-color: #4f46e5;
             background: #1a2035;
         }
+        /* Email виден только на ПК, на мобильных скрыт */
         .pnl-block .email-label {
-            font-size: 12px;
-            color: #64748b;
-            max-width: 100px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            display: none;
         }
         .pnl-block .value {
             font-weight: 700;
-            font-size: 15px;
+            font-size: 14px;
         }
         .pnl-block .value.positive {
             color: #22c55e;
@@ -102,18 +98,24 @@
         .pnl-block .value.negative {
             color: #ef4444;
         }
-        .pnl-block .balance-label {
-            font-size: 13px;
-            color: #94a3b8;
+        .pnl-block .divider {
+            color: #1e293b;
+            font-weight: 300;
+            font-size: 16px;
+        }
+        .pnl-block .balance-value {
+            font-weight: 600;
+            font-size: 14px;
+            color: #e2e8f0;
         }
 
-        /* --- HERO --- */
+        /* --- HERO (МОБИЛЬНАЯ ОПТИМИЗАЦИЯ) --- */
         .hero {
             text-align: center;
-            padding: 60px 0 40px;
+            padding: 40px 0 30px;
         }
         .hero h1 {
-            font-size: 42px;
+            font-size: 28px;
             font-weight: 800;
             background: linear-gradient(135deg, #f8fafc, #4f46e5);
             -webkit-background-clip: text;
@@ -122,32 +124,35 @@
             line-height: 1.2;
         }
         .hero p {
-            font-size: 18px;
+            font-size: 16px;
             color: #94a3b8;
             max-width: 700px;
-            margin: 16px auto 24px;
+            margin: 12px auto 20px;
+            padding: 0 8px;
         }
 
-        /* --- WIDGET: DEMO BOT --- */
+        /* --- WIDGET: DEMO BOT (МОБИЛЬНЫЙ) --- */
         .bot-widget {
             background: #111827;
             border: 1px solid #1e293b;
             border-radius: 16px;
-            padding: 20px 24px;
-            margin: 30px 0 40px;
+            padding: 16px 18px;
+            margin: 20px 0 30px;
             display: flex;
             flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
+            gap: 8px;
         }
         .bot-widget .status {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            font-size: 13px;
         }
         .bot-widget .status .dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background: #22c55e;
             display: inline-block;
@@ -159,172 +164,200 @@
             100% { opacity: 1; }
         }
         .bot-widget .balance {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
         }
         .bot-widget .balance small {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 400;
             color: #94a3b8;
         }
         .bot-widget .pnl {
             font-weight: 600;
+            font-size: 14px;
         }
         .pnl.positive { color: #22c55e; }
         .pnl.negative { color: #ef4444; }
         .bot-widget .trade-info {
-            font-size: 14px;
+            font-size: 13px;
             color: #94a3b8;
+            width: 100%;
+            text-align: center;
         }
         .bot-widget .trade-info strong {
             color: #e2e8f0;
         }
+        .bot-widget .btn-primary {
+            font-size: 12px;
+            padding: 6px 14px;
+        }
 
-        /* --- GRID: MARKET INDICATORS --- */
+        /* --- GRID: MARKET INDICATORS (МОБИЛЬНЫЙ) --- */
         .market-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin: 30px 0;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
         }
         .market-card {
             background: #111827;
             border: 1px solid #1e293b;
             border-radius: 12px;
-            padding: 16px 20px;
+            padding: 14px 16px;
         }
         .market-card .label {
-            font-size: 12px;
+            font-size: 10px;
             text-transform: uppercase;
             color: #64748b;
             letter-spacing: 0.5px;
         }
         .market-card .value {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            margin-top: 4px;
+            margin-top: 2px;
         }
         .market-card .change {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
         }
         .change.positive { color: #22c55e; }
         .change.negative { color: #ef4444; }
 
-        /* --- TABLE: TOP-10 (заглушка) --- */
+        /* --- TABLE: TOP-10 (МОБИЛЬНЫЙ) --- */
         .section-title {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            margin: 40px 0 16px;
+            margin: 30px 0 12px;
         }
         .table-wrap {
             overflow-x: auto;
             background: #111827;
             border-radius: 12px;
             border: 1px solid #1e293b;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            font-size: 12px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
+            font-size: 12px;
         }
         th {
             text-align: left;
-            padding: 12px 16px;
+            padding: 10px 12px;
             background: #0f172a;
             color: #94a3b8;
             font-weight: 600;
+            font-size: 11px;
         }
         td {
-            padding: 12px 16px;
+            padding: 10px 12px;
             border-top: 1px solid #1e293b;
+            font-size: 12px;
         }
         .placeholder {
             color: #64748b;
             text-align: center;
-            padding: 30px 0;
+            padding: 20px 0;
+            font-size: 13px;
         }
 
-        /* --- NEWS --- */
+        /* --- NEWS (МОБИЛЬНЫЙ) --- */
         .news-list {
             display: grid;
-            gap: 12px;
-            margin: 16px 0 30px;
+            gap: 10px;
+            margin: 12px 0 20px;
         }
         .news-item {
             background: #111827;
             border: 1px solid #1e293b;
             border-radius: 8px;
-            padding: 12px 16px;
+            padding: 10px 14px;
         }
         .news-item .title {
             font-weight: 500;
+            font-size: 14px;
         }
         .news-item .source {
-            font-size: 12px;
+            font-size: 11px;
             color: #64748b;
         }
 
-        /* --- FEATURES --- */
+        /* --- FEATURES (МОБИЛЬНЫЙ) --- */
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 24px;
-            margin: 30px 0 40px;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0 30px;
         }
         .feature {
             text-align: center;
+            padding: 12px 8px;
+            background: #111827;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
         }
         .feature .icon {
-            font-size: 36px;
-            margin-bottom: 8px;
-        }
-        .feature h3 {
-            font-size: 18px;
+            font-size: 28px;
             margin-bottom: 4px;
         }
-        .feature p {
+        .feature h3 {
             font-size: 14px;
+            margin-bottom: 2px;
+        }
+        .feature p {
+            font-size: 12px;
             color: #94a3b8;
         }
 
-        /* --- CTA --- */
+        /* --- CTA (МОБИЛЬНЫЙ) --- */
         .cta {
             text-align: center;
             background: #111827;
             border: 1px solid #1e293b;
             border-radius: 16px;
-            padding: 40px 20px;
-            margin: 40px 0 60px;
+            padding: 28px 16px;
+            margin: 30px 0 40px;
         }
         .cta h2 {
-            font-size: 28px;
+            font-size: 22px;
             margin-bottom: 8px;
         }
         .cta p {
             color: #94a3b8;
             max-width: 500px;
-            margin: 0 auto 20px;
+            margin: 0 auto 16px;
+            font-size: 14px;
+        }
+        .cta .btn-primary {
+            font-size: 16px;
+            padding: 12px 32px;
         }
 
         /* --- FOOTER --- */
         .footer {
             border-top: 1px solid #1e293b;
-            padding: 24px 0;
+            padding: 20px 0;
             text-align: center;
             color: #64748b;
-            font-size: 14px;
+            font-size: 12px;
         }
 
-        /* --- RESPONSIVE --- */
-        @media (max-width: 768px) {
-            .hero h1 { font-size: 28px; }
-            .header { flex-wrap: wrap; gap: 12px; }
-            .bot-widget { flex-direction: column; align-items: flex-start; gap: 12px; }
-            .pnl-block .email-label { display: none; }
-            .pnl-block .balance-label { display: none; }
-            .pnl-block { padding: 4px 12px; }
+        /* --- ПЛАНШЕТЫ И БОЛЬШИЕ ЭКРАНЫ (1024px+) --- */
+        @media (min-width: 1024px) {
+            body { padding: 0 20px; }
+            .logo { font-size: 24px; }
+            .btn-primary { font-size: 14px; padding: 8px 20px; }
+            .pnl-block { height: 40px; padding: 4px 16px 4px 20px; }
+            .pnl-block .email-label { display: inline-block; font-size: 12px; color: #64748b; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+            .pnl-block .value { font-size: 15px; }
+            .pnl-block .balance-value { font-size: 15px; }
+            .hero h1 { font-size: 42px; }
+            .hero p { font-size: 18px; }
+            .market-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+            .features { grid-template-columns: repeat(4, 1fr); }
+            .bot-widget .balance { font-size: 24px; }
+            .bot-widget .pnl { font-size: 16px; }
         }
     </style>
 </head>
@@ -361,7 +394,7 @@
             <div class="trade-info" id="demoTrade">
                 <span id="tradeInfo">Ожидание сигнала...</span>
             </div>
-            <a href="/dashboard.html" class="btn-primary" style="padding:6px 16px; font-size:14px;">Мой бот</a>
+            <a href="/dashboard.html" class="btn-primary" style="padding:6px 14px; font-size:12px;">Мой бот</a>
         </section>
 
         <!-- MARKET INDICATORS -->
@@ -382,40 +415,40 @@
                 <div class="change" id="ethChange">--</div>
             </div>
             <div class="market-card">
-                <div class="label">Total Market Cap</div>
+                <div class="label">Total Cap</div>
                 <div class="value" id="totalCap">--</div>
-                <div class="change">BTC доминирование: 55.6%</div>
+                <div class="change">BTC: 55.6%</div>
             </div>
         </div>
 
         <!-- TOP-10 CRYPTO (заглушка) -->
-        <h2 class="section-title">🏆 Топ-10 криптовалют</h2>
+        <h2 class="section-title">🏆 Топ-10</h2>
         <div class="table-wrap">
             <table>
                 <thead>
-                    <tr><th>#</th><th>Монета</th><th>Цена</th><th>24ч %</th><th>Объём</th><th>Рыночная кап.</th></tr>
+                    <tr><th>#</th><th>Монета</th><th>Цена</th><th>24ч %</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="6" class="placeholder">📊 Данные загружаются... (доступно в терминале)</td></tr>
+                    <tr><td colspan="4" class="placeholder">📊 Загрузка...</td></tr>
                 </tbody>
             </table>
         </div>
 
         <!-- TECHNICAL INDICATORS (заглушка) -->
-        <h2 class="section-title">📈 Технические индикаторы (BTC)</h2>
+        <h2 class="section-title">📈 Индикаторы BTC</h2>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Индикатор</th><th>Значение</th><th>Сигнал</th></tr></thead>
+                <thead><tr><th>Индикатор</th><th>Значение</th></tr></thead>
                 <tbody>
-                    <tr><td>RSI</td><td>--</td><td>--</td></tr>
-                    <tr><td>MACD</td><td>--</td><td>--</td></tr>
-                    <tr><td>Уровни</td><td colspan="2">Поддержка: -- / Сопротивление: --</td></tr>
+                    <tr><td>RSI</td><td>--</td></tr>
+                    <tr><td>MACD</td><td>--</td></tr>
+                    <tr><td>Уровни</td><td>Поддержка: -- / Сопротивление: --</td></tr>
                 </tbody>
             </table>
         </div>
 
         <!-- NEWS -->
-        <h2 class="section-title">📰 Новости крипторынка</h2>
+        <h2 class="section-title">📰 Новости</h2>
         <div class="news-list" id="newsContainer">
             <div class="news-item"><span class="title">Загрузка новостей...</span></div>
         </div>
@@ -425,30 +458,30 @@
             <div class="feature">
                 <div class="icon">📊</div>
                 <h3>100+ активов</h3>
-                <p>Аналитика и сигналы по всем топ-монетам</p>
+                <p>Аналитика и сигналы</p>
             </div>
             <div class="feature">
                 <div class="icon">🧠</div>
                 <h3>AI-аналитика</h3>
-                <p>Индикаторы, паттерны, новостной фон</p>
+                <p>Индикаторы, паттерны</p>
             </div>
             <div class="feature">
                 <div class="icon">⚡</div>
                 <h3>Сигналы</h3>
-                <p>LONG / SHORT с разной уверенностью</p>
+                <p>LONG / SHORT</p>
             </div>
             <div class="feature">
                 <div class="icon">🤖</div>
                 <h3>Автоторговля</h3>
-                <p>Настраиваемая стратегия и риск-менеджмент</p>
+                <p>Риск-менеджмент</p>
             </div>
         </div>
 
         <!-- CTA -->
         <section class="cta">
-            <h2>🚀 Готовы торговать умнее?</h2>
-            <p>Получите полный доступ к терминалу, сигналам и автоторговле.</p>
-            <a href="/dashboard.html" class="btn-primary" style="padding:12px 40px; font-size:18px;">Открыть терминал</a>
+            <h2>🚀 Готовы торговать?</h2>
+            <p>Полный доступ к терминалу, сигналам и автоторговле.</p>
+            <a href="/dashboard.html" class="btn-primary" style="padding:12px 32px; font-size:16px;">Открыть терминал</a>
         </section>
 
         <!-- FOOTER -->
@@ -489,13 +522,15 @@
                         const pnl = data.pnlPercent || 0;
                         const pnlClass = pnl >= 0 ? 'positive' : 'negative';
                         const pnlSign = pnl >= 0 ? '+' : '';
+                        const balance = data.balance || 0;
 
                         headerRight.innerHTML = `
                             <a href="/dashboard.html" style="text-decoration: none;">
                                 <div class="pnl-block">
                                     <span class="email-label">${user.email}</span>
                                     <span class="value ${pnlClass}">${pnlSign}${pnl.toFixed(2)}%</span>
-                                    <span class="balance-label">$${data.balance?.toFixed(2) || '0.00'}</span>
+                                    <span class="divider">|</span>
+                                    <span class="balance-value">$${balance.toFixed(2)}</span>
                                 </div>
                             </a>
                         `;
