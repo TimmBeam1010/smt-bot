@@ -1349,6 +1349,133 @@ app.delete('/api/exchange/trade/:email/:exchangeId/:orderId', async (req, res) =
     }
 });
 
+app.post('/api/bot/create', async (req, res) => {
+    const { email, exchangeId, name, strategy, deposit, apiKey, secretKey, autoUseExisting } = req.body;
+
+    console.log('📥 Создание бота для:', email);
+    console.log('📦 Данные:', { exchangeId, name, strategy, deposit, autoUseExisting });
+
+    if (!email || !exchangeId || !name) {
+        return res.status(400).json({ error: 'email, exchangeId и name обязательны' });
+    }
+
+    try {
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        let userExchanges = user.exchanges || [];
+        let finalApiKey = null;
+        let finalSecretKey = null;
+
+        const existingExchange = userExchanges.find(ex => ex.id === exchangeId);
+        const isConnected = existingExchange && existingExchange.api_key && existingExchange.secret_key;
+
+        if (autoUseExisting && isConnected) {
+            finalApiKey = existingExchange.api_key;
+            finalSecretKey = existingExchange.secret_key;
+            console.log('✅ Используем существующие ключи для биржи:', exchangeId);
+        } else if (apiKey && secretKey) {
+            finalApiKey = apiKey;
+            finalSecretKey = secretKey;
+
+            const exchangeLogo = {
+                'binance': '🟡', 'bybit': '🔵', 'okx': '🔴', 'gateio': '🟣',
+                'kucoin': '🟢', 'kraken': '🟠', 'bitget': '🟡', 'htx': '🔵',
+                'mexc': '🔴', 'bingx': '🟣', 'coinex': '🟢', 'bitmex': '🔵',
+                'crypto_com': '🔴', 'upbit': '🟣', 'whitebit': '🟢', 'exmo': '🟠',
+                'bitfinex': '🟡', 'phemex': '🔵'
+            };
+
+            const exchangeName = {
+                'binance': 'Binance', 'bybit': 'Bybit', 'okx': 'OKX',
+                'gateio': 'Gate.io', 'kucoin': 'KuCoin', 'kraken': 'Kraken',
+                'bitget': 'Bitget', 'htx': 'HTX (Huobi)', 'mexc': 'MEXC',
+                'bingx': 'BingX', 'coinex': 'CoinEx', 'bitmex': 'BitMEX',
+                'crypto_com': 'Crypto.com', 'upbit': 'Upbit', 'whitebit': 'WhiteBit',
+                'exmo': 'EXMO', 'bitfinex': 'Bitfinex', 'phemex': 'Phemex'
+            };
+
+            const newExchange = {
+                id: exchangeId,
+                name: exchangeName[exchangeId] || exchangeId,
+                logo: exchangeLogo[exchangeId] || '🏦',
+                api_key: apiKey,
+                secret_key: secretKey,
+                connected: true,
+                updated_at: new Date().toISOString()
+            };
+
+            const existingIndex = userExchanges.findIndex(ex => ex.id === exchangeId);
+            if (existingIndex >= 0) {
+                userExchanges[existingIndex] = newExchange;
+            } else {
+                userExchanges.push(newExchange);
+            }
+
+            await supabase
+                .from('users')
+                .update({ exchanges: userExchanges, updated_at: new Date().toISOString() })
+                .eq('id', user.id);
+
+            console.log('✅ Биржа добавлена в подключенные:', exchangeId);
+        } else {
+            return res.status(400).json({ error: 'Требуются API-ключи' });
+        }
+
+        const bots = user.bots || [];
+        const newBot = {
+            id: Date.now().toString(),
+            exchange: exchangeId,
+            name: name,
+            strategy: strategy,
+            deposit: deposit,
+            apiKey: finalApiKey ? '***' : null,
+            active: true,
+            paused: false,
+            createdAt: new Date().toISOString(),
+            tariff: 'Пользовательский',
+            services: ['Сигналы'],
+            tariffEnd: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+            pnl: 0,
+            openTrades: 0,
+            closedTrades: 0
+        };
+
+        bots.push(newBot);
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ bots: bots, updated_at: new Date().toISOString() })
+            .eq('id', user.id)
+            .select();
+
+        if (updateError) {
+            console.error('❌ Ошибка сохранения бота:', updateError);
+            return res.status(500).json({ error: 'Ошибка сохранения бота' });
+        }
+
+        console.log('✅ Бот создан:', name);
+
+        res.json({
+            success: true,
+            bot: newBot,
+            message: `Бот "${name}" создан успешно`,
+            exchangeUsed: isConnected ? 'existing' : 'new'
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка создания бота:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/public/market-overview', async (req, res) => {
     try {
         const [fgRes, priceRes, capRes, changeRes] = await Promise.all([
