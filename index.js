@@ -4,6 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const axios = require('axios');
+const crypto = require('crypto');
 const trading = require('./trading');
 const { encrypt, decrypt, testExchangeCredentials, forceConnectExchange } = require('./exchange');
 const { executeSignal } = require('./executor');
@@ -596,9 +597,6 @@ app.post('/api/exchange/disconnect', async (req, res) => {
 //  ПОЛУЧЕНИЕ БАЛАНСА БИРЖИ
 // ============================================
 
-/**
- * Получение баланса с BingX
- */
 async function getBingXBalance(apiKey, secretKey) {
     const timestamp = Date.now().toString();
     const signature = crypto.createHmac('sha256', secretKey)
@@ -624,9 +622,6 @@ async function getBingXBalance(apiKey, secretKey) {
     return 0;
 }
 
-/**
- * Получение баланса с Binance
- */
 async function getBinanceBalance(apiKey, secretKey) {
     const timestamp = Date.now();
     const signature = crypto.createHmac('sha256', secretKey)
