@@ -1096,6 +1096,171 @@ cron.schedule('*/1 * * * *', async () => {
 console.log('⏰ Многопользовательский планировщик запущен (каждую минуту)');
 
 // ============================================
+//  API ДЛЯ РАБОТЫ С БИРЖАМИ (НОВЫЕ ЭНДПОИНТЫ)
+// ============================================
+
+const { encrypt, decrypt, testExchangeCredentials } = require('./exchange');
+
+// 1. ПОДКЛЮЧЕНИЕ БИРЖИ
+app.post('/api/exchange/connect', async (req, res) => {
+    const { email, exchange, apiKey, secretKey } = req.body;
+
+    if (!email || !exchange || !apiKey || !secretKey) {
+        return res.status(400).json({ error: 'Все поля обязательны' });
+    }
+
+    try {
+        // 1. Получаем пользователя
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('exchange_credentials, connected_exchanges')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        // 2. Проверяем ключи тестовым запросом
+        const isValid = await testExchangeCredentials(exchange, apiKey, secretKey);
+        if (!isValid) {
+            return res.status(400).json({ error: 'Неверные API ключи или недостаточно прав' });
+        }
+
+        // 3. Шифруем ключи
+        const encryptedApi = encrypt(apiKey);
+        const encryptedSecret = encrypt(secretKey);
+
+        // 4. Сохраняем в БД
+        const credentials = user.exchange_credentials || {};
+        credentials[exchange] = {
+            api_key_encrypted: encryptedApi.encrypted,
+            secret_key_encrypted: encryptedSecret.encrypted,
+            iv: encryptedApi.iv,
+            enabled: true,
+            last_checked: new Date().toISOString()
+        };
+
+        const connectedExchanges = user.connected_exchanges || [];
+        if (!connectedExchanges.includes(exchange)) {
+            connectedExchanges.push(exchange);
+        }
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({
+                exchange_credentials: credentials,
+                connected_exchanges: connectedExchanges
+            })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        delete updatedUser.password;
+        res.json({
+            success: true,
+            message: `Биржа ${exchange} успешно подключена`,
+            user: updatedUser
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка подключения биржи:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. ПОЛУЧЕНИЕ СПИСКА ПОДКЛЮЧЕННЫХ БИРЖ
+app.get('/api/exchange/list/:email', async (req, res) => {
+    const { email } = req.params;
+
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('connected_exchanges, exchange_credentials')
+            .eq('email', email)
+            .single();
+
+        if (error || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        // Возвращаем только названия бирж и статус, без ключей
+        const exchanges = (user.connected_exchanges || []).map(exchange => ({
+            exchange,
+            enabled: user.exchange_credentials?.[exchange]?.enabled || false,
+            last_checked: user.exchange_credentials?.[exchange]?.last_checked || null
+        }));
+
+        res.json({ exchanges });
+
+    } catch (err) {
+        console.error('❌ Ошибка получения списка бирж:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 3. ОТКЛЮЧЕНИЕ БИРЖИ
+app.post('/api/exchange/disconnect', async (req, res) => {
+    const { email, exchange } = req.body;
+
+    if (!email || !exchange) {
+        return res.status(400).json({ error: 'Email и биржа обязательны' });
+    }
+
+    try {
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('exchange_credentials, connected_exchanges, bots')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        // Проверяем, есть ли боты, привязанные к этой бирже
+        const bots = user.bots || [];
+        const hasBots = bots.some(bot => bot.exchange === exchange);
+        if (hasBots) {
+            return res.status(400).json({
+                error: 'Невозможно отключить биржу: есть активные боты, привязанные к ней'
+            });
+        }
+
+        // Удаляем биржу из списка
+        const credentials = user.exchange_credentials || {};
+        delete credentials[exchange];
+
+        const connectedExchanges = (user.connected_exchanges || []).filter(e => e !== exchange);
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({
+                exchange_credentials: credentials,
+                connected_exchanges: connectedExchanges
+            })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        delete updatedUser.password;
+        res.json({
+            success: true,
+            message: `Биржа ${exchange} отключена`,
+            user: updatedUser
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка отключения биржи:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
 //  ЗАПУСК СЕРВЕРА
 // ============================================
 
