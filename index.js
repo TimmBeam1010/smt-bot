@@ -4,7 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const axios = require('axios');
-const crypto = require('crypto'); // <--- ЭТО ДОБАВЛЕНО
+const crypto = require('crypto');
 const trading = require('./trading');
 const { encrypt, decrypt, testExchangeCredentials, forceConnectExchange } = require('./exchange');
 const { executeSignal } = require('./executor');
@@ -598,46 +598,43 @@ app.post('/api/exchange/disconnect', async (req, res) => {
 // ============================================
 
 async function getBingXFuturesBalance(apiKey, secretKey) {
-    const timestamp = Date.now().toString();
-    const signature = crypto.createHmac('sha256', secretKey)
-        .update(timestamp)
-        .digest('hex');
+    try {
+        const timestamp = Date.now().toString();
+        const payload = `timestamp=${timestamp}`;
+        const signature = crypto.createHmac('sha256', secretKey)
+            .update(payload)
+            .digest('hex');
 
-    const response = await axios.get(
-        'https://open-api.bingx.com/openApi/swap/v3/user/balance',
-        {
+        const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
+
+        const response = await axios.get(url, {
             headers: {
-                'X-BX-APIKEY': apiKey,
-                'X-BX-SIGNATURE': signature,
-                'X-BX-TIMESTAMP': timestamp
+                'X-BX-APIKEY': apiKey
             },
             timeout: 10000
-        }
-    );
+        });
 
-    // Логируем ответ для отладки
-    console.log('📊 BingX Futures Balance Response:', JSON.stringify(response.data, null, 2));
+        console.log('📊 BingX Futures Balance Response:', JSON.stringify(response.data, null, 2));
 
-    if (response.data && response.data.code === 0 && response.data.data) {
-        // Структура ответа: data.balance - объект с балансом
-        // или data.data.balance в некоторых версиях
-        const balanceData = response.data.data.balance || response.data.data;
-        
-        if (balanceData && balanceData.balance !== undefined) {
-            return parseFloat(balanceData.balance) || 0;
+        if (response.data && response.data.code === 0 && response.data.data && response.data.data.length > 0) {
+            const usdtData = response.data.data.find(item => item.asset === 'USDT');
+            if (usdtData) {
+                return parseFloat(usdtData.equity) || parseFloat(usdtData.balance) || 0;
+            }
+            const firstAsset = response.data.data[0];
+            if (firstAsset) {
+                return parseFloat(firstAsset.equity) || parseFloat(firstAsset.balance) || 0;
+            }
+            return 0;
         }
         
-        // Если баланс не найден, пробуем найти equity или availableMargin
-        if (balanceData && balanceData.equity !== undefined) {
-            return parseFloat(balanceData.equity) || 0;
-        }
-        
-        // Если структура другая, выводим все data для диагностики
-        console.log('📊 Неизвестная структура balanceData:', balanceData);
+        console.log('⚠️ Неожиданный ответ от BingX:', response.data);
+        return 0;
+
+    } catch (error) {
+        console.error('❌ Ошибка получения баланса BingX Futures:', error.response?.data || error.message);
         return 0;
     }
-    
-    return 0;
 }
 
 async function getBinanceBalance(apiKey, secretKey) {
