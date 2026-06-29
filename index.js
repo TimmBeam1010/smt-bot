@@ -160,6 +160,8 @@ async function broadcastPnlUpdate(email) {
                 }
             });
 
+            console.log(`📊 Бот ${bot.name || bot.exchange}: PNL = ${botPnl}, открыто = ${botOpenTrades}, закрыто = ${botClosedTrades}`);
+
             return {
                 id: bot.id,
                 name: bot.name,
@@ -1043,7 +1045,7 @@ app.post('/api/trade/close', async (req, res) => {
 
             if (user.bots && user.bots.length > 0) {
                 const updatedBots = user.bots.map(bot => {
-                    if (bot.exchange === position.exchange || bot.id === position.bot_id) {
+                    if (bot.id === position.bot_id || bot.exchange === position.exchange || bot.exchange === 'demo') {
                         return {
                             ...bot,
                             pnl: (bot.pnl || 0) + pnl,
