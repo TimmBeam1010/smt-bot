@@ -4,15 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMT Bot — Личный кабинет</title>
-    <!-- Подключаем Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         /* --- RESET & BASE --- */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #0a0e17;
             color: #e2e8f0;
@@ -20,15 +14,7 @@
             line-height: 1.6;
             padding: 0 16px;
         }
-        a {
-            color: #4f46e5;
-            text-decoration: none;
-        }
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 0 16px;
-        }
+        .container { max-width: 1280px; margin: 0 auto; padding: 0 16px; }
 
         /* --- HEADER --- */
         .header {
@@ -38,127 +24,145 @@
             padding: 16px 0;
             border-bottom: 1px solid #1e293b;
         }
-        .logo {
-            font-size: 20px;
-            font-weight: 700;
-            color: #fff;
-            cursor: pointer;
-        }
-        .logo span {
-            color: #4f46e5;
-        }
+        .logo { font-size: 20px; font-weight: 700; color: #fff; cursor: pointer; }
+        .logo span { color: #4f46e5; }
         .btn-danger {
             background: #dc2626;
             color: #fff !important;
             padding: 6px 14px;
             border-radius: 8px;
-            font-weight: 600;
             border: none;
             cursor: pointer;
             font-size: 13px;
         }
-        .btn-danger:hover {
-            background: #b91c1c;
-        }
-        .user-email {
-            color: #94a3b8;
-            font-size: 13px;
-            margin-right: 8px;
-        }
+        .btn-danger:hover { background: #b91c1c; }
+        .user-email { color: #94a3b8; font-size: 13px; margin-right: 8px; }
+
+        /* --- BUTTONS --- */
         .btn-primary {
             background: #4f46e5;
             color: #fff !important;
             padding: 8px 20px;
             border-radius: 8px;
-            font-weight: 600;
             border: none;
             cursor: pointer;
             font-size: 14px;
         }
-        .btn-primary:hover {
-            background: #4338ca;
+        .btn-primary:hover { background: #4338ca; }
+        .btn-secondary {
+            background: #1e293b;
+            color: #fff !important;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
         }
+        .btn-secondary:hover { background: #2d3748; }
+        .btn-danger-sm {
+            background: #dc262620;
+            color: #ef4444 !important;
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid #ef444440;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-danger-sm:hover { background: #dc262640; }
+        .btn-success-sm {
+            background: #22c55e20;
+            color: #22c55e !important;
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid #22c55e40;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-success-sm:hover { background: #22c55e40; }
 
-        /* --- CARDS --- */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
+        /* --- CARDS & SECTIONS --- */
+        .section {
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 20px;
             margin: 20px 0;
         }
-        .card {
-            background: #111827;
-            border: 1px solid #1e293b;
-            border-radius: 12px;
-            padding: 16px;
-        }
-        .card h3 {
-            font-size: 12px;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .card .value {
-            font-size: 22px;
-            font-weight: 700;
-            margin-top: 4px;
-        }
-        .card .value.positive { color: #22c55e; }
-        .card .value.negative { color: #ef4444; }
-
-        /* --- CHART --- */
-        .chart-container {
-            background: #111827;
-            border: 1px solid #1e293b;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 20px 0 30px;
-        }
-        .chart-container h3 {
-            font-size: 16px;
-            margin-bottom: 12px;
-            color: #94a3b8;
-        }
-        .chart-wrapper {
-            position: relative;
-            height: 240px;
-        }
-        .chart-wrapper canvas {
-            width: 100% !important;
-            height: 100% !important;
-        }
-
-        /* --- TABLES --- */
         .section-title {
             font-size: 18px;
             font-weight: 700;
-            margin: 24px 0 12px;
+            margin-bottom: 16px;
         }
-        .table-wrap {
-            overflow-x: auto;
-            background: #111827;
-            border-radius: 12px;
-            border: 1px solid #1e293b;
-            margin-bottom: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .section-title small {
             font-size: 13px;
-        }
-        th {
-            text-align: left;
-            padding: 10px 12px;
-            background: #0f172a;
+            font-weight: 400;
             color: #94a3b8;
-            font-weight: 600;
-            font-size: 11px;
-            text-transform: uppercase;
         }
-        td {
+
+        /* --- FORM --- */
+        .form-group { margin-bottom: 12px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        .form-group select,
+        .form-group input {
+            width: 100%;
             padding: 10px 12px;
-            border-top: 1px solid #1e293b;
+            background: #0a0e17;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
         }
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .form-hint {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* --- EXCHANGE LIST --- */
+        .exchange-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .exchange-item:last-child { border-bottom: none; }
+        .exchange-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .exchange-item .name { font-weight: 600; }
+        .exchange-item .status { font-size: 13px; }
+        .status.active { color: #22c55e; }
+        .status.inactive { color: #64748b; }
+        .exchange-item .actions { display: flex; gap: 8px; }
+
+        /* --- BOT LIST --- */
+        .bot-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .bot-item:last-child { border-bottom: none; }
+        .bot-item .info { display: flex; flex-direction: column; gap: 4px; }
+        .bot-item .name { font-weight: 600; }
+        .bot-item .details { font-size: 13px; color: #94a3b8; }
+        .bot-item .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
         .badge {
             display: inline-block;
             padding: 2px 10px;
@@ -166,38 +170,40 @@
             font-size: 11px;
             font-weight: 600;
         }
-        .badge.long { background: #22c55e20; color: #22c55e; }
-        .badge.short { background: #ef444420; color: #ef4444; }
         .badge.active { background: #22c55e20; color: #22c55e; }
         .badge.paused { background: #f59e0b20; color: #f59e0b; }
         .badge.inactive { background: #64748b20; color: #64748b; }
 
-        /* --- BOT CONTROLS --- */
-        .bot-controls {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
+        /* --- EMPTY STATE --- */
+        .empty-state {
+            text-align: center;
+            padding: 30px 0;
+            color: #64748b;
         }
-        .bot-controls button {
-            padding: 4px 10px;
-            border-radius: 6px;
-            border: 1px solid #1e293b;
-            background: transparent;
-            color: #94a3b8;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.2s;
+        .empty-state .icon { font-size: 40px; margin-bottom: 8px; }
+
+        /* --- MESSAGES --- */
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-size: 14px;
         }
-        .bot-controls button:hover {
-            background: #1e293b;
-            color: #fff;
+        .message.success { background: #22c55e20; color: #22c55e; border: 1px solid #22c55e40; }
+        .message.error { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; }
+        .message.info { background: #4f46e520; color: #4f46e5; border: 1px solid #4f46e540; }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .exchange-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .bot-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .header { flex-wrap: wrap; gap: 8px; }
         }
-        .bot-controls .pause-btn.active { color: #f59e0b; border-color: #f59e0b; }
-        .bot-controls .pause-btn:hover { background: #f59e0b20; }
-        .bot-controls .activate-btn.active { color: #22c55e; border-color: #22c55e; }
-        .bot-controls .activate-btn:hover { background: #22c55e20; }
-        .bot-controls .delete-btn { color: #ef4444; border-color: #ef4444; }
-        .bot-controls .delete-btn:hover { background: #ef444420; }
+        @media (min-width: 768px) {
+            body { padding: 0 20px; }
+            .logo { font-size: 24px; }
+        }
 
         /* --- LOGIN FORM --- */
         .login-form {
@@ -208,53 +214,15 @@
             border-radius: 16px;
             padding: 32px 24px;
         }
-        .login-form h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 22px;
-        }
-        .login-form input {
-            width: 100%;
-            padding: 12px;
-            background: #0a0e17;
-            border: 1px solid #1e293b;
-            border-radius: 8px;
-            color: #fff;
-            margin-bottom: 12px;
-            font-size: 14px;
-        }
-        .login-form input:focus {
-            outline: none;
-            border-color: #4f46e5;
-        }
-        .login-form button {
-            width: 100%;
-            padding: 12px;
-            background: #4f46e5;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .login-form button:hover {
-            background: #4338ca;
-        }
-        .login-form .error {
-            color: #ef4444;
-            font-size: 14px;
-            margin-top: 8px;
-            text-align: center;
-        }
-        .login-form .register-link {
-            text-align: center;
-            margin-top: 16px;
-            color: #94a3b8;
-            font-size: 14px;
-        }
+        .login-form h2 { text-align: center; margin-bottom: 20px; font-size: 22px; }
+        .login-form input { width: 100%; padding: 12px; background: #0a0e17; border: 1px solid #1e293b; border-radius: 8px; color: #fff; margin-bottom: 12px; font-size: 14px; }
+        .login-form input:focus { outline: none; border-color: #4f46e5; }
+        .login-form button { width: 100%; padding: 12px; background: #4f46e5; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px; }
+        .login-form button:hover { background: #4338ca; }
+        .login-form .error { color: #ef4444; font-size: 14px; margin-top: 8px; text-align: center; }
+        .login-form .register-link { text-align: center; margin-top: 16px; color: #94a3b8; font-size: 14px; }
+        .login-form .register-link a { color: #4f46e5; }
 
-        /* --- FOOTER --- */
         .footer {
             border-top: 1px solid #1e293b;
             padding: 20px 0;
@@ -262,22 +230,6 @@
             color: #64748b;
             font-size: 12px;
             margin-top: 30px;
-        }
-
-        /* --- PLACEHOLDER --- */
-        .placeholder {
-            color: #64748b;
-            text-align: center;
-            padding: 20px 0;
-            font-size: 13px;
-        }
-
-        /* --- MOBILE --- */
-        @media (min-width: 768px) {
-            .dashboard-grid { grid-template-columns: repeat(4, 1fr); }
-            body { padding: 0 20px; }
-            .logo { font-size: 24px; }
-            .chart-wrapper { height: 300px; }
         }
     </style>
 </head>
@@ -304,7 +256,9 @@
     </div>
 
     <script>
-        // --- UTILITIES ---
+        // ============================================
+        //  UTILITIES
+        // ============================================
         function getUser() {
             try { return JSON.parse(localStorage.getItem('smt_user')); } catch { return null; }
         }
@@ -316,240 +270,311 @@
             window.location.href = '/';
         });
 
-        // --- API CALLS ---
-        async function updateBot(email, index, data) {
-            const res = await fetch(`/api/user/bots/${email}/${index}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+        // ============================================
+        //  API CALLS
+        // ============================================
+        const API_BASE = '/api';
+
+        async function apiCall(endpoint, options = {}) {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                ...options,
+                headers: { 'Content-Type': 'application/json', ...options.headers }
             });
             return res.json();
         }
 
-        async function deleteBot(email, index) {
-            const res = await fetch(`/api/user/bots/${email}/${index}`, {
-                method: 'DELETE'
-            });
-            return res.json();
-        }
-
-        // --- RENDER DASHBOARD ---
+        // ============================================
+        //  RENDER DASHBOARD
+        // ============================================
         async function renderDashboard(user) {
             const container = document.getElementById('mainContent');
             document.getElementById('userEmail').textContent = user.email || '';
 
             try {
-                const demoRes = await fetch(`/api/demo/${encodeURIComponent(user.email)}`);
-                const demoData = await demoRes.json();
+                // Загружаем данные
+                const exchangesRes = await fetch(`${API_BASE}/exchange/list/${encodeURIComponent(user.email)}`);
+                const exchangesData = await exchangesRes.json();
 
-                const signalsRes = await fetch(`/api/signals/user/${encodeURIComponent(user.email)}`);
-                const signalsData = await signalsRes.json();
-
-                // Загружаем историю PNL для графика
-                const pnlRes = await fetch(`/api/user/pnl-history/${encodeURIComponent(user.email)}?days=7`);
-                const pnlData = await pnlRes.json();
-
-                const balance = demoData?.data?.balance || 0;
-                const equity = demoData?.data?.equity || 0;
-                const totalPnl = demoData?.data?.totalPnl || 0;
-                const positions = demoData?.data?.positions || [];
-                const signals = signalsData?.signals || [];
                 const bots = user.bots || [];
+                const connectedExchanges = exchangesData.exchanges || [];
+                const hasExchange = connectedExchanges.length > 0;
 
-                // --- STATS ---
-                let html = `
-                    <div class="dashboard-grid">
-                        <div class="card"><h3>💰 Баланс</h3><div class="value">$${balance.toFixed(2)}</div></div>
-                        <div class="card"><h3>📈 Капитал</h3><div class="value">$${equity.toFixed(2)}</div></div>
-                        <div class="card"><h3>📊 PNL</h3><div class="value ${totalPnl >= 0 ? 'positive' : 'negative'}">${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}$</div></div>
-                        <div class="card"><h3>📡 Сигналы</h3><div class="value">${signals.length}</div></div>
+                let html = '';
+
+                // --- СООБЩЕНИЕ, ЕСЛИ НЕТ БИРЖ ---
+                if (!hasExchange) {
+                    html += `
+                        <div class="message info">
+                            🔐 Для создания бота необходимо подключить хотя бы одну биржу по API.
+                            Ключи шифруются и хранятся в безопасности.
+                        </div>
+                    `;
+                }
+
+                // --- БЛОК: ПОДКЛЮЧЕНИЕ БИРЖИ ---
+                html += `
+                    <div class="section">
+                        <div class="section-title">🔌 Подключение биржи</div>
+                        <form id="connectExchangeForm">
+                            <div class="form-group">
+                                <label for="exchangeSelect">Биржа</label>
+                                <select id="exchangeSelect" required>
+                                    <option value="binance">Binance</option>
+                                    <option value="bybit">Bybit</option>
+                                    <option value="okx">OKX</option>
+                                    <option value="bingx">BingX</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="apiKeyInput">API Key</label>
+                                    <input type="text" id="apiKeyInput" placeholder="Введите API ключ" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="secretKeyInput">Secret Key</label>
+                                    <input type="password" id="secretKeyInput" placeholder="Введите Secret ключ" required>
+                                </div>
+                            </div>
+                            <div class="form-hint">
+                                ⚠️ Ключи нужны только для чтения баланса и торговли. Они шифруются перед сохранением.
+                            </div>
+                            <button type="submit" class="btn-primary" style="margin-top:12px;">✅ Подключить биржу</button>
+                            <div id="connectMessage" style="margin-top:8px;"></div>
+                        </form>
                     </div>
                 `;
 
-                // --- CHART ---
+                // --- БЛОК: МОИ БИРЖИ ---
                 html += `
-                    <div class="chart-container">
-                        <h3>📈 PNL за 7 дней</h3>
-                        <div class="chart-wrapper">
-                            <canvas id="pnlChart"></canvas>
+                    <div class="section">
+                        <div class="section-title">🏦 Мои биржи <small>(${connectedExchanges.length})</small></div>
+                        <div id="exchangeList">
+                `;
+
+                if (connectedExchanges.length === 0) {
+                    html += `<div class="empty-state"><div class="icon">🔌</div><p>Нет подключенных бирж</p></div>`;
+                } else {
+                    html += `<div id="exchangeItems">`;
+                    for (const ex of connectedExchanges) {
+                        const statusClass = ex.enabled ? 'active' : 'inactive';
+                        const statusText = ex.enabled ? '✅ Активна' : '⛔ Отключена';
+                        html += `
+                            <div class="exchange-item" data-exchange="${ex.exchange}">
+                                <div class="info">
+                                    <span class="name">${ex.exchange.toUpperCase()}</span>
+                                    <span class="status ${statusClass}">${statusText}</span>
+                                    ${ex.last_checked ? `<span style="font-size:12px;color:#64748b;">(проверено: ${new Date(ex.last_checked).toLocaleDateString()})</span>` : ''}
+                                </div>
+                                <div class="actions">
+                                    <button class="btn-danger-sm" onclick="disconnectExchange('${user.email}','${ex.exchange}')">❌ Отключить</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    html += `</div>`;
+                }
+
+                html += `
                         </div>
                     </div>
                 `;
 
-                // --- SIGNALS ---
-                html += `<h2 class="section-title">📡 Последние сигналы</h2>`;
-                if (signals.length === 0) {
-                    html += `<div class="table-wrap"><div class="placeholder">Нет сигналов</div></div>`;
-                } else {
-                    html += `<div class="table-wrap"><table>
-                        <thead><tr><th>Актив</th><th>Тип</th><th>Цена</th><th>Дата</th></tr></thead>
-                        <tbody>`;
-                    signals.slice(0, 10).forEach(s => {
-                        html += `<tr>
-                            <td><strong>${s.symbol}</strong></td>
-                            <td><span class="badge ${s.side === 'LONG' ? 'long' : 'short'}">${s.side}</span></td>
-                            <td>$${parseFloat(s.entry_price).toFixed(4)}</td>
-                            <td>${new Date(s.created_at).toLocaleDateString()}</td>
-                        </tr>`;
-                    });
-                    html += `</tbody></table></div>`;
-                }
+                // --- БЛОК: МОИ БОТЫ ---
+                html += `
+                    <div class="section">
+                        <div class="section-title">🤖 Мои боты <small>(${bots.length})</small></div>
+                        <div id="botList">
+                `;
 
-                // --- POSITIONS ---
-                html += `<h2 class="section-title">🔓 Открытые позиции</h2>`;
-                if (positions.length === 0) {
-                    html += `<div class="table-wrap"><div class="placeholder">Нет открытых позиций</div></div>`;
+                if (!hasExchange) {
+                    html += `
+                        <div class="empty-state">
+                            <div class="icon">🔒</div>
+                            <p>Подключите биржу, чтобы создавать ботов</p>
+                        </div>
+                    `;
+                } else if (bots.length === 0) {
+                    html += `
+                        <div class="empty-state">
+                            <div class="icon">🤖</div>
+                            <p>У вас пока нет ботов. Создайте первого!</p>
+                            <button class="btn-primary" style="margin-top:12px;" onclick="alert('Форма создания бота в разработке')">➕ Создать бота</button>
+                        </div>
+                    `;
                 } else {
-                    html += `<div class="table-wrap"><table>
-                        <thead><tr><th>Актив</th><th>Тип</th><th>Цена</th><th>PNL</th></tr></thead>
-                        <tbody>`;
-                    positions.forEach(p => {
-                        const pnl = p.pnl || 0;
-                        html += `<tr>
-                            <td><strong>${p.symbol}</strong></td>
-                            <td><span class="badge ${p.side === 'LONG' ? 'long' : 'short'}">${p.side}</span></td>
-                            <td>$${parseFloat(p.entry_price).toFixed(4)}</td>
-                            <td class="${pnl >= 0 ? 'positive' : 'negative'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}$</td>
-                        </tr>`;
-                    });
-                    html += `</tbody></table></div>`;
-                }
-
-                // --- BOTS ---
-                html += `<h2 class="section-title">🤖 Мои боты</h2>`;
-                if (bots.length === 0) {
-                    html += `<div class="table-wrap"><div class="placeholder">Нет подключенных ботов</div></div>`;
-                } else {
-                    html += `<div class="table-wrap"><table>
-                        <thead><tr><th>Биржа</th><th>Тариф</th><th>PNL</th><th>Статус</th><th>Управление</th></tr></thead>
-                        <tbody>`;
-                    bots.forEach((bot, index) => {
-                        const statusText = bot.active ? (bot.paused ? '⏸ Пауза' : '✅ Активен') : '⛔ Отключен';
+                    html += `<div id="botItems">`;
+                    for (let index = 0; index < bots.length; index++) {
+                        const bot = bots[index];
                         const statusClass = bot.active ? (bot.paused ? 'paused' : 'active') : 'inactive';
-                        const pnl = bot.pnl || 0;
+                        const statusText = bot.active ? (bot.paused ? '⏸ Пауза' : '✅ Активен') : '⛔ Отключен';
+                        const pnl = bot.stats?.pnl || 0;
+                        const signals = bot.stats?.total_signals || 0;
+                        const mode = bot.mode || 'signals_only';
+                        const modeLabel = mode === 'auto_trade' ? '🤖 Автоторговля' : 
+                                         mode === 'hybrid' ? '🔀 Гибридный' : '📡 Только сигналы';
 
-                        html += `<tr>
-                            <td>${bot.exchange || 'demo'}</td>
-                            <td>${bot.tariff || 'Базовый'}</td>
-                            <td class="${pnl >= 0 ? 'positive' : 'negative'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}$</td>
-                            <td><span class="badge ${statusClass}">${statusText}</span></td>
-                            <td>
-                                <div class="bot-controls" data-index="${index}">
-                                    <button class="pause-btn ${bot.active && bot.paused ? 'active' : ''}" 
-                                            data-action="pause" 
-                                            title="${bot.paused ? 'Возобновить' : 'Пауза'}">
+                        html += `
+                            <div class="bot-item" data-index="${index}">
+                                <div class="info">
+                                    <span class="name">${bot.name || 'Без названия'}</span>
+                                    <span class="details">
+                                        🏦 ${bot.exchange?.toUpperCase() || 'Нет биржи'} · 
+                                        ${modeLabel} · 
+                                        📊 ${bot.strategies?.length || 0} стратегий · 
+                                        📡 ${signals} сигналов · 
+                                        PNL: <span style="color:${pnl >= 0 ? '#22c55e' : '#ef4444'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}$</span>
+                                    </span>
+                                </div>
+                                <div class="actions">
+                                    <span class="badge ${statusClass}">${statusText}</span>
+                                    <button class="btn-secondary" onclick="toggleBotPause('${user.email}', ${index})" title="${bot.paused ? 'Возобновить' : 'Пауза'}">
                                         ${bot.paused ? '▶️' : '⏸️'}
                                     </button>
-                                    <button class="activate-btn ${bot.active ? 'active' : ''}" 
-                                            data-action="activate"
-                                            title="${bot.active ? 'Отключить' : 'Активировать'}">
-                                        ${bot.active ? '✅' : '⛔'}
+                                    <button class="btn-secondary" onclick="toggleBotActive('${user.email}', ${index})" title="${bot.active ? 'Отключить' : 'Активировать'}">
+                                        ${bot.active ? '⛔' : '✅'}
                                     </button>
-                                    <button class="delete-btn" 
-                                            data-action="delete"
-                                            title="Удалить бота">
-                                        🗑️
-                                    </button>
+                                    <button class="btn-danger-sm" onclick="deleteBot('${user.email}', ${index})">🗑️</button>
                                 </div>
-                            </td>
-                        </tr>`;
-                    });
-                    html += `</tbody></table></div>`;
+                            </div>
+                        `;
+                    }
+                    html += `</div>`;
                 }
+
+                html += `
+                        </div>
+                    </div>
+                `;
 
                 container.innerHTML = html;
 
-                // --- INIT CHART ---
-                if (pnlData && pnlData.labels) {
-                    const ctx = document.getElementById('pnlChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: pnlData.labels,
-                            datasets: [
-                                {
-                                    label: 'Баланс',
-                                    data: pnlData.balance,
-                                    borderColor: '#4f46e5',
-                                    backgroundColor: 'transparent',
-                                    tension: 0.2,
-                                    pointRadius: 3,
-                                },
-                                {
-                                    label: 'PNL',
-                                    data: pnlData.pnl,
-                                    borderColor: '#22c55e',
-                                    backgroundColor: 'transparent',
-                                    tension: 0.2,
-                                    pointRadius: 3,
-                                    borderDash: [5, 5],
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    labels: { color: '#94a3b8' }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    grid: { color: '#1e293b' },
-                                    ticks: { color: '#94a3b8' }
-                                },
-                                x: {
-                                    grid: { color: '#1e293b' },
-                                    ticks: { color: '#94a3b8' }
-                                }
-                            }
-                        }
-                    });
-                }
+                // --- ПОДКЛЮЧЕНИЕ ФОРМЫ ---
+                document.getElementById('connectExchangeForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const exchange = document.getElementById('exchangeSelect').value;
+                    const apiKey = document.getElementById('apiKeyInput').value.trim();
+                    const secretKey = document.getElementById('secretKeyInput').value.trim();
+                    const msgEl = document.getElementById('connectMessage');
 
-                // --- ATTACH BOT CONTROLS ---
-                document.querySelectorAll('.bot-controls').forEach((controls) => {
-                    const index = parseInt(controls.dataset.index);
-                    controls.querySelectorAll('button').forEach((btn) => {
-                        btn.addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            const action = btn.dataset.action;
-                            const email = user.email;
+                    if (!apiKey || !secretKey) {
+                        msgEl.innerHTML = '<div class="message error">Заполните все поля</div>';
+                        return;
+                    }
 
-                            try {
-                                let result;
-                                if (action === 'pause') {
-                                    const currentPaused = btn.classList.contains('active');
-                                    result = await updateBot(email, index, { paused: !currentPaused });
-                                } else if (action === 'activate') {
-                                    const currentActive = btn.classList.contains('active');
-                                    result = await updateBot(email, index, { active: !currentActive });
-                                } else if (action === 'delete') {
-                                    if (!confirm('Удалить этого бота?')) return;
-                                    result = await deleteBot(email, index);
-                                }
+                    msgEl.innerHTML = '<div class="message info">⏳ Проверка ключей...</div>';
 
-                                if (result.success) {
-                                    saveUser(result.user);
-                                    renderDashboard(result.user);
-                                } else {
-                                    alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
-                                }
-                            } catch (err) {
-                                alert('Ошибка соединения: ' + err.message);
-                            }
+                    try {
+                        const result = await apiCall('/exchange/connect', {
+                            method: 'POST',
+                            body: JSON.stringify({ email: user.email, exchange, apiKey, secretKey })
                         });
-                    });
+
+                        if (result.success) {
+                            msgEl.innerHTML = `<div class="message success">✅ Биржа ${exchange} успешно подключена!</div>`;
+                            document.getElementById('apiKeyInput').value = '';
+                            document.getElementById('secretKeyInput').value = '';
+                            if (result.user) {
+                                saveUser(result.user);
+                            }
+                            renderDashboard(result.user || user);
+                        } else {
+                            msgEl.innerHTML = `<div class="message error">❌ ${result.error || 'Ошибка подключения'}</div>`;
+                        }
+                    } catch (err) {
+                        msgEl.innerHTML = `<div class="message error">❌ Ошибка соединения: ${err.message}</div>`;
+                    }
                 });
 
             } catch (err) {
                 console.error('Ошибка загрузки дашборда:', err);
-                container.innerHTML = `<div class="card" style="margin-top:30px;text-align:center;padding:40px;"><h3>❌ Ошибка</h3><p style="color:#94a3b8;">${err.message}</p></div>`;
+                container.innerHTML = `
+                    <div class="section" style="text-align:center;padding:40px;">
+                        <h3>❌ Ошибка загрузки</h3>
+                        <p style="color:#94a3b8;">${err.message}</p>
+                        <button class="btn-primary" style="margin-top:12px;" onclick="location.reload()">🔄 Обновить</button>
+                    </div>
+                `;
             }
         }
 
-        // --- LOGIN FORM ---
+        // ============================================
+        //  УПРАВЛЕНИЕ БОТАМИ (ЧЕРЕЗ API)
+        // ============================================
+        window.toggleBotPause = async function(email, index) {
+            const user = getUser();
+            try {
+                const result = await apiCall(`/user/bots/${email}/${index}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ paused: true })
+                });
+                if (result.success) {
+                    saveUser(result.user);
+                    renderDashboard(result.user);
+                } else {
+                    alert('❌ ' + (result.error || 'Ошибка'));
+                }
+            } catch (err) {
+                alert('❌ Ошибка: ' + err.message);
+            }
+        };
+
+        window.toggleBotActive = async function(email, index) {
+            const user = getUser();
+            try {
+                const result = await apiCall(`/user/bots/${email}/${index}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ active: false })
+                });
+                if (result.success) {
+                    saveUser(result.user);
+                    renderDashboard(result.user);
+                } else {
+                    alert('❌ ' + (result.error || 'Ошибка'));
+                }
+            } catch (err) {
+                alert('❌ Ошибка: ' + err.message);
+            }
+        };
+
+        window.deleteBot = async function(email, index) {
+            if (!confirm('Удалить этого бота?')) return;
+            const user = getUser();
+            try {
+                const result = await apiCall(`/user/bots/${email}/${index}`, {
+                    method: 'DELETE'
+                });
+                if (result.success) {
+                    saveUser(result.user);
+                    renderDashboard(result.user);
+                } else {
+                    alert('❌ ' + (result.error || 'Ошибка'));
+                }
+            } catch (err) {
+                alert('❌ Ошибка: ' + err.message);
+            }
+        };
+
+        window.disconnectExchange = async function(email, exchange) {
+            if (!confirm(`Отключить биржу ${exchange.toUpperCase()}?`)) return;
+            try {
+                const result = await apiCall('/exchange/disconnect', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, exchange })
+                });
+                if (result.success) {
+                    if (result.user) saveUser(result.user);
+                    renderDashboard(result.user || getUser());
+                } else {
+                    alert('❌ ' + (result.error || 'Ошибка отключения'));
+                }
+            } catch (err) {
+                alert('❌ Ошибка: ' + err.message);
+            }
+        };
+
+        // ============================================
+        //  ЛОГИН ФОРМА
+        // ============================================
         function renderLoginForm() {
             const container = document.getElementById('mainContent');
             document.getElementById('userEmail').textContent = '';
@@ -593,7 +618,9 @@
             });
         }
 
-        // --- INIT ---
+        // ============================================
+        //  INIT
+        // ============================================
         const user = getUser();
         if (user && user.email) {
             renderDashboard(user);
