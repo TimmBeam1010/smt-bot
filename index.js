@@ -593,6 +593,106 @@ app.post('/api/exchange/disconnect', async (req, res) => {
 });
 
 // ============================================
+//  ПОЛУЧЕНИЕ БАЛАНСА БИРЖИ
+// ============================================
+
+/**
+ * Получение баланса с BingX
+ */
+async function getBingXBalance(apiKey, secretKey) {
+    const timestamp = Date.now().toString();
+    const signature = crypto.createHmac('sha256', secretKey)
+        .update(timestamp)
+        .digest('hex');
+
+    const response = await axios.get(
+        'https://open-api.bingx.com/openApi/spot/v1/account',
+        {
+            headers: {
+                'X-BX-APIKEY': apiKey,
+                'X-BX-SIGNATURE': signature,
+                'X-BX-TIMESTAMP': timestamp
+            },
+            timeout: 10000
+        }
+    );
+
+    if (response.data && response.data.data && response.data.data.balances) {
+        const usdtBalance = response.data.data.balances.find(b => b.asset === 'USDT');
+        return usdtBalance ? parseFloat(usdtBalance.free) : 0;
+    }
+    return 0;
+}
+
+/**
+ * Получение баланса с Binance
+ */
+async function getBinanceBalance(apiKey, secretKey) {
+    const timestamp = Date.now();
+    const signature = crypto.createHmac('sha256', secretKey)
+        .update(`timestamp=${timestamp}&recvWindow=5000`)
+        .digest('hex');
+
+    const response = await axios.get(
+        `https://api.binance.com/api/v3/account?timestamp=${timestamp}&signature=${signature}`,
+        { headers: { 'X-MBX-APIKEY': apiKey }, timeout: 10000 }
+    );
+
+    if (response.data && response.data.balances) {
+        const usdtBalance = response.data.balances.find(b => b.asset === 'USDT');
+        return usdtBalance ? parseFloat(usdtBalance.free) : 0;
+    }
+    return 0;
+}
+
+app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
+    const { email, exchange } = req.params;
+
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('exchange_credentials')
+            .eq('email', email)
+            .single();
+
+        if (error || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const credentials = user.exchange_credentials?.[exchange];
+        if (!credentials || !credentials.api_key_encrypted) {
+            return res.status(404).json({ error: 'Ключи не найдены' });
+        }
+
+        const apiKey = decrypt(credentials.api_key_encrypted, credentials.iv);
+        const secretKey = decrypt(credentials.secret_key_encrypted, credentials.iv);
+
+        let balance = 0;
+        switch (exchange) {
+            case 'bingx':
+                balance = await getBingXBalance(apiKey, secretKey);
+                break;
+            case 'binance':
+                balance = await getBinanceBalance(apiKey, secretKey);
+                break;
+            default:
+                return res.status(400).json({ error: 'Биржа не поддерживается' });
+        }
+
+        res.json({
+            exchange,
+            balance,
+            currency: 'USDT',
+            updated_at: new Date().toISOString()
+        });
+
+    } catch (err) {
+        console.error(`❌ Ошибка получения баланса ${exchange}:`, err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
 //  ТЕСТОВЫЙ ЭНДПОИНТ ДЛЯ ПРИНУДИТЕЛЬНОГО ПОДКЛЮЧЕНИЯ БИРЖИ
 // ============================================
 
@@ -1329,7 +1429,7 @@ app.get('/api/user/pnl-history/:email', async (req, res) => {
 });
 
 // ============================================
-//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА (С ПОДДЕРЖКОЙ СИМВОЛОВ БОТА)
+//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА
 // ============================================
 
 const {
@@ -1421,7 +1521,6 @@ cron.schedule('*/1 * * * *', async () => {
                                 console.log(`📈 СИГНАЛ для ${userId} (${symbol}): ${signal.side} (${signal.confidence})`);
 
                                 try {
-                                    // Сохраняем сигнал в БД
                                     const { data: savedSignal, error: insertError } = await supabase
                                         .from('signals')
                                         .insert({
@@ -1443,7 +1542,6 @@ cron.schedule('*/1 * * * *', async () => {
                                         continue;
                                     }
 
-                                    // --- АВТОТОРГОВЛЯ ---
                                     if (bot.mode === 'auto_trade' || bot.mode === 'hybrid') {
                                         const userData = await supabase
                                             .from('users')
