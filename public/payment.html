@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💳 SMT Bot — Оплата</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0e17;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .card {
+            background: #1a1f2e;
+            border-radius: 16px;
+            padding: 32px;
+            border: 1px solid #2d3748;
+            width: 100%;
+        }
+        .logo {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 24px;
+        }
+        .order-summary {
+            background: #0a0e17;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+        .order-summary .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+        }
+        .order-summary .row.total {
+            border-top: 1px solid #2d3748;
+            margin-top: 8px;
+            padding-top: 12px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .order-summary .row .label {
+            color: #94a3b8;
+        }
+        .order-summary .row .value {
+            color: #fff;
+        }
+        .order-summary .row .value.price {
+            color: #4f46e5;
+        }
+        .payment-methods {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .payment-method {
+            padding: 16px;
+            background: #0a0e17;
+            border-radius: 12px;
+            border: 2px solid #1a1f2e;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .payment-method:hover {
+            border-color: #4f46e5;
+        }
+        .payment-method.selected {
+            border-color: #4f46e5;
+            background: #1a1f2e;
+        }
+        .payment-method .icon {
+            font-size: 28px;
+        }
+        .payment-method .name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .payment-method .desc {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .btn-pay {
+            width: 100%;
+            padding: 16px;
+            background: #10b981;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-pay:hover {
+            background: #059669;
+        }
+        .btn-pay:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-back {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 12px;
+            transition: color 0.2s;
+        }
+        .btn-back:hover {
+            color: #fff;
+        }
+        .status-msg {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .status-msg.success {
+            display: block;
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .status-msg.error {
+            display: block;
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        .status-msg.info {
+            display: block;
+            background: #92400e;
+            color: #fbbf24;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="logo">💳</div>
+        <div class="title">Оплата подписки</div>
+        <div class="subtitle" id="botNameDisplay">Бот: --</div>
+
+        <div class="status-msg" id="statusMessage"></div>
+
+        <div class="order-summary">
+            <div class="row"><span class="label">Тариф</span><span class="value" id="summaryTariff">--</span></div>
+            <div class="row"><span class="label">Биржа</span><span class="value" id="summaryExchange">--</span></div>
+            <div class="row"><span class="label">Период</span><span class="value">1 месяц</span></div>
+            <div class="row total"><span class="label">Итого</span><span class="value price" id="summaryPrice">$--</span></div>
+        </div>
+
+        <div class="payment-methods">
+            <div class="payment-method selected" onclick="selectMethod('telegram')">
+                <span class="icon">⭐</span>
+                <div>
+                    <div class="name">Telegram Stars</div>
+                    <div class="desc">Быстро и безопасно</div>
+                </div>
+            </div>
+            <div class="payment-method" onclick="selectMethod('yookassa')">
+                <span class="icon">💳</span>
+                <div>
+                    <div class="name">Банковская карта</div>
+                    <div class="desc">Visa/Mastercard через ЮKassa</div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-pay" onclick="processPayment()">💳 Оплатить</button>
+        <button class="btn-back" onclick="goBack()">← Вернуться к выбору биржи</button>
+    </div>
+
+    <script>
+        (function() {
+            const userEmail = localStorage.getItem('smt_user_email');
+            if (!userEmail) {
+                window.location.replace('/login.html');
+                return;
+            }
+
+            const botData = JSON.parse(localStorage.getItem('smt_bot_for_payment') || '{}');
+            const tariffData = JSON.parse(localStorage.getItem('smt_selected_tariff') || '{}');
+
+            if (!botData.exchange) {
+                window.location.href = '/select-exchange.html';
+                return;
+            }
+
+            document.getElementById('botNameDisplay').textContent = 'Бот: ' + (botData.name || 'Мой бот');
+            document.getElementById('summaryTariff').textContent = botData.tariff || 'Custom';
+            document.getElementById('summaryExchange').textContent = botData.exchangeName || 'Биржа';
+            document.getElementById('summaryPrice').textContent = '$' + (botData.price || tariffData.price || 0).toFixed(2);
+
+            let selectedMethod = 'telegram';
+
+            window.selectMethod = function(method) {
+                selectedMethod = method;
+                document.querySelectorAll('.payment-method').forEach(el => {
+                    el.classList.toggle('selected', el.querySelector('.name').textContent.toLowerCase().includes(method));
+                });
+            };
+
+            function showStatus(type, message) {
+                const el = document.getElementById('statusMessage');
+                el.className = 'status-msg ' + type;
+                el.textContent = message;
+                el.style.display = 'block';
+                setTimeout(() => {
+                    el.style.display = 'none';
+                }, 5000);
+            }
+
+            window.processPayment = async function() {
+                const btn = document.querySelector('.btn-pay');
+                btn.disabled = true;
+                btn.textContent = '⏳ Обработка...';
+
+                showStatus('info', '⏳ Обработка платежа...');
+
+                try {
+                    // Эмуляция оплаты
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+
+                    // Создаём бота на сервере
+                    const createResp = await fetch('/api/bot/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: userEmail,
+                            exchangeId: botData.exchange,
+                            name: botData.name || 'Мой бот',
+                            strategy: 'combined',
+                            deposit: 1000,
+                            apiKey: null,
+                            secretKey: null,
+                            autoUseExisting: true,
+                            tariff: botData.tariffId || 'custom',
+                            price: botData.price || 0,
+                            config: botData.config || {}
+                        })
+                    });
+
+                    const result = await createResp.json();
+
+                    if (createResp.ok) {
+                        showStatus('success', '✅ Бот создан! Перенаправляем...');
+                        
+                        // Очищаем временные данные
+                        localStorage.removeItem('smt_selected_tariff');
+                        localStorage.removeItem('smt_bot_for_payment');
+                        localStorage.removeItem('smt_custom_config');
+
+                        setTimeout(() => {
+                            window.location.href = '/dashboard.html';
+                        }, 2000);
+                    } else {
+                        showStatus('error', '❌ Ошибка создания бота: ' + (result.error || 'Неизвестная ошибка'));
+                        btn.disabled = false;
+                        btn.textContent = '💳 Оплатить';
+                    }
+
+                } catch (e) {
+                    console.error('Ошибка:', e);
+                    showStatus('error', '❌ Ошибка: ' + e.message);
+                    btn.disabled = false;
+                    btn.textContent = '💳 Оплатить';
+                }
+            };
+
+            window.goBack = function() {
+                window.location.href = '/select-exchange.html';
+            };
+
+        })();
+    </script>
+
+</body>
+</html>
