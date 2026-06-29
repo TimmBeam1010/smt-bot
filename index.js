@@ -923,6 +923,83 @@ app.delete('/api/user/bots/:email/:botIndex', async (req, res) => {
 });
 
 // ============================================
+//  ИСТОРИЯ PNL ДЛЯ ГРАФИКА
+// ============================================
+
+app.get('/api/user/pnl-history/:email', async (req, res) => {
+    const { email } = req.params;
+    const { days = 7 } = req.query; // по умолчанию 7 дней
+
+    try {
+        // Находим пользователя
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        // Получаем все закрытые сделки за последние N дней
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - parseInt(days));
+
+        const { data: trades, error: tradesError } = await supabase
+            .from('demo_trades')
+            .select('close_time, pnl')
+            .eq('user_id', user.id)
+            .eq('status', 'closed')
+            .gte('close_time', fromDate.toISOString())
+            .order('close_time', { ascending: true });
+
+        if (tradesError) {
+            console.error('Ошибка получения истории PNL:', tradesError);
+            return res.status(500).json({ error: 'Ошибка получения истории' });
+        }
+
+        // Группируем по дням и суммируем PNL
+        const dailyPnl = {};
+        const dailyBalance = {};
+        let runningBalance = 1000; // начальный депозит
+
+        trades.forEach(trade => {
+            const day = new Date(trade.close_time).toISOString().slice(0, 10);
+            const pnl = trade.pnl || 0;
+            dailyPnl[day] = (dailyPnl[day] || 0) + pnl;
+        });
+
+        // Строим массив дат за последние N дней
+        const labels = [];
+        const pnlData = [];
+        const balanceData = [];
+        let cumulativePnl = 0;
+
+        for (let i = parseInt(days) - 1; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const key = date.toISOString().slice(0, 10);
+            labels.push(key);
+            const dayPnl = dailyPnl[key] || 0;
+            cumulativePnl += dayPnl;
+            pnlData.push(cumulativePnl);
+            balanceData.push(1000 + cumulativePnl);
+        }
+
+        res.json({
+            labels: labels,
+            pnl: pnlData,
+            balance: balanceData
+        });
+
+    } catch (err) {
+        console.error('Ошибка получения истории PNL:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
 //  ЗАПУСК СЕРВЕРА
 // ============================================
 
