@@ -64,6 +64,49 @@
             background: #4338ca;
         }
 
+        /* --- БЛОК PNL В ШАПКЕ (НОВЫЙ) --- */
+        .pnl-block {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: #111827;
+            padding: 6px 16px 6px 20px;
+            border-radius: 40px;
+            border: 1px solid #1e293b;
+            cursor: pointer;
+            transition: border-color 0.3s, background 0.3s;
+        }
+        .pnl-block:hover {
+            border-color: #4f46e5;
+            background: #1a2035;
+        }
+        .pnl-block .label {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .pnl-block .value {
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .pnl-block .value.positive {
+            color: #22c55e;
+        }
+        .pnl-block .value.negative {
+            color: #ef4444;
+        }
+        .pnl-block .arrow {
+            color: #64748b;
+            font-size: 18px;
+        }
+        .pnl-block .email-label {
+            font-size: 12px;
+            color: #64748b;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         /* --- HERO --- */
         .hero {
             text-align: center;
@@ -85,7 +128,7 @@
             margin: 16px auto 24px;
         }
 
-        /* --- WIDGET: DEMO BOT (ОБНОВЛЁННЫЙ) --- */
+        /* --- WIDGET: DEMO BOT --- */
         .bot-widget {
             background: #111827;
             border: 1px solid #1e293b;
@@ -279,6 +322,9 @@
             .hero h1 { font-size: 28px; }
             .header { flex-wrap: wrap; gap: 12px; }
             .bot-widget { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .pnl-block .email-label { display: none; }
+            .pnl-block .label { font-size: 10px; }
+            .pnl-block .value { font-size: 14px; }
         }
     </style>
 </head>
@@ -286,10 +332,12 @@
 
     <div class="container">
 
-        <!-- HEADER -->
+        <!-- HEADER (ОБНОВЛЁННЫЙ) -->
         <header class="header">
             <a href="/" class="logo">SMT <span>Bot</span></a>
-            <a href="/dashboard.html" class="btn-primary">Терминал</a>
+            <div id="headerRight">
+                <!-- Сюда будет вставлен либо блок PNL, либо кнопка Терминал -->
+            </div>
         </header>
 
         <!-- HERO -->
@@ -298,7 +346,7 @@
             <p>Индексы, новости, сигналы и автоматическая торговля — всё в одном месте. Начните с демо-бота прямо сейчас.</p>
         </section>
 
-        <!-- BOT WIDGET (ОБНОВЛЁННЫЙ - ЖИВЫЕ ДАННЫЕ) -->
+        <!-- BOT WIDGET -->
         <section class="bot-widget" id="botWidget">
             <div class="status">
                 <span class="dot"></span> <span id="botStatus">Бот активен</span>
@@ -418,6 +466,56 @@
             return '$' + num.toLocaleString();
         }
 
+        // --- ПОЛУЧЕНИЕ ПОЛЬЗОВАТЕЛЯ ИЗ LOCALSTORAGE ---
+        function getUser() {
+            try {
+                const user = JSON.parse(localStorage.getItem('smt_user'));
+                return user;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // --- ОТОБРАЖЕНИЕ ШАПКИ (PNL БЛОК ИЛИ КНОПКА) ---
+        async function renderHeader() {
+            const headerRight = document.getElementById('headerRight');
+            const user = getUser();
+
+            if (user && user.email) {
+                // Пользователь залогинен — показываем блок PNL
+                try {
+                    const res = await fetch(`/api/user/quick-stats?email=${encodeURIComponent(user.email)}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const pnl = data.pnlPercent || 0;
+                        const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+                        const pnlSign = pnl >= 0 ? '+' : '';
+
+                        headerRight.innerHTML = `
+                            <a href="/dashboard.html" style="text-decoration: none;">
+                                <div class="pnl-block">
+                                    <span class="email-label">${user.email}</span>
+                                    <span class="label">PNL</span>
+                                    <span class="value ${pnlClass}">${pnlSign}${pnl.toFixed(2)}%</span>
+                                    <span class="label">($${data.balance?.toFixed(2) || '0.00'})</span>
+                                    <span class="arrow">→</span>
+                                </div>
+                            </a>
+                        `;
+                    } else {
+                        // Если API не ответил — показываем кнопку
+                        headerRight.innerHTML = `<a href="/dashboard.html" class="btn-primary">Терминал</a>`;
+                    }
+                } catch (e) {
+                    console.warn('Ошибка загрузки PNL:', e);
+                    headerRight.innerHTML = `<a href="/dashboard.html" class="btn-primary">Терминал</a>`;
+                }
+            } else {
+                // Пользователь не залогинен — кнопка "Терминал"
+                headerRight.innerHTML = `<a href="/dashboard.html" class="btn-primary">Терминал</a>`;
+            }
+        }
+
         // --- ЗАГРУЗКА РЫНОЧНЫХ ДАННЫХ ---
         async function loadMarketData() {
             try {
@@ -455,21 +553,18 @@
             }
         }
 
-        // --- ЗАГРУЗКА ДАННЫХ ПУБЛИЧНОГО ДЕМО-БОТА (НОВЫЙ ЭНДПОИНТ) ---
+        // --- ЗАГРУЗКА ДАННЫХ ПУБЛИЧНОГО ДЕМО-БОТА ---
         async function loadDemoBotStatus() {
             try {
                 const res = await fetch('/api/public/demo/status');
                 const data = await res.json();
                 if (data.status === 'ok' && data.data) {
                     const demo = data.data;
-                    // Баланс
                     document.getElementById('demoBalance').textContent = demo.balance.toFixed(2);
-                    // PNL
                     const pnl = ((demo.balance - 1000) / 1000 * 100);
                     const pnlEl = document.getElementById('pnlValue');
                     pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + '%';
                     pnlEl.className = pnl >= 0 ? 'positive' : 'negative';
-                    // Информация о позиции
                     const tradeInfo = document.getElementById('tradeInfo');
                     if (demo.positions && demo.positions.length > 0) {
                         const pos = demo.positions[0];
@@ -477,7 +572,6 @@
                     } else {
                         tradeInfo.textContent = 'Нет открытых позиций';
                     }
-                    // Статус бота
                     document.getElementById('botStatus').textContent = 'Бот активен';
                 } else {
                     console.warn('Данные демо-бота не получены');
@@ -488,16 +582,14 @@
             }
         }
 
-        // --- ЗАПУСК ВСЕХ ФУНКЦИЙ ---
+        // --- ЗАПУСК ---
+        renderHeader();
         loadMarketData();
         loadNews();
         loadDemoBotStatus();
 
-        // Обновлять демо-бота каждые 5 секунд
         setInterval(loadDemoBotStatus, 5000);
-        // Обновлять рыночные данные каждые 60 секунд
         setInterval(loadMarketData, 60000);
-        // Обновлять новости каждые 5 минут
         setInterval(loadNews, 300000);
     </script>
 
