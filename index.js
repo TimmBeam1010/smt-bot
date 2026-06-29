@@ -742,6 +742,81 @@ app.get('/api/public/demo/status', async (req, res) => {
 });
 
 // ============================================
+//  БЫСТРАЯ СТАТИСТИКА ДЛЯ ГЛАВНОЙ (PNL)
+// ============================================
+
+app.get('/api/user/quick-stats', async (req, res) => {
+    const { email } = req.query;
+    if (!email) {
+        return res.status(400).json({ error: 'Email обязателен' });
+    }
+
+    try {
+        // Находим пользователя
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        // Получаем баланс
+        const { data: balanceData, error: balanceError } = await supabase
+            .from('demo_balance')
+            .select('balance')
+            .eq('user_id', user.id)
+            .single();
+
+        if (balanceError) {
+            console.error('Ошибка получения баланса:', balanceError);
+        }
+
+        // Получаем открытые позиции для расчёта PNL
+        const { data: positions, error: posError } = await supabase
+            .from('demo_trades')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'open');
+
+        if (posError) {
+            console.error('Ошибка получения позиций:', posError);
+        }
+
+        // Получаем закрытые сделки для расчёта PNL
+        const { data: trades, error: tradesError } = await supabase
+            .from('demo_trades')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'closed');
+
+        if (tradesError) {
+            console.error('Ошибка получения истории:', tradesError);
+        }
+
+        const balance = balanceData?.balance || 0;
+        const totalPnl = trades?.reduce((sum, t) => sum + (t.pnl || 0), 0) || 0;
+        const unrealizedPnl = positions?.reduce((sum, p) => sum + (p.pnl || 0), 0) || 0;
+        const totalEquity = balance + unrealizedPnl;
+
+        res.json({
+            email: email,
+            balance: balance,
+            totalPnl: totalPnl,
+            unrealizedPnl: unrealizedPnl,
+            equity: totalEquity,
+            pnlPercent: balance > 0 ? (totalPnl / balance * 100) : 0
+        });
+
+    } catch (err) {
+        console.error('Ошибка получения статистики:', err);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+// ============================================
 //  ЗАПУСК СЕРВЕРА
 // ============================================
 
