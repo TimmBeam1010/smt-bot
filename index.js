@@ -314,7 +314,7 @@ app.get('/api/signals/user/:email', async (req, res) => {
         const { data: signals, error } = await supabase
             .from('signals')
             .select('*')
-            .eq('email', email)
+            .eq('user_id', user.id)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -471,9 +471,18 @@ app.post('/api/exchange/connect', async (req, res) => {
             activatedAt: new Date().toISOString()
         };
 
+        // Добавляем биржу в список connected_exchanges
+        const currentExchanges = user.connected_exchanges || [];
+        if (!currentExchanges.includes(exchange)) {
+            currentExchanges.push(exchange);
+        }
+
         const { data: updatedUser, error: updateError } = await supabase
             .from('users')
-            .update({ bots: [...currentBots, newBot] })
+            .update({ 
+                bots: [...currentBots, newBot],
+                connected_exchanges: currentExchanges
+            })
             .eq('email', email)
             .select()
             .single();
@@ -662,7 +671,6 @@ app.post('/api/trade/open-manual', async (req, res) => {
 //  ПУБЛИЧНОЕ ДЕМО API (ДЛЯ ГЛАВНОЙ СТРАНИЦЫ)
 // ============================================
 
-// Вспомогательная функция для получения публичного демо-пользователя
 async function getPublicDemoUserId() {
     const { data, error } = await supabase
         .from('users')
@@ -676,7 +684,6 @@ async function getPublicDemoUserId() {
     return data.id;
 }
 
-// Эндпоинт для публичного виджета (не требует авторизации)
 app.get('/api/public/demo/status', async (req, res) => {
     try {
         const userId = await getPublicDemoUserId();
@@ -684,7 +691,6 @@ app.get('/api/public/demo/status', async (req, res) => {
             return res.status(404).json({ error: 'Публичный демо-пользователь не найден' });
         }
 
-        // Получаем баланс
         const { data: balanceData, error: balanceError } = await supabase
             .from('demo_balance')
             .select('balance')
@@ -695,7 +701,6 @@ app.get('/api/public/demo/status', async (req, res) => {
             console.error('Ошибка получения баланса:', balanceError);
         }
 
-        // Получаем открытые позиции
         const { data: positions, error: posError } = await supabase
             .from('demo_trades')
             .select('*')
@@ -707,7 +712,6 @@ app.get('/api/public/demo/status', async (req, res) => {
             console.error('Ошибка получения позиций:', posError);
         }
 
-        // Получаем историю сделок (последние 5)
         const { data: trades, error: tradesError } = await supabase
             .from('demo_trades')
             .select('*')
@@ -720,7 +724,6 @@ app.get('/api/public/demo/status', async (req, res) => {
             console.error('Ошибка получения истории:', tradesError);
         }
 
-        // Рассчитываем PNL
         const balance = balanceData?.balance || 0;
         const totalPnl = trades?.reduce((sum, t) => sum + (t.pnl || 0), 0) || 0;
 
@@ -752,7 +755,6 @@ app.get('/api/user/quick-stats', async (req, res) => {
     }
 
     try {
-        // Находим пользователя
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('id')
@@ -763,7 +765,6 @@ app.get('/api/user/quick-stats', async (req, res) => {
             return res.status(404).json({ error: 'Пользователь не найден' });
         }
 
-        // Получаем баланс
         const { data: balanceData, error: balanceError } = await supabase
             .from('demo_balance')
             .select('balance')
@@ -774,7 +775,6 @@ app.get('/api/user/quick-stats', async (req, res) => {
             console.error('Ошибка получения баланса:', balanceError);
         }
 
-        // Получаем открытые позиции для расчёта PNL
         const { data: positions, error: posError } = await supabase
             .from('demo_trades')
             .select('*')
@@ -785,7 +785,6 @@ app.get('/api/user/quick-stats', async (req, res) => {
             console.error('Ошибка получения позиций:', posError);
         }
 
-        // Получаем закрытые сделки для расчёта PNL
         const { data: trades, error: tradesError } = await supabase
             .from('demo_trades')
             .select('*')
@@ -820,7 +819,6 @@ app.get('/api/user/quick-stats', async (req, res) => {
 //  УПРАВЛЕНИЕ БОТАМИ (ОБНОВЛЕНИЕ И УДАЛЕНИЕ)
 // ============================================
 
-// Обновление статуса бота (пауза/активация/отключение)
 app.put('/api/user/bots/:email/:botIndex', async (req, res) => {
     const { email, botIndex } = req.params;
     const { active, paused } = req.body;
@@ -830,7 +828,6 @@ app.put('/api/user/bots/:email/:botIndex', async (req, res) => {
     }
 
     try {
-        // Получаем пользователя
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('bots')
@@ -848,7 +845,6 @@ app.put('/api/user/bots/:email/:botIndex', async (req, res) => {
             return res.status(404).json({ error: 'Бот не найден' });
         }
 
-        // Обновляем статусы
         if (active !== undefined) {
             bots[index].active = active;
         }
@@ -856,7 +852,6 @@ app.put('/api/user/bots/:email/:botIndex', async (req, res) => {
             bots[index].paused = paused;
         }
 
-        // Сохраняем
         const { data: updatedUser, error: updateError } = await supabase
             .from('users')
             .update({ bots, updated_at: new Date() })
@@ -875,7 +870,6 @@ app.put('/api/user/bots/:email/:botIndex', async (req, res) => {
     }
 });
 
-// Удаление бота
 app.delete('/api/user/bots/:email/:botIndex', async (req, res) => {
     const { email, botIndex } = req.params;
 
@@ -901,7 +895,6 @@ app.delete('/api/user/bots/:email/:botIndex', async (req, res) => {
             return res.status(404).json({ error: 'Бот не найден' });
         }
 
-        // Удаляем бота
         bots.splice(index, 1);
 
         const { data: updatedUser, error: updateError } = await supabase
@@ -928,10 +921,9 @@ app.delete('/api/user/bots/:email/:botIndex', async (req, res) => {
 
 app.get('/api/user/pnl-history/:email', async (req, res) => {
     const { email } = req.params;
-    const { days = 7 } = req.query; // по умолчанию 7 дней
+    const { days = 7 } = req.query;
 
     try {
-        // Находим пользователя
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('id')
@@ -942,7 +934,6 @@ app.get('/api/user/pnl-history/:email', async (req, res) => {
             return res.status(404).json({ error: 'Пользователь не найден' });
         }
 
-        // Получаем все закрытые сделки за последние N дней
         const fromDate = new Date();
         fromDate.setDate(fromDate.getDate() - parseInt(days));
 
@@ -959,18 +950,13 @@ app.get('/api/user/pnl-history/:email', async (req, res) => {
             return res.status(500).json({ error: 'Ошибка получения истории' });
         }
 
-        // Группируем по дням и суммируем PNL
         const dailyPnl = {};
-        const dailyBalance = {};
-        let runningBalance = 1000; // начальный депозит
-
         trades.forEach(trade => {
             const day = new Date(trade.close_time).toISOString().slice(0, 10);
             const pnl = trade.pnl || 0;
             dailyPnl[day] = (dailyPnl[day] || 0) + pnl;
         });
 
-        // Строим массив дат за последние N дней
         const labels = [];
         const pnlData = [];
         const balanceData = [];
@@ -998,6 +984,116 @@ app.get('/api/user/pnl-history/:email', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// ============================================
+//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА (МНОГОПОЛЬЗОВАТЕЛЬСКИЙ)
+// ============================================
+
+const {
+    SYMBOLS_HOT,
+    getUserAggregatedPrice,
+    getAllUserExchanges,
+    generateSignal
+} = require('./trading');
+
+const userPriceHistory = {};
+
+function getUserPriceHistory(userId, symbol) {
+    if (!userPriceHistory[userId]) {
+        userPriceHistory[userId] = {};
+    }
+    if (!userPriceHistory[userId][symbol]) {
+        userPriceHistory[userId][symbol] = [];
+    }
+    return userPriceHistory[userId][symbol];
+}
+
+cron.schedule('*/1 * * * *', async () => {
+    const startTime = Date.now();
+    console.log('🔄 Запуск многопользовательского анализа...');
+
+    try {
+        const userExchangesMap = await getAllUserExchanges(supabase);
+        const userIds = Array.from(userExchangesMap.keys());
+
+        if (userIds.length === 0) {
+            console.log('⚠️ Нет активных пользователей для анализа');
+            return;
+        }
+
+        console.log(`👥 Обрабатываем ${userIds.length} пользователей`);
+
+        for (const userId of userIds) {
+            try {
+                const exchanges = userExchangesMap.get(userId) || ['binance', 'bybit', 'okx'];
+                
+                const hotPrices = {};
+                for (const symbol of SYMBOLS_HOT) {
+                    const result = await getUserAggregatedPrice(userId, symbol, supabase);
+                    if (result) {
+                        hotPrices[symbol] = result.price;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                for (const symbol of SYMBOLS_HOT) {
+                    if (hotPrices[symbol] !== undefined) {
+                        const history = getUserPriceHistory(userId, symbol);
+                        history.push(hotPrices[symbol]);
+                        if (history.length > 60) {
+                            history.shift();
+                        }
+                    }
+                }
+
+                for (const symbol of SYMBOLS_HOT) {
+                    const history = getUserPriceHistory(userId, symbol);
+                    if (history.length >= 20) {
+                        const signal = generateSignal(symbol, history);
+                        if (signal) {
+                            console.log(`📈 СИГНАЛ для ${userId} (${symbol}): ${signal.side} (${signal.confidence})`);
+                            
+                            try {
+                                const { error: insertError } = await supabase
+                                    .from('signals')
+                                    .insert({
+                                        user_id: userId,
+                                        symbol: signal.symbol,
+                                        side: signal.side,
+                                        entry_price: signal.entry,
+                                        confidence: signal.confidence,
+                                        reasons: signal.reasons,
+                                        rsi: signal.rsi,
+                                        macd: signal.macd,
+                                        created_at: new Date()
+                                    });
+
+                                if (insertError) {
+                                    console.error(`❌ Ошибка сохранения сигнала для ${userId}:`, insertError);
+                                }
+                            } catch (dbError) {
+                                console.error(`❌ Ошибка БД для ${userId}:`, dbError.message);
+                            }
+                        }
+                    }
+                }
+
+            } catch (userError) {
+                console.error(`❌ Ошибка обработки пользователя ${userId}:`, userError.message);
+            }
+        }
+
+        const duration = Date.now() - startTime;
+        console.log(`✅ Многопользовательский анализ завершён за ${duration}мс`);
+
+    } catch (error) {
+        console.error('❌ Ошибка в планировщике:', error.message);
+    }
+}, {
+    timezone: "Europe/Moscow"
+});
+
+console.log('⏰ Многопользовательский планировщик запущен (каждую минуту)');
 
 // ============================================
 //  ЗАПУСК СЕРВЕРА
