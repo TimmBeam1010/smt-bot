@@ -28,7 +28,7 @@
             padding: 0 16px;
         }
 
-        /* --- HEADER --- */
+        /* --- HEADER (ОБНОВЛЁННЫЙ) --- */
         .header {
             display: flex;
             justify-content: space-between;
@@ -40,18 +40,14 @@
             font-size: 24px;
             font-weight: 700;
             color: #fff;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .logo:hover {
+            opacity: 0.8;
         }
         .logo span {
             color: #4f46e5;
-        }
-        .nav a {
-            margin-left: 24px;
-            font-size: 14px;
-            color: #94a3b8;
-            transition: color 0.2s;
-        }
-        .nav a:hover {
-            color: #fff;
         }
         .btn-primary {
             background: #4f46e5;
@@ -60,6 +56,9 @@
             border-radius: 8px;
             font-weight: 600;
             transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
         }
         .btn-primary:hover {
             background: #4338ca;
@@ -279,7 +278,6 @@
         @media (max-width: 768px) {
             .hero h1 { font-size: 28px; }
             .header { flex-wrap: wrap; gap: 12px; }
-            .nav a { margin-left: 12px; font-size: 13px; }
             .bot-widget { flex-direction: column; align-items: flex-start; gap: 12px; }
         }
     </style>
@@ -288,15 +286,10 @@
 
     <div class="container">
 
-        <!-- HEADER -->
+        <!-- HEADER (ОБНОВЛЁННЫЙ) -->
         <header class="header">
-            <div class="logo">SMT <span>Bot</span></div>
-            <nav class="nav">
-                <a href="/">Главная</a>
-                <a href="/dashboard.html">Терминал</a>
-                <a href="/signals.html">Сигналы</a>
-                <a href="/login.html" class="btn-primary">Войти</a>
-            </nav>
+            <a href="/" class="logo">SMT <span>Bot</span></a>
+            <a href="/dashboard.html" class="btn-primary">Терминал</a>
         </header>
 
         <!-- HERO -->
@@ -465,12 +458,11 @@
         // --- ДЕМО-ВИДЖЕТ (имитация работы бота) ---
         // В будущем здесь будет запрос к /api/public/demo/status
         function updateDemoWidget() {
-            // Имитация изменения баланса и PNL
             const balanceEl = document.getElementById('demoBalance');
             const pnlEl = document.getElementById('demoPnl');
             const currentBalance = parseFloat(balanceEl.textContent);
             if (!isNaN(currentBalance)) {
-                const change = (Math.random() * 2 - 1) * 0.5; // -0.5% ... +0.5%
+                const change = (Math.random() * 2 - 1) * 0.5;
                 const newBalance = currentBalance * (1 + change / 100);
                 balanceEl.textContent = newBalance.toFixed(2);
                 const pnl = ((newBalance - 1000) / 1000 * 100).toFixed(2);
@@ -484,10 +476,7 @@
         loadNews();
         updateDemoWidget();
 
-        // Обновлять демо-виджет каждые 5 секунд (имитация)
         setInterval(updateDemoWidget, 5000);
-
-        // Обновлять рыночные данные каждые 60 секунд
         setInterval(loadMarketData, 60000);
     </script>
 
