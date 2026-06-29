@@ -29,7 +29,7 @@ function decrypt(encrypted, ivHex) {
 }
 
 // ============================================
-//  ПРОВЕРКА API КЛЮЧЕЙ (ТЕСТОВЫЙ ЗАПРОС)
+//  ПРОВЕРКА API КЛЮЧЕЙ
 // ============================================
 
 async function testExchangeCredentials(exchange, apiKey, secretKey) {
@@ -52,13 +52,11 @@ async function testExchangeCredentials(exchange, apiKey, secretKey) {
     }
 }
 
-// --- Binance ---
 async function testBinance(apiKey, secretKey) {
     const timestamp = Date.now();
     const signature = crypto.createHmac('sha256', secretKey)
         .update(`timestamp=${timestamp}&recvWindow=5000`)
         .digest('hex');
-    
     const response = await axios.get(
         `https://api.binance.com/api/v3/account?timestamp=${timestamp}&signature=${signature}`,
         { headers: { 'X-MBX-APIKEY': apiKey }, timeout: 10000 }
@@ -66,14 +64,12 @@ async function testBinance(apiKey, secretKey) {
     return response.status === 200;
 }
 
-// --- Bybit ---
 async function testBybit(apiKey, secretKey) {
     const timestamp = Date.now().toString();
     const recvWindow = '5000';
     const signature = crypto.createHmac('sha256', secretKey)
         .update(`${timestamp}${apiKey}${recvWindow}`)
         .digest('hex');
-    
     const response = await axios.get(
         `https://api.bybit.com/v5/account/wallet-balance?accountType=UNIFIED&timestamp=${timestamp}&recvWindow=${recvWindow}&sign=${signature}`,
         { headers: { 'X-BAPI-API-KEY': apiKey }, timeout: 10000 }
@@ -81,7 +77,6 @@ async function testBybit(apiKey, secretKey) {
     return response.status === 200 && response.data.retCode === 0;
 }
 
-// --- OKX ---
 async function testOKX(apiKey, secretKey) {
     const timestamp = new Date().toISOString();
     const method = 'GET';
@@ -89,7 +84,6 @@ async function testOKX(apiKey, secretKey) {
     const signature = crypto.createHmac('sha256', secretKey)
         .update(timestamp + method + path)
         .digest('base64');
-    
     const response = await axios.get(
         `https://www.okx.com${path}`,
         {
@@ -105,13 +99,11 @@ async function testOKX(apiKey, secretKey) {
     return response.status === 200 && response.data.code === '0';
 }
 
-// --- BingX ---
 async function testBingX(apiKey, secretKey) {
     const timestamp = Date.now().toString();
     const signature = crypto.createHmac('sha256', secretKey)
         .update(timestamp)
         .digest('hex');
-    
     const response = await axios.get(
         `https://open-api.bingx.com/openApi/spot/v1/account`,
         {
@@ -127,11 +119,48 @@ async function testBingX(apiKey, secretKey) {
 }
 
 // ============================================
-//  ЭКСПОРТ
+//  ВРЕМЕННАЯ ЭМУЛЯЦИЯ ПОДКЛЮЧЕНИЯ БИРЖИ
 // ============================================
+
+async function forceConnectExchange(email, exchange, supabase) {
+    const { data: user, error } = await supabase
+        .from('users')
+        .select('exchange_credentials, connected_exchanges')
+        .eq('email', email)
+        .single();
+
+    if (error || !user) {
+        throw new Error('Пользователь не найден');
+    }
+
+    const credentials = user.exchange_credentials || {};
+    credentials[exchange] = {
+        enabled: true,
+        last_checked: new Date().toISOString(),
+        test_mode: true
+    };
+
+    const connectedExchanges = user.connected_exchanges || [];
+    if (!connectedExchanges.includes(exchange)) {
+        connectedExchanges.push(exchange);
+    }
+
+    const { error: updateError } = await supabase
+        .from('users')
+        .update({
+            exchange_credentials: credentials,
+            connected_exchanges: connectedExchanges
+        })
+        .eq('email', email);
+
+    if (updateError) throw updateError;
+
+    return { success: true, message: `Биржа ${exchange} принудительно подключена (тестовый режим)` };
+}
 
 module.exports = {
     encrypt,
     decrypt,
-    testExchangeCredentials
+    testExchangeCredentials,
+    forceConnectExchange
 };
