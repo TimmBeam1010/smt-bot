@@ -594,17 +594,17 @@ app.post('/api/exchange/disconnect', async (req, res) => {
 });
 
 // ============================================
-//  ПОЛУЧЕНИЕ БАЛАНСА БИРЖИ
+//  ПОЛУЧЕНИЕ БАЛАНСА БЕССРОЧНЫХ ФЬЮЧЕРСОВ (USDT-M)
 // ============================================
 
-async function getBingXBalance(apiKey, secretKey) {
+async function getBingXFuturesBalance(apiKey, secretKey) {
     const timestamp = Date.now().toString();
     const signature = crypto.createHmac('sha256', secretKey)
         .update(timestamp)
         .digest('hex');
 
     const response = await axios.get(
-        'https://open-api.bingx.com/openApi/spot/v1/account',
+        'https://open-api.bingx.com/openApi/swap/v3/user/balance',
         {
             headers: {
                 'X-BX-APIKEY': apiKey,
@@ -615,10 +615,28 @@ async function getBingXBalance(apiKey, secretKey) {
         }
     );
 
-    if (response.data && response.data.data && response.data.data.balances) {
-        const usdtBalance = response.data.data.balances.find(b => b.asset === 'USDT');
-        return usdtBalance ? parseFloat(usdtBalance.free) : 0;
+    // Логируем ответ для отладки
+    console.log('📊 BingX Futures Balance Response:', JSON.stringify(response.data, null, 2));
+
+    if (response.data && response.data.code === 0 && response.data.data) {
+        // Структура ответа: data.balance - объект с балансом
+        // или data.data.balance в некоторых версиях
+        const balanceData = response.data.data.balance || response.data.data;
+        
+        if (balanceData && balanceData.balance !== undefined) {
+            return parseFloat(balanceData.balance) || 0;
+        }
+        
+        // Если баланс не найден, пробуем найти equity или availableMargin
+        if (balanceData && balanceData.equity !== undefined) {
+            return parseFloat(balanceData.equity) || 0;
+        }
+        
+        // Если структура другая, выводим все data для диагностики
+        console.log('📊 Неизвестная структура balanceData:', balanceData);
+        return 0;
     }
+    
     return 0;
 }
 
@@ -665,7 +683,7 @@ app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
         let balance = 0;
         switch (exchange) {
             case 'bingx':
-                balance = await getBingXBalance(apiKey, secretKey);
+                balance = await getBingXFuturesBalance(apiKey, secretKey);
                 break;
             case 'binance':
                 balance = await getBinanceBalance(apiKey, secretKey);
@@ -677,7 +695,7 @@ app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
         res.json({
             exchange,
             balance,
-            currency: 'USDT',
+            currency: 'USDT (Futures)',
             updated_at: new Date().toISOString()
         });
 
