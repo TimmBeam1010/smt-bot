@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMT Bot — Крипто-дашборд</title>
+    <title>SMT Bot — Крипто-аналитика и торговля</title>
     <style>
+        /* --- RESET & BASE --- */
         * {
             margin: 0;
             padding: 0;
@@ -12,703 +13,482 @@
         }
         body {
             background: #0a0e17;
-            color: #fff;
+            color: #e2e8f0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-            min-height: 100vh;
+            line-height: 1.6;
+            padding: 0 20px;
         }
+        a {
+            color: #4f46e5;
+            text-decoration: none;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        /* --- HEADER --- */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #2d3748;
-            flex-wrap: wrap;
-            gap: 12px;
+            padding: 20px 0;
+            border-bottom: 1px solid #1e293b;
         }
         .logo {
-            font-size: 28px;
-            font-weight: bold;
-            color: #4f46e5;
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
         }
         .logo span {
-            color: #fff;
-        }
-        .nav {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-            flex-wrap: wrap;
+            color: #4f46e5;
         }
         .nav a {
-            color: #94a3b8;
-            text-decoration: none;
+            margin-left: 24px;
             font-size: 14px;
-            padding: 6px 12px;
-            border-radius: 8px;
-            transition: all 0.2s;
+            color: #94a3b8;
+            transition: color 0.2s;
         }
         .nav a:hover {
-            color: #fff;
-            background: #1a1f2e;
-        }
-        .nav a.primary {
-            background: #4f46e5;
-            color: #fff;
-        }
-        .nav a.primary:hover {
-            background: #4338ca;
-        }
-        .card {
-            background: #1a1f2e;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            border: 1px solid #2d3748;
-        }
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        .card-header h2 {
-            font-size: 20px;
-            font-weight: 600;
-        }
-        .card-header .badge {
-            font-size: 12px;
-            color: #94a3b8;
-        }
-        .grid-4 {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-        }
-        .grid-3 {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-        }
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-        }
-        .stat-card {
-            background: #0a0e17;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #1a1f2e;
-            text-align: center;
-        }
-        .stat-card .label {
-            color: #94a3b8;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .stat-card .value {
-            font-size: 28px;
-            font-weight: 700;
-            margin: 4px 0;
-        }
-        .stat-card .change {
-            font-size: 14px;
-        }
-        .stat-card .sub {
-            color: #94a3b8;
-            font-size: 12px;
-        }
-        .positive { color: #10b981; }
-        .negative { color: #ef4444; }
-        .neutral { color: #f59e0b; }
-        .fear-greed-bar {
-            height: 8px;
-            border-radius: 4px;
-            background: linear-gradient(to right, #ef4444, #f59e0b, #10b981);
-            margin-top: 8px;
-            position: relative;
-        }
-        .fear-greed-bar .fill {
-            height: 100%;
-            border-radius: 4px;
-            background: #4f46e5;
-            transition: width 0.5s ease;
-            width: 50%;
-        }
-        .fear-greed-bar .pointer {
-            position: absolute;
-            top: -4px;
-            width: 16px;
-            height: 16px;
-            background: #fff;
-            border-radius: 50%;
-            transform: translateX(-50%);
-            border: 2px solid #4f46e5;
-        }
-        .coin-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .coin-table th {
-            text-align: left;
-            color: #94a3b8;
-            font-size: 12px;
-            text-transform: uppercase;
-            padding: 8px 12px;
-            border-bottom: 1px solid #2d3748;
-        }
-        .coin-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #1a1f2e;
-            font-size: 14px;
-        }
-        .coin-table tr:hover td {
-            background: #0a0e17;
-        }
-        .coin-table .rank {
-            color: #94a3b8;
-            font-weight: 600;
-        }
-        .coin-table .name {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .coin-table .name img {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-        }
-        .coin-table .symbol {
-            color: #94a3b8;
-            font-size: 12px;
-        }
-        .sparkline {
-            width: 80px;
-            height: 30px;
-        }
-        .news-item {
-            display: flex;
-            gap: 16px;
-            padding: 12px 0;
-            border-bottom: 1px solid #1a1f2e;
-            align-items: flex-start;
-        }
-        .news-item:last-child {
-            border-bottom: none;
-        }
-        .news-item .time {
-            color: #94a3b8;
-            font-size: 12px;
-            white-space: nowrap;
-            min-width: 60px;
-        }
-        .news-item .title {
-            color: #fff;
-            text-decoration: none;
-            font-size: 14px;
-            line-height: 1.4;
-            flex: 1;
-        }
-        .news-item .title:hover {
-            color: #4f46e5;
-        }
-        .news-item .source {
-            color: #94a3b8;
-            font-size: 11px;
-        }
-        .trend-tag {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            background: #1a1f2e;
-            color: #94a3b8;
-            margin: 2px;
-        }
-        .trend-tag.hot {
-            background: #7f1d1d;
-            color: #fca5a5;
-        }
-        .btn-outline {
-            background: transparent;
-            color: #4f46e5;
-            border: 1px solid #4f46e5;
-            padding: 6px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-        .btn-outline:hover {
-            background: #4f46e5;
             color: #fff;
         }
         .btn-primary {
             background: #4f46e5;
-            color: #fff;
-            border: none;
-            padding: 8px 24px;
+            color: #fff !important;
+            padding: 8px 20px;
             border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
+            font-weight: 600;
             transition: background 0.2s;
         }
         .btn-primary:hover {
             background: #4338ca;
         }
-        .indicators-row {
+
+        /* --- HERO --- */
+        .hero {
+            text-align: center;
+            padding: 60px 0 40px;
+        }
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f8fafc, #4f46e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+        .hero p {
+            font-size: 18px;
+            color: #94a3b8;
+            max-width: 700px;
+            margin: 16px auto 24px;
+        }
+
+        /* --- WIDGET: DEMO BOT --- */
+        .bot-widget {
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin: 30px 0 40px;
             display: flex;
-            gap: 12px;
             flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
         }
-        .indicators-row .indicator {
-            background: #0a0e17;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            border: 1px solid #1a1f2e;
+        .bot-widget .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .indicators-row .indicator .label {
+        .bot-widget .status .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #22c55e;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+        .bot-widget .balance {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .bot-widget .balance small {
+            font-size: 14px;
+            font-weight: 400;
             color: #94a3b8;
         }
-        .indicators-row .indicator .value {
+        .bot-widget .pnl {
             font-weight: 600;
-            margin-left: 4px;
         }
-        .loading {
+        .pnl.positive { color: #22c55e; }
+        .pnl.negative { color: #ef4444; }
+        .bot-widget .trade-info {
+            font-size: 14px;
             color: #94a3b8;
-            text-align: center;
-            padding: 40px;
         }
-        .error-msg {
-            color: #fca5a5;
-            background: #7f1d1d;
-            padding: 12px;
+        .bot-widget .trade-info strong {
+            color: #e2e8f0;
+        }
+
+        /* --- GRID: MARKET INDICATORS --- */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin: 30px 0;
+        }
+        .market-card {
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 16px 20px;
+        }
+        .market-card .label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.5px;
+        }
+        .market-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+        .market-card .change {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .change.positive { color: #22c55e; }
+        .change.negative { color: #ef4444; }
+
+        /* --- TABLE: TOP-10 (заглушка) --- */
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 40px 0 16px;
+        }
+        .table-wrap {
+            overflow-x: auto;
+            background: #111827;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            background: #0f172a;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid #1e293b;
+        }
+        .placeholder {
+            color: #64748b;
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        /* --- NEWS --- */
+        .news-list {
+            display: grid;
+            gap: 12px;
+            margin: 16px 0 30px;
+        }
+        .news-item {
+            background: #111827;
+            border: 1px solid #1e293b;
             border-radius: 8px;
+            padding: 12px 16px;
+        }
+        .news-item .title {
+            font-weight: 500;
+        }
+        .news-item .source {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* --- FEATURES --- */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin: 30px 0 40px;
+        }
+        .feature {
             text-align: center;
         }
-        @media (max-width: 1024px) {
-            .grid-4 { grid-template-columns: repeat(2, 1fr); }
-            .grid-3 { grid-template-columns: repeat(2, 1fr); }
+        .feature .icon {
+            font-size: 36px;
+            margin-bottom: 8px;
         }
-        @media (max-width: 600px) {
-            .grid-4 { grid-template-columns: 1fr; }
-            .grid-3 { grid-template-columns: 1fr; }
-            .grid-2 { grid-template-columns: 1fr; }
-            .header {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-            .nav {
-                justify-content: center;
-            }
-            .coin-table {
-                font-size: 12px;
-            }
-            .coin-table td, .coin-table th {
-                padding: 6px 8px;
-            }
-            .sparkline {
-                width: 50px;
-                height: 20px;
-            }
-            .news-item {
-                flex-direction: column;
-                gap: 4px;
-            }
-            .news-item .time {
-                min-width: auto;
-            }
-            .indicators-row {
-                justify-content: center;
-            }
+        .feature h3 {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+        .feature p {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        /* --- CTA --- */
+        .cta {
+            text-align: center;
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 16px;
+            padding: 40px 20px;
+            margin: 40px 0 60px;
+        }
+        .cta h2 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .cta p {
+            color: #94a3b8;
+            max-width: 500px;
+            margin: 0 auto 20px;
+        }
+
+        /* --- FOOTER --- */
+        .footer {
+            border-top: 1px solid #1e293b;
+            padding: 24px 0;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 28px; }
+            .header { flex-wrap: wrap; gap: 12px; }
+            .nav a { margin-left: 12px; font-size: 13px; }
+            .bot-widget { flex-direction: column; align-items: flex-start; gap: 12px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="logo">SMT <span>Bot</span></div>
-        <div class="nav">
-            <a href="/">Дашборд</a>
-            <a href="/dashboard.html">Личный кабинет</a>
-            <a href="/login.html" class="primary">Войти</a>
-        </div>
-    </div>
+    <div class="container">
 
-    <!-- Рыночные индикаторы -->
-    <div class="card">
-        <div class="card-header">
-            <h2>📊 Рыночные индикаторы</h2>
-            <span class="badge" id="lastUpdate">Обновлено: --</span>
-        </div>
-        <div class="grid-4" id="marketIndicators">
-            <div class="stat-card">
-                <div class="label">Fear & Greed</div>
-                <div class="value" id="fearGreedValue">--</div>
-                <div class="sub" id="fearGreedLabel">--</div>
-                <div class="fear-greed-bar">
-                    <div class="fill" id="fearGreedBar" style="width:50%"></div>
-                    <div class="pointer" id="fearGreedPointer" style="left:50%"></div>
-                </div>
+        <!-- HEADER -->
+        <header class="header">
+            <div class="logo">SMT <span>Bot</span></div>
+            <nav class="nav">
+                <a href="/">Главная</a>
+                <a href="/dashboard.html">Терминал</a>
+                <a href="/signals.html">Сигналы</a>
+                <a href="/login.html" class="btn-primary">Войти</a>
+            </nav>
+        </header>
+
+        <!-- HERO -->
+        <section class="hero">
+            <h1>Аналитика рынка в реальном времени</h1>
+            <p>Индексы, новости, сигналы и автоматическая торговля — всё в одном месте. Начните с демо-бота прямо сейчас.</p>
+        </section>
+
+        <!-- BOT WIDGET (демо-бот) -->
+        <section class="bot-widget" id="botWidget">
+            <div class="status">
+                <span class="dot"></span> <span>Бот активен</span>
             </div>
-            <div class="stat-card">
+            <div class="balance">
+                $<span id="demoBalance">1000.00</span>
+                <small>баланс</small>
+            </div>
+            <div class="pnl" id="demoPnl">
+                PNL: <span class="positive">+0.00%</span>
+            </div>
+            <div class="trade-info" id="demoTrade">
+                <strong>SOL/USDT</strong> · LONG · +1.8%
+            </div>
+            <a href="/dashboard.html" class="btn-primary" style="padding:6px 16px; font-size:14px;">Мой бот</a>
+        </section>
+
+        <!-- MARKET INDICATORS -->
+        <div class="market-grid" id="marketData">
+            <div class="market-card">
+                <div class="label">Fear & Greed</div>
+                <div class="value" id="fearGreed">--</div>
+                <div class="change" id="fearLabel">Загрузка...</div>
+            </div>
+            <div class="market-card">
                 <div class="label">BTC / USD</div>
-                <div class="value" id="btcPrice">$--</div>
+                <div class="value" id="btcPrice">--</div>
                 <div class="change" id="btcChange">--</div>
             </div>
-            <div class="stat-card">
+            <div class="market-card">
                 <div class="label">ETH / USD</div>
-                <div class="value" id="ethPrice">$--</div>
+                <div class="value" id="ethPrice">--</div>
                 <div class="change" id="ethChange">--</div>
             </div>
-            <div class="stat-card">
+            <div class="market-card">
                 <div class="label">Total Market Cap</div>
-                <div class="value" id="totalCap">$--</div>
-                <div class="sub" id="btcDominance">BTC доминирование: --%</div>
+                <div class="value" id="totalCap">--</div>
+                <div class="change">BTC доминирование: 55.6%</div>
             </div>
         </div>
-    </div>
 
-    <!-- Топ-10 монет -->
-    <div class="card">
-        <div class="card-header">
-            <h2>🏆 Топ-10 криптовалют</h2>
-            <button class="btn-outline" onclick="loadTopCoins()">🔄 Обновить</button>
-        </div>
-        <div style="overflow-x:auto;">
-            <table class="coin-table">
+        <!-- TOP-10 CRYPTO (заглушка) -->
+        <h2 class="section-title">🏆 Топ-10 криптовалют</h2>
+        <div class="table-wrap">
+            <table>
                 <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Монета</th>
-                        <th>Цена</th>
-                        <th>24ч %</th>
-                        <th>Объём 24ч</th>
-                        <th>Рыночная кап.</th>
-                        <th>График (7д)</th>
-                    </tr>
+                    <tr><th>#</th><th>Монета</th><th>Цена</th><th>24ч %</th><th>Объём</th><th>Рыночная кап.</th></tr>
                 </thead>
-                <tbody id="topCoinsBody">
-                    <tr><td colspan="7" class="loading">Загрузка...</td></tr>
+                <tbody>
+                    <tr><td colspan="6" class="placeholder">📊 Данные загружаются... (доступно в терминале)</td></tr>
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <!-- Технические индикаторы и тренды -->
-    <div class="grid-2">
-        <div class="card">
-            <div class="card-header">
-                <h2>📈 Технические индикаторы (BTC)</h2>
-            </div>
-            <div id="technicalIndicators">
-                <div class="loading">Загрузка...</div>
-            </div>
+        <!-- TECHNICAL INDICATORS (заглушка) -->
+        <h2 class="section-title">📈 Технические индикаторы (BTC)</h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Индикатор</th><th>Значение</th><th>Сигнал</th></tr></thead>
+                <tbody>
+                    <tr><td>RSI</td><td>--</td><td>--</td></tr>
+                    <tr><td>MACD</td><td>--</td><td>--</td></tr>
+                    <tr><td>Уровни</td><td colspan="2">Поддержка: -- / Сопротивление: --</td></tr>
+                </tbody>
+            </table>
         </div>
-        <div class="card">
-            <div class="card-header">
-                <h2>🔥 Трендовые монеты</h2>
-            </div>
-            <div id="trendingCoins">
-                <div class="loading">Загрузка...</div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Новости -->
-    <div class="card">
-        <div class="card-header">
-            <h2>📰 Новости крипторынка</h2>
-            <button class="btn-outline" onclick="loadNews()">🔄 Обновить</button>
+        <!-- NEWS -->
+        <h2 class="section-title">📰 Новости крипторынка</h2>
+        <div class="news-list" id="newsContainer">
+            <div class="news-item"><span class="title">Загрузка новостей...</span></div>
         </div>
-        <div id="newsContainer">
-            <div class="loading">Загрузка новостей...</div>
-        </div>
-    </div>
 
-    <!-- Призыв к действию -->
-    <div class="card" style="text-align:center;border-color:#4f46e5;">
-        <h2 style="margin-bottom:12px;">🚀 Готовы торговать умнее?</h2>
-        <p style="color:#94a3b8;margin-bottom:16px;max-width:500px;margin-left:auto;margin-right:auto;">
-            Получайте торговые сигналы, используйте AI-аналитику и управляйте портфелем в одном месте.
-        </p>
-        <a href="/login.html" class="btn-primary" style="text-decoration:none;display:inline-block;">Начать бесплатно</a>
+        <!-- FEATURES -->
+        <div class="features">
+            <div class="feature">
+                <div class="icon">📊</div>
+                <h3>100+ активов</h3>
+                <p>Аналитика и сигналы по всем топ-монетам</p>
+            </div>
+            <div class="feature">
+                <div class="icon">🧠</div>
+                <h3>AI-аналитика</h3>
+                <p>Индикаторы, паттерны, новостной фон</p>
+            </div>
+            <div class="feature">
+                <div class="icon">⚡</div>
+                <h3>Сигналы</h3>
+                <p>LONG / SHORT с разной уверенностью</p>
+            </div>
+            <div class="feature">
+                <div class="icon">🤖</div>
+                <h3>Автоторговля</h3>
+                <p>Настраиваемая стратегия и риск-менеджмент</p>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <section class="cta">
+            <h2>🚀 Готовы торговать умнее?</h2>
+            <p>Получите полный доступ к терминалу, сигналам и автоторговле.</p>
+            <a href="/dashboard.html" class="btn-primary" style="padding:12px 40px; font-size:18px;">Открыть терминал</a>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            &copy; 2026 SMT Bot. Не является инвестиционной рекомендацией.
+        </footer>
     </div>
 
     <script>
-        (function() {
-            // ============================================
-            //  ЗАГРУЗКА РЫНОЧНЫХ ИНДИКАТОРОВ
-            // ============================================
-            async function loadMarketOverview() {
-                try {
-                    const resp = await fetch('/api/public/market-overview');
-                    const data = await resp.json();
-                    
-                    if (data.error) throw new Error(data.error);
+        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '--';
+            if (num >= 1e9) return '$' + (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return '$' + (num / 1e6).toFixed(2) + 'M';
+            return '$' + num.toLocaleString();
+        }
 
-                    // Fear & Greed
-                    const fg = data.fearGreed || 50;
-                    document.getElementById('fearGreedValue').textContent = fg;
-                    document.getElementById('fearGreedBar').style.width = fg + '%';
-                    document.getElementById('fearGreedPointer').style.left = fg + '%';
-                    
-                    let fgLabel = 'Нейтрально';
-                    if (fg >= 75) fgLabel = '🟢 Extreme Greed';
-                    else if (fg >= 55) fgLabel = '🟢 Greed';
-                    else if (fg >= 45) fgLabel = '🟡 Neutral';
-                    else if (fg >= 25) fgLabel = '🔴 Fear';
-                    else fgLabel = '🔴 Extreme Fear';
-                    document.getElementById('fearGreedLabel').textContent = fgLabel;
-
-                    // BTC
-                    const btcPrice = data.btcPrice || 0;
-                    document.getElementById('btcPrice').textContent = '$' + formatNumber(btcPrice);
-                    document.getElementById('btcChange').textContent = (data.btcChange24h || 0) + '%';
-                    document.getElementById('btcChange').className = 'change ' + (data.btcChange24h >= 0 ? 'positive' : 'negative');
-
-                    // ETH
-                    const ethPrice = data.ethPrice || 0;
-                    document.getElementById('ethPrice').textContent = '$' + formatNumber(ethPrice);
-                    document.getElementById('ethChange').textContent = (data.ethChange24h || 0) + '%';
-                    document.getElementById('ethChange').className = 'change ' + (data.ethChange24h >= 0 ? 'positive' : 'negative');
-
-                    // Total Cap & BTC Dominance
-                    document.getElementById('totalCap').textContent = '$' + formatMarketCap(data.totalCap || 0);
-                    document.getElementById('btcDominance').textContent = 'BTC доминирование: ' + (data.btcDominance || 0).toFixed(1) + '%';
-
-                    document.getElementById('lastUpdate').textContent = 'Обновлено: ' + new Date().toLocaleString();
-
-                } catch (e) {
-                    console.error('Ошибка загрузки индикаторов:', e);
-                    document.querySelectorAll('#marketIndicators .value').forEach(el => el.textContent = '--');
+        // --- ЗАГРУЗКА РЫНОЧНЫХ ДАННЫХ ---
+        async function loadMarketData() {
+            try {
+                const res = await fetch('/api/market-data');
+                const data = await res.json();
+                if (data) {
+                    document.getElementById('fearGreed').textContent = data.fearGreed ?? '--';
+                    document.getElementById('btcPrice').textContent = data.btcPrice ?? '--';
+                    document.getElementById('totalCap').textContent = data.totalCap ?? '--';
                 }
+            } catch (e) {
+                console.warn('Ошибка загрузки рыночных данных:', e);
             }
+        }
 
-            // ============================================
-            //  ЗАГРУЗКА ТОП-10 МОНЕТ
-            // ============================================
-            async function loadTopCoins() {
-                try {
-                    const resp = await fetch('/api/public/top-coins');
-                    const coins = await resp.json();
-                    
-                    if (coins.error) throw new Error(coins.error);
-
-                    const tbody = document.getElementById('topCoinsBody');
-                    tbody.innerHTML = coins.map((coin, i) => `
-                        <tr>
-                            <td class="rank">${i + 1}</td>
-                            <td>
-                                <div class="name">
-                                    <img src="${coin.image}" alt="${coin.name}" onerror="this.style.display='none'">
-                                    ${coin.name}
-                                    <span class="symbol">${coin.symbol.toUpperCase()}</span>
-                                </div>
-                            </td>
-                            <td>$${formatNumber(coin.current_price)}</td>
-                            <td class="${coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}">
-                                ${coin.price_change_percentage_24h ? coin.price_change_percentage_24h.toFixed(2) : '0'}%
-                            </td>
-                            <td>$${formatMarketCap(coin.total_volume)}</td>
-                            <td>$${formatMarketCap(coin.market_cap)}</td>
-                            <td>
-                                <svg class="sparkline" viewBox="0 0 80 30">
-                                    ${coin.sparkline_in_7d?.price?.length > 0 ? `
-                                        <polyline
-                                            points="${coin.sparkline_in_7d.price.map((p, i) => `${(i / (coin.sparkline_in_7d.price.length - 1)) * 80},${30 - (p / Math.max(...coin.sparkline_in_7d.price) * 25)}`).join(' ')}"
-                                            fill="none"
-                                            stroke="${coin.price_change_percentage_24h >= 0 ? '#10b981' : '#ef4444'}"
-                                            stroke-width="2"
-                                        />
-                                    ` : ''}
-                                </svg>
-                            </td>
-                        </tr>
+        // --- ЗАГРУЗКА НОВОСТЕЙ ---
+        async function loadNews() {
+            const container = document.getElementById('newsContainer');
+            try {
+                const res = await fetch('/api/news');
+                const data = await res.json();
+                if (data.news && data.news.length) {
+                    container.innerHTML = data.news.slice(0, 6).map(item => `
+                        <div class="news-item">
+                            <div class="title">${item.title || 'Новость'}</div>
+                            <div class="source">${item.source?.name || 'Источник'} · ${new Date(item.publishedAt).toLocaleDateString()}</div>
+                        </div>
                     `).join('');
-
-                } catch (e) {
-                    console.error('Ошибка загрузки топ-монет:', e);
-                    document.getElementById('topCoinsBody').innerHTML = `<tr><td colspan="7" class="error-msg">Ошибка загрузки данных</td></tr>`;
+                } else {
+                    container.innerHTML = `<div class="news-item"><span class="title">Новостей пока нет</span></div>`;
                 }
+            } catch (e) {
+                console.warn('Ошибка загрузки новостей:', e);
+                container.innerHTML = `<div class="news-item"><span class="title">Не удалось загрузить новости</span></div>`;
             }
+        }
 
-            // ============================================
-            //  ЗАГРУЗКА ТЕХНИЧЕСКИХ ИНДИКАТОРОВ (BTC)
-            // ============================================
-            async function loadTechnicalIndicators() {
-                try {
-                    const resp = await fetch('/api/public/technical-indicators');
-                    const data = await resp.json();
-                    
-                    if (data.error) throw new Error(data.error);
-
-                    const container = document.getElementById('technicalIndicators');
-                    container.innerHTML = `
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                            <div class="stat-card">
-                                <div class="label">RSI (14)</div>
-                                <div class="value ${data.rsi >= 70 ? 'negative' : data.rsi <= 30 ? 'positive' : 'neutral'}">
-                                    ${data.rsi || '--'}
-                                </div>
-                                <div class="sub">${data.rsi >= 70 ? 'Перекуплен' : data.rsi <= 30 ? 'Перепродан' : 'Нейтрально'}</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="label">MACD</div>
-                                <div class="value ${data.macd_histogram >= 0 ? 'positive' : 'negative'}">
-                                    ${data.macd_histogram ? data.macd_histogram.toFixed(4) : '--'}
-                                </div>
-                                <div class="sub">Гистограмма</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="label">Bollinger Bands</div>
-                                <div class="value" style="font-size:18px;">
-                                    ${data.bollinger_band ? (data.bollinger_band / 100).toFixed(2) + '%' : '--'}
-                                </div>
-                                <div class="sub">${data.bollinger_band > 0 ? 'Верхняя полоса' : 'Нижняя полоса'}</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="label">Волатильность</div>
-                                <div class="value" style="font-size:18px;">
-                                    ${data.volatility ? data.volatility.toFixed(2) + '%' : '--'}
-                                </div>
-                                <div class="sub">24ч</div>
-                            </div>
-                        </div>
-                    `;
-
-                } catch (e) {
-                    console.error('Ошибка загрузки индикаторов:', e);
-                    document.getElementById('technicalIndicators').innerHTML = `<div class="error-msg">Ошибка загрузки</div>`;
-                }
+        // --- ДЕМО-ВИДЖЕТ (имитация работы бота) ---
+        // В будущем здесь будет запрос к /api/public/demo/status
+        function updateDemoWidget() {
+            // Имитация изменения баланса и PNL
+            const balanceEl = document.getElementById('demoBalance');
+            const pnlEl = document.getElementById('demoPnl');
+            const currentBalance = parseFloat(balanceEl.textContent);
+            if (!isNaN(currentBalance)) {
+                const change = (Math.random() * 2 - 1) * 0.5; // -0.5% ... +0.5%
+                const newBalance = currentBalance * (1 + change / 100);
+                balanceEl.textContent = newBalance.toFixed(2);
+                const pnl = ((newBalance - 1000) / 1000 * 100).toFixed(2);
+                const isPositive = pnl >= 0;
+                pnlEl.innerHTML = `PNL: <span class="${isPositive ? 'positive' : 'negative'}">${isPositive ? '+' : ''}${pnl}%</span>`;
             }
+        }
 
-            // ============================================
-            //  ЗАГРУЗКА ТРЕНДОВЫХ МОНЕТ
-            // ============================================
-            async function loadTrendingCoins() {
-                try {
-                    const resp = await fetch('/api/public/trending');
-                    const data = await resp.json();
-                    
-                    if (data.error) throw new Error(data.error);
+        // --- ЗАПУСК ---
+        loadMarketData();
+        loadNews();
+        updateDemoWidget();
 
-                    const container = document.getElementById('trendingCoins');
-                    if (data.coins && data.coins.length > 0) {
-                        container.innerHTML = data.coins.map(coin => `
-                            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1a1f2e;align-items:center;">
-                                <div>
-                                    <strong>${coin.name}</strong>
-                                    <span style="color:#94a3b8;font-size:12px;margin-left:8px;">${coin.symbol}</span>
-                                </div>
-                                <div>
-                                    <span class="trend-tag ${coin.score > 0 ? 'hot' : ''}">
-                                        ${coin.score > 0 ? '🔥 ' + coin.score : ''}
-                                    </span>
-                                    <span style="color:#94a3b8;font-size:12px;margin-left:8px;">
-                                        ${coin.price ? '$' + formatNumber(coin.price) : ''}
-                                    </span>
-                                </div>
-                            </div>
-                        `).join('');
-                    } else {
-                        container.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:20px;">Нет данных о трендовых монетах</div>';
-                    }
+        // Обновлять демо-виджет каждые 5 секунд (имитация)
+        setInterval(updateDemoWidget, 5000);
 
-                } catch (e) {
-                    console.error('Ошибка загрузки трендов:', e);
-                    document.getElementById('trendingCoins').innerHTML = `<div class="error-msg">Ошибка загрузки</div>`;
-                }
-            }
-
-            // ============================================
-            //  ЗАГРУЗКА НОВОСТЕЙ
-            // ============================================
-            async function loadNews() {
-                try {
-                    const resp = await fetch('/api/public/news');
-                    const data = await resp.json();
-                    
-                    if (data.error) throw new Error(data.error);
-
-                    const container = document.getElementById('newsContainer');
-                    if (data.news && data.news.length > 0) {
-                        container.innerHTML = data.news.map(item => `
-                            <div class="news-item">
-                                <span class="time">${item.published_at ? new Date(item.published_at).toLocaleString() : '--'}</span>
-                                <a href="${item.url}" target="_blank" class="title">${item.title}</a>
-                                <span class="source">${item.source || 'Crypto'}</span>
-                            </div>
-                        `).join('');
-                    } else {
-                        container.innerHTML = '<div class="loading">Нет новостей</div>';
-                    }
-
-                } catch (e) {
-                    console.error('Ошибка загрузки новостей:', e);
-                    document.getElementById('newsContainer').innerHTML = `
-                        <div class="error-msg">❌ Ошибка загрузки новостей</div>
-                        <div style="color:#94a3b8;text-align:center;padding:12px;font-size:13px;">
-                            Попробуйте обновить страницу позже
-                        </div>
-                    `;
-                }
-            }
-
-            // ============================================
-            //  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-            // ============================================
-            function formatNumber(num) {
-                if (!num) return '0';
-                if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
-                if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
-                return num.toFixed(2);
-            }
-
-            function formatMarketCap(num) {
-                if (!num) return '0';
-                if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
-                if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
-                if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
-                return num.toFixed(2);
-            }
-
-            // ============================================
-            //  ЭКСПОРТ В ГЛОБАЛЬНЫЙ СКОУП
-            // ============================================
-            window.loadTopCoins = loadTopCoins;
-            window.loadNews = loadNews;
-
-            // ============================================
-            //  ЗАПУСК
-            // ============================================
-            loadMarketOverview();
-            loadTopCoins();
-            loadTechnicalIndicators();
-            loadTrendingCoins();
-            loadNews();
-
-            // Автообновление каждые 60 секунд
-            setInterval(() => {
-                loadMarketOverview();
-                loadTopCoins();
-            }, 60000);
-
-            setInterval(() => {
-                loadNews();
-            }, 120000);
-
-        })();
+        // Обновлять рыночные данные каждые 60 секунд
+        setInterval(loadMarketData, 60000);
     </script>
 
 </body>
