@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const axios = require('axios');
 const trading = require('./trading');
+const { encrypt, decrypt, testExchangeCredentials, forceConnectExchange } = require('./exchange');
 require('dotenv').config();
 
 // === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
@@ -33,6 +34,14 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("✅ Подключение к Supabase установлено");
+
+// ============================================
+//  БАЗОВЫЕ МАРШРУТЫ
+// ============================================
+
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'SMT Bot API работает!' });
+});
 
 // ============================================
 //  МАРШРУТЫ АВТОРИЗАЦИИ
@@ -435,53 +444,49 @@ app.put('/api/user/:email/bots', async (req, res) => {
 
 app.post('/api/exchange/connect', async (req, res) => {
     const { email, exchange, apiKey, secretKey } = req.body;
+
     if (!email || !exchange || !apiKey || !secretKey) {
         return res.status(400).json({ error: 'Все поля обязательны' });
     }
 
     try {
-        const { data: user, error } = await supabase
+        const { data: user, error: userError } = await supabase
             .from('users')
-            .update({
-                exchange_connected: true,
-                exchange_name: exchange,
-                exchange_api_key: apiKey,
-                exchange_secret_key: secretKey,
-                updated_at: new Date()
-            })
+            .select('exchange_credentials, connected_exchanges')
             .eq('email', email)
-            .select()
             .single();
 
-        if (error) throw error;
-        if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
 
-        const currentBots = user.bots || [];
-        const newBot = {
-            exchange: exchange,
-            tariff: 'Пользовательский',
-            services: ['Сигналы'],
-            active: true,
-            paused: false,
-            tariffEnd: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-            deposit: 0,
-            pnl: 0,
-            openTrades: 0,
-            closedTrades: 0,
-            activatedAt: new Date().toISOString()
+        const isValid = await testExchangeCredentials(exchange, apiKey, secretKey);
+        if (!isValid) {
+            return res.status(400).json({ error: 'Неверные API ключи или недостаточно прав' });
+        }
+
+        const encryptedApi = encrypt(apiKey);
+        const encryptedSecret = encrypt(secretKey);
+
+        const credentials = user.exchange_credentials || {};
+        credentials[exchange] = {
+            api_key_encrypted: encryptedApi.encrypted,
+            secret_key_encrypted: encryptedSecret.encrypted,
+            iv: encryptedApi.iv,
+            enabled: true,
+            last_checked: new Date().toISOString()
         };
 
-        // Добавляем биржу в список connected_exchanges
-        const currentExchanges = user.connected_exchanges || [];
-        if (!currentExchanges.includes(exchange)) {
-            currentExchanges.push(exchange);
+        const connectedExchanges = user.connected_exchanges || [];
+        if (!connectedExchanges.includes(exchange)) {
+            connectedExchanges.push(exchange);
         }
 
         const { data: updatedUser, error: updateError } = await supabase
             .from('users')
-            .update({ 
-                bots: [...currentBots, newBot],
-                connected_exchanges: currentExchanges
+            .update({
+                exchange_credentials: credentials,
+                connected_exchanges: connectedExchanges
             })
             .eq('email', email)
             .select()
@@ -490,10 +495,347 @@ app.post('/api/exchange/connect', async (req, res) => {
         if (updateError) throw updateError;
 
         delete updatedUser.password;
-        res.json({ success: true, user: updatedUser });
+        res.json({
+            success: true,
+            message: `Биржа ${exchange} успешно подключена`,
+            user: updatedUser
+        });
 
     } catch (err) {
-        console.error('Ошибка подключения биржи:', err);
+        console.error('❌ Ошибка подключения биржи:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/exchange/list/:email', async (req, res) => {
+    const { email } = req.params;
+
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('connected_exchanges, exchange_credentials')
+            .eq('email', email)
+            .single();
+
+        if (error || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const exchanges = (user.connected_exchanges || []).map(exchange => ({
+            exchange: exchange.trim(),
+            enabled: user.exchange_credentials?.[exchange]?.enabled || false,
+            last_checked: user.exchange_credentials?.[exchange]?.last_checked || null
+        }));
+
+        res.json({ exchanges });
+
+    } catch (err) {
+        console.error('❌ Ошибка получения списка бирж:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/exchange/disconnect', async (req, res) => {
+    const { email, exchange } = req.body;
+
+    if (!email || !exchange) {
+        return res.status(400).json({ error: 'Email и биржа обязательны' });
+    }
+
+    try {
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('exchange_credentials, connected_exchanges, bots')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const bots = user.bots || [];
+        const hasBots = bots.some(bot => bot.exchange === exchange);
+        if (hasBots) {
+            return res.status(400).json({
+                error: 'Невозможно отключить биржу: есть активные боты, привязанные к ней'
+            });
+        }
+
+        const credentials = user.exchange_credentials || {};
+        delete credentials[exchange];
+
+        const connectedExchanges = (user.connected_exchanges || []).filter(e => e !== exchange);
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({
+                exchange_credentials: credentials,
+                connected_exchanges: connectedExchanges
+            })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        delete updatedUser.password;
+        res.json({
+            success: true,
+            message: `Биржа ${exchange} отключена`,
+            user: updatedUser
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка отключения биржи:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
+//  ТЕСТОВЫЙ ЭНДПОИНТ ДЛЯ ПРИНУДИТЕЛЬНОГО ПОДКЛЮЧЕНИЯ БИРЖИ
+// ============================================
+
+app.post('/api/test/force-exchange', async (req, res) => {
+    const { email, exchange } = req.body;
+
+    if (!email || !exchange) {
+        return res.status(400).json({ error: 'Email и биржа обязательны' });
+    }
+
+    try {
+        const result = await forceConnectExchange(email, exchange, supabase);
+        res.json(result);
+    } catch (err) {
+        console.error('❌ Ошибка принудительного подключения:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
+//  API ДЛЯ СОЗДАНИЯ БОТА
+// ============================================
+
+app.post('/api/bot/create', async (req, res) => {
+    const { email, config } = req.body;
+
+    if (!email || !config) {
+        return res.status(400).json({ error: 'Email и конфигурация бота обязательны' });
+    }
+
+    try {
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id, email, connected_exchanges, bots')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const connectedExchanges = (user.connected_exchanges || []).map(e => e.trim());
+        if (connectedExchanges.length === 0) {
+            return res.status(400).json({
+                error: 'Необходимо подключить хотя бы одну биржу перед созданием бота'
+            });
+        }
+
+        if (!connectedExchanges.includes(config.exchange)) {
+            return res.status(400).json({
+                error: `Биржа ${config.exchange} не подключена. Доступны: ${connectedExchanges.join(', ')}`
+            });
+        }
+
+        if (!config.name || config.name.length < 3) {
+            return res.status(400).json({ error: 'Название бота должно содержать минимум 3 символа' });
+        }
+
+        if (!config.strategies || config.strategies.length === 0) {
+            return res.status(400).json({ error: 'Выберите хотя бы одну стратегию' });
+        }
+
+        if (!config.symbols || config.symbols.length === 0) {
+            return res.status(400).json({ error: 'Выберите хотя бы один актив' });
+        }
+
+        if (!config.mode || !['signals_only', 'auto_trade', 'hybrid'].includes(config.mode)) {
+            return res.status(400).json({ error: 'Неверный режим работы' });
+        }
+
+        const newBot = {
+            id: `bot_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            name: config.name.trim(),
+            exchange: config.exchange,
+            mode: config.mode,
+            active: true,
+            paused: false,
+            strategies: config.strategies.map(s => ({
+                id: s,
+                enabled: true,
+                params: config.strategyParams?.[s] || {}
+            })),
+            symbols: config.symbols,
+            risk: {
+                max_positions: config.risk?.max_positions || 3,
+                risk_percent: config.risk?.risk_percent || 2.0,
+                stop_loss_percent: config.risk?.stop_loss_percent || 1.5,
+                take_profit_percent: config.risk?.take_profit_percent || 3.0,
+                trailing_stop: config.risk?.trailing_stop || false
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            stats: {
+                total_signals: 0,
+                total_trades: 0,
+                win_rate: 0,
+                pnl: 0
+            }
+        };
+
+        const bots = [...(user.bots || []), newBot];
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ bots, updated_at: new Date() })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        delete updatedUser.password;
+        res.json({
+            success: true,
+            message: `Бот "${newBot.name}" успешно создан`,
+            bot: newBot,
+            user: updatedUser
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка создания бота:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/bot/list/:email', async (req, res) => {
+    const { email } = req.params;
+
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('bots')
+            .eq('email', email)
+            .single();
+
+        if (error || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        res.json({ bots: user.bots || [] });
+
+    } catch (err) {
+        console.error('❌ Ошибка получения списка ботов:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/bot/update/:email/:botId', async (req, res) => {
+    const { email, botId } = req.params;
+    const { updates } = req.body;
+
+    if (!updates) {
+        return res.status(400).json({ error: 'Обновления не переданы' });
+    }
+
+    try {
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('bots')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const bots = user.bots || [];
+        const botIndex = bots.findIndex(b => b.id === botId);
+
+        if (botIndex === -1) {
+            return res.status(404).json({ error: 'Бот не найден' });
+        }
+
+        bots[botIndex] = {
+            ...bots[botIndex],
+            ...updates,
+            updated_at: new Date().toISOString()
+        };
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ bots, updated_at: new Date() })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        delete updatedUser.password;
+        res.json({
+            success: true,
+            message: `Бот "${bots[botIndex].name}" обновлён`,
+            bot: bots[botIndex],
+            user: updatedUser
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка обновления бота:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/bot/delete/:email/:botId', async (req, res) => {
+    const { email, botId } = req.params;
+
+    try {
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('bots')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const bots = user.bots || [];
+        const botIndex = bots.findIndex(b => b.id === botId);
+
+        if (botIndex === -1) {
+            return res.status(404).json({ error: 'Бот не найден' });
+        }
+
+        const botName = bots[botIndex].name;
+        bots.splice(botIndex, 1);
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ bots, updated_at: new Date() })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        delete updatedUser.password;
+        res.json({
+            success: true,
+            message: `Бот "${botName}" удалён`,
+            user: updatedUser
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка удаления бота:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -1094,171 +1436,6 @@ cron.schedule('*/1 * * * *', async () => {
 });
 
 console.log('⏰ Многопользовательский планировщик запущен (каждую минуту)');
-
-// ============================================
-//  API ДЛЯ РАБОТЫ С БИРЖАМИ (НОВЫЕ ЭНДПОИНТЫ)
-// ============================================
-
-const { encrypt, decrypt, testExchangeCredentials } = require('./exchange');
-
-// 1. ПОДКЛЮЧЕНИЕ БИРЖИ
-app.post('/api/exchange/connect', async (req, res) => {
-    const { email, exchange, apiKey, secretKey } = req.body;
-
-    if (!email || !exchange || !apiKey || !secretKey) {
-        return res.status(400).json({ error: 'Все поля обязательны' });
-    }
-
-    try {
-        // 1. Получаем пользователя
-        const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('exchange_credentials, connected_exchanges')
-            .eq('email', email)
-            .single();
-
-        if (userError || !user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        // 2. Проверяем ключи тестовым запросом
-        const isValid = await testExchangeCredentials(exchange, apiKey, secretKey);
-        if (!isValid) {
-            return res.status(400).json({ error: 'Неверные API ключи или недостаточно прав' });
-        }
-
-        // 3. Шифруем ключи
-        const encryptedApi = encrypt(apiKey);
-        const encryptedSecret = encrypt(secretKey);
-
-        // 4. Сохраняем в БД
-        const credentials = user.exchange_credentials || {};
-        credentials[exchange] = {
-            api_key_encrypted: encryptedApi.encrypted,
-            secret_key_encrypted: encryptedSecret.encrypted,
-            iv: encryptedApi.iv,
-            enabled: true,
-            last_checked: new Date().toISOString()
-        };
-
-        const connectedExchanges = user.connected_exchanges || [];
-        if (!connectedExchanges.includes(exchange)) {
-            connectedExchanges.push(exchange);
-        }
-
-        const { data: updatedUser, error: updateError } = await supabase
-            .from('users')
-            .update({
-                exchange_credentials: credentials,
-                connected_exchanges: connectedExchanges
-            })
-            .eq('email', email)
-            .select()
-            .single();
-
-        if (updateError) throw updateError;
-
-        delete updatedUser.password;
-        res.json({
-            success: true,
-            message: `Биржа ${exchange} успешно подключена`,
-            user: updatedUser
-        });
-
-    } catch (err) {
-        console.error('❌ Ошибка подключения биржи:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 2. ПОЛУЧЕНИЕ СПИСКА ПОДКЛЮЧЕННЫХ БИРЖ
-app.get('/api/exchange/list/:email', async (req, res) => {
-    const { email } = req.params;
-
-    try {
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('connected_exchanges, exchange_credentials')
-            .eq('email', email)
-            .single();
-
-        if (error || !user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        // Возвращаем только названия бирж и статус, без ключей
-        const exchanges = (user.connected_exchanges || []).map(exchange => ({
-            exchange,
-            enabled: user.exchange_credentials?.[exchange]?.enabled || false,
-            last_checked: user.exchange_credentials?.[exchange]?.last_checked || null
-        }));
-
-        res.json({ exchanges });
-
-    } catch (err) {
-        console.error('❌ Ошибка получения списка бирж:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 3. ОТКЛЮЧЕНИЕ БИРЖИ
-app.post('/api/exchange/disconnect', async (req, res) => {
-    const { email, exchange } = req.body;
-
-    if (!email || !exchange) {
-        return res.status(400).json({ error: 'Email и биржа обязательны' });
-    }
-
-    try {
-        const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('exchange_credentials, connected_exchanges, bots')
-            .eq('email', email)
-            .single();
-
-        if (userError || !user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        // Проверяем, есть ли боты, привязанные к этой бирже
-        const bots = user.bots || [];
-        const hasBots = bots.some(bot => bot.exchange === exchange);
-        if (hasBots) {
-            return res.status(400).json({
-                error: 'Невозможно отключить биржу: есть активные боты, привязанные к ней'
-            });
-        }
-
-        // Удаляем биржу из списка
-        const credentials = user.exchange_credentials || {};
-        delete credentials[exchange];
-
-        const connectedExchanges = (user.connected_exchanges || []).filter(e => e !== exchange);
-
-        const { data: updatedUser, error: updateError } = await supabase
-            .from('users')
-            .update({
-                exchange_credentials: credentials,
-                connected_exchanges: connectedExchanges
-            })
-            .eq('email', email)
-            .select()
-            .single();
-
-        if (updateError) throw updateError;
-
-        delete updatedUser.password;
-        res.json({
-            success: true,
-            message: `Биржа ${exchange} отключена`,
-            user: updatedUser
-        });
-
-    } catch (err) {
-        console.error('❌ Ошибка отключения биржи:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
 
 // ============================================
 //  ЗАПУСК СЕРВЕРА
