@@ -6,6 +6,7 @@ const cron = require('node-cron');
 const axios = require('axios');
 const trading = require('./trading');
 const { encrypt, decrypt, testExchangeCredentials, forceConnectExchange } = require('./exchange');
+const { executeSignal } = require('./executor');
 require('dotenv').config();
 
 // === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
@@ -1368,7 +1369,7 @@ cron.schedule('*/1 * * * *', async () => {
             try {
                 const { data: user, error: userError } = await supabase
                     .from('users')
-                    .select('bots')
+                    .select('bots, id, email')
                     .eq('id', userId)
                     .single();
 
@@ -1420,7 +1421,8 @@ cron.schedule('*/1 * * * *', async () => {
                                 console.log(`📈 СИГНАЛ для ${userId} (${symbol}): ${signal.side} (${signal.confidence})`);
 
                                 try {
-                                    const { error: insertError } = await supabase
+                                    // Сохраняем сигнал в БД
+                                    const { data: savedSignal, error: insertError } = await supabase
                                         .from('signals')
                                         .insert({
                                             user_id: userId,
@@ -1432,11 +1434,33 @@ cron.schedule('*/1 * * * *', async () => {
                                             rsi: signal.rsi,
                                             macd: signal.macd,
                                             created_at: new Date()
-                                        });
+                                        })
+                                        .select()
+                                        .single();
 
                                     if (insertError) {
                                         console.error(`❌ Ошибка сохранения сигнала для ${userId}:`, insertError);
+                                        continue;
                                     }
+
+                                    // --- АВТОТОРГОВЛЯ ---
+                                    if (bot.mode === 'auto_trade' || bot.mode === 'hybrid') {
+                                        const userData = await supabase
+                                            .from('users')
+                                            .select('*')
+                                            .eq('id', userId)
+                                            .single();
+
+                                        if (userData.data) {
+                                            const result = await executeSignal(savedSignal, bot, userData.data, supabase);
+                                            if (result.executed) {
+                                                console.log(`✅ Автосделка открыта для ${userId} (${symbol})`);
+                                            } else {
+                                                console.log(`⚠️ Автосделка не открыта: ${result.reason}`);
+                                            }
+                                        }
+                                    }
+
                                 } catch (dbError) {
                                     console.error(`❌ Ошибка БД для ${userId}:`, dbError.message);
                                 }
