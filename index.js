@@ -615,13 +615,14 @@ async function getBingXFuturesBalance(apiKey, secretKey) {
             .update(payload)
             .digest('hex');
 
-        // Подпись передаётся ТОЛЬКО в параметре signature в URL
         const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
 
-        console.log('📡 URL запроса:', url.replace(cleanApiKey, '***').replace(cleanSecretKey, '***'));
+        console.log('📡 URL запроса:', url.replace(cleanApiKey, '***'));
         console.log('📡 X-BX-APIKEY:', cleanApiKey);
 
-        const response = await axios.get(url, {
+        const response = await axios({
+            method: 'get',
+            url: url,
             headers: {
                 'X-BX-APIKEY': cleanApiKey
             },
