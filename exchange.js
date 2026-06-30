@@ -100,23 +100,30 @@ async function testOKX(apiKey, secretKey) {
     return response.status === 200 && response.data.code === '0';
 }
 
-async function testBingXFutures(apiKey, secretKey) {
-    const timestamp = Date.now().toString();
-    const signature = crypto.createHmac('sha256', secretKey)
-        .update(timestamp)
-        .digest('hex');
-    const response = await axios.get(
-        'https://open-api.bingx.com/openApi/swap/v3/user/balance',
-        {
+async function testBingX(apiKey, secretKey) {
+    try {
+        const crypto = require('crypto');
+        const timestamp = Date.now().toString();
+        const payload = `timestamp=${timestamp}`;
+        const signature = crypto.createHmac('sha256', secretKey)
+            .update(payload)
+            .digest('hex');
+
+        const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
+
+        const response = await axios.get(url, {
             headers: {
-                'X-BX-APIKEY': apiKey,
-                'X-BX-SIGNATURE': signature,
-                'X-BX-TIMESTAMP': timestamp
+                'X-BX-APIKEY': apiKey
             },
             timeout: 10000
-        }
-    );
-    return response.status === 200 && response.data.code === 0;
+        });
+
+        // Если код 0 — ключи валидны
+        return response.data && response.data.code === 0;
+    } catch (error) {
+        console.error('❌ Ошибка проверки BingX:', error.message);
+        return false;
+    }
 }
 
 // ============================================
