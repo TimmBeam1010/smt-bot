@@ -25,7 +25,8 @@ function decrypt(encrypted, ivHex) {
     const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(ivHex, 'hex'));
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    return decrypted;
+    // Убираем все непечатаемые символы, оставляем только буквы, цифры и базовые символы
+    return decrypted.replace(/[^\x20-\x7E]/g, '').trim();
 }
 
 // ============================================
