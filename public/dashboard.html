@@ -79,6 +79,20 @@
             font-size: 12px;
         }
         .btn-danger-sm:hover { background: #dc262640; }
+        .btn-expand {
+            background: none;
+            border: 1px solid #1e293b;
+            color: #94a3b8;
+            padding: 4px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-expand:hover {
+            background: #1e293b;
+            color: #fff;
+        }
 
         /* --- CARDS & SECTIONS --- */
         .section {
@@ -149,13 +163,13 @@
             color: #64748b;
             margin-top: 4px;
         }
-        .radio-group {
+        .checkbox-group {
             display: flex;
-            gap: 16px;
             flex-wrap: wrap;
+            gap: 12px;
             margin-top: 4px;
         }
-        .radio-group label {
+        .checkbox-group label {
             display: flex;
             align-items: center;
             gap: 6px;
@@ -163,7 +177,7 @@
             color: #94a3b8;
             cursor: pointer;
         }
-        .radio-group input[type="radio"] {
+        .checkbox-group input[type="checkbox"] {
             width: auto;
             accent-color: #4f46e5;
         }
@@ -221,6 +235,27 @@
         .badge.active { background: #22c55e20; color: #22c55e; }
         .badge.paused { background: #f59e0b20; color: #f59e0b; }
         .badge.inactive { background: #64748b20; color: #64748b; }
+        .badge.low { background: #22c55e20; color: #22c55e; }
+        .badge.medium { background: #f59e0b20; color: #f59e0b; }
+        .badge.high { background: #ef444420; color: #ef4444; }
+
+        /* --- SIGNALS --- */
+        .signal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .signal-item:last-child { border-bottom: none; }
+        .signal-item .info { display: flex; gap: 16px; flex-wrap: wrap; }
+        .signal-item .symbol { font-weight: 600; min-width: 80px; }
+        .signal-item .side { font-weight: 600; }
+        .signal-item .side.long { color: #22c55e; }
+        .signal-item .side.short { color: #ef4444; }
+        .signal-item .time { color: #64748b; font-size: 12px; }
+        .signal-item .entry { color: #94a3b8; font-size: 13px; }
+        .signal-item .reasons { color: #64748b; font-size: 12px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* --- EMPTY STATE --- */
         .empty-state {
@@ -249,6 +284,7 @@
             .form-row { grid-template-columns: 1fr; }
             .exchange-item { flex-direction: column; align-items: flex-start; gap: 8px; }
             .bot-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .signal-item { flex-direction: column; align-items: flex-start; gap: 4px; }
             .header { flex-wrap: wrap; gap: 8px; }
             .section-title { flex-wrap: wrap; gap: 8px; }
         }
@@ -349,6 +385,11 @@
                 const bots = user.bots || [];
                 const connectedExchanges = exchangesData.exchanges || [];
                 const hasExchange = connectedExchanges.length > 0;
+
+                // Загружаем сигналы
+                const signalsRes = await fetch(`${API_BASE}/signals/user/${encodeURIComponent(user.email)}`);
+                const signalsData = await signalsRes.json();
+                const signals = signalsData.signals || [];
 
                 let html = '';
 
@@ -457,13 +498,13 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label>Уровень сигналов</label>
-                                    <div class="radio-group">
-                                        <label><input type="radio" name="signalLevel" value="low" checked> 🟢 Низкий</label>
-                                        <label><input type="radio" name="signalLevel" value="medium"> 🟡 Средний</label>
-                                        <label><input type="radio" name="signalLevel" value="high"> 🔴 Высокий</label>
+                                    <label>Уровень сигналов (мультивыбор)</label>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" value="low" checked> 🟢 Низкий</label>
+                                        <label><input type="checkbox" value="medium" checked> 🟡 Средний</label>
+                                        <label><input type="checkbox" value="high" checked> 🔴 Высокий</label>
                                     </div>
-                                    <div class="form-hint">Сигналы только с выбранным уровнем уверенности</div>
+                                    <div class="form-hint">Бот будет генерировать сигналы выбранных уровней</div>
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
@@ -512,7 +553,7 @@
                         const statusClass = bot.active ? (bot.paused ? 'paused' : 'active') : 'inactive';
                         const statusText = bot.active ? (bot.paused ? '⏸ Пауза' : '✅ Активен') : '⛔ Отключен';
                         const pnl = bot.stats?.pnl || 0;
-                        const signals = bot.stats?.total_signals || 0;
+                        const signalsCount = bot.stats?.total_signals || 0;
                         const mode = bot.mode || 'signals_only';
                         const modeLabel = mode === 'auto_trade' ? '🤖 Автоторговля' : 
                                          mode === 'hybrid' ? '🔀 Гибридный' : '📡 Только сигналы';
@@ -525,7 +566,7 @@
                                         🏦 ${bot.exchange?.toUpperCase() || 'Нет биржи'} · 
                                         ${modeLabel} · 
                                         📊 ${bot.strategies?.length || 0} стратегий · 
-                                        📡 ${signals} сигналов · 
+                                        📡 ${signalsCount} сигналов · 
                                         PNL: <span style="color:${pnl >= 0 ? '#22c55e' : '#ef4444'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}$</span>
                                     </span>
                                 </div>
@@ -543,6 +584,45 @@
                         `;
                     }
                     html += `</div>`;
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+
+                // --- БЛОК: СИГНАЛЫ ---
+                html += `
+                    <div class="section">
+                        <div class="section-title">
+                            <span>📡 Сигналы <small>(${signals.length})</small></span>
+                            <button class="btn-expand" onclick="toggleSignals()">${signals.length > 5 ? '▶ Развернуть все' : '▼ Свернуть'}</button>
+                        </div>
+                        <div id="signalsContainer">
+                `;
+
+                if (signals.length === 0) {
+                    html += `<div class="empty-state"><div class="icon">📡</div><p>Пока нет сигналов</p></div>`;
+                } else {
+                    const showSignals = signals.slice(0, 5);
+                    const hiddenSignals = signals.slice(5);
+
+                    html += `<div id="signalsList">`;
+                    for (const signal of showSignals) {
+                        html += renderSignalItem(signal);
+                    }
+                    html += `</div>`;
+
+                    if (hiddenSignals.length > 0) {
+                        html += `<div id="hiddenSignals" class="hidden">`;
+                        for (const signal of hiddenSignals) {
+                            html += renderSignalItem(signal);
+                        }
+                        html += `</div>`;
+                        html += `<div style="text-align:center;margin-top:12px;">
+                            <button class="btn-expand" onclick="toggleHiddenSignals()">Показать ещё ${hiddenSignals.length}</button>
+                        </div>`;
+                    }
                 }
 
                 html += `
@@ -597,7 +677,9 @@
                     const name = document.getElementById('botName').value.trim();
                     const exchange = document.getElementById('botExchange').value;
                     const mode = document.getElementById('botMode').value;
-                    const signalLevel = document.querySelector('input[name="signalLevel"]:checked')?.value || 'medium';
+                    const signalLevels = Array.from(document.querySelectorAll('#createBotForm input[type="checkbox"][value]'))
+                        .filter(cb => cb.checked)
+                        .map(cb => cb.value);
                     const riskPercent = parseFloat(document.getElementById('riskPercent').value) || 2.0;
                     const maxPositions = parseInt(document.getElementById('maxPositions').value) || 3;
 
@@ -606,12 +688,15 @@
                         return;
                     }
 
+                    if (signalLevels.length === 0) {
+                        msgEl.innerHTML = '<div class="message error">Выберите хотя бы один уровень сигналов</div>';
+                        return;
+                    }
+
                     msgEl.innerHTML = '<div class="message info">⏳ Создание бота...</div>';
 
                     try {
-                        // Все стратегии по умолчанию
                         const strategies = ['smc', 'rsi', 'bollinger', 'ichimoku', 'volume'];
-                        // Все символы по умолчанию (топ-5)
                         const symbols = ['BTC-USDT', 'ETH-USDT', 'SOL-USDT', 'XRP-USDT', 'ADA-USDT'];
 
                         const result = await apiCall('/bot/create', {
@@ -630,7 +715,7 @@
                                         stop_loss_percent: 1.5,
                                         take_profit_percent: 3.0,
                                         trailing_stop: false,
-                                        signal_level: signalLevel
+                                        signal_levels: signalLevels
                                     }
                                 }
                             })
@@ -667,6 +752,29 @@
                     </div>
                 `;
             }
+        }
+
+        // ============================================
+        //  RENDER SIGNAL ITEM
+        // ============================================
+        function renderSignalItem(signal) {
+            const sideClass = signal.side === 'LONG' ? 'long' : 'short';
+            const confidence = signal.confidence || 'medium';
+            const reasons = signal.reasons ? signal.reasons.join(', ') : '';
+            const time = new Date(signal.created_at).toLocaleString();
+
+            return `
+                <div class="signal-item">
+                    <div class="info">
+                        <span class="symbol">${signal.symbol}</span>
+                        <span class="side ${sideClass}">${signal.side}</span>
+                        <span class="badge ${confidence}">${confidence}</span>
+                        <span class="entry">💰 ${signal.entry_price}</span>
+                        <span class="reasons" title="${reasons}">${reasons}</span>
+                    </div>
+                    <span class="time">${time}</span>
+                </div>
+            `;
         }
 
         // ============================================
@@ -712,6 +820,32 @@
             if (container) {
                 container.classList.toggle('hidden');
                 btn.textContent = container.classList.contains('hidden') ? '▶ Развернуть' : '▼ Свернуть';
+            }
+        };
+
+        // ============================================
+        //  СИГНАЛЫ
+        // ============================================
+        window.toggleSignals = function() {
+            const hiddenSignals = document.getElementById('hiddenSignals');
+            const btn = document.querySelector('.section:last-child .section-title .btn-expand');
+            if (hiddenSignals) {
+                if (hiddenSignals.classList.contains('hidden')) {
+                    hiddenSignals.classList.remove('hidden');
+                    btn.textContent = '▼ Свернуть';
+                } else {
+                    hiddenSignals.classList.add('hidden');
+                    btn.textContent = '▶ Развернуть все';
+                }
+            }
+        };
+
+        window.toggleHiddenSignals = function() {
+            const hiddenSignals = document.getElementById('hiddenSignals');
+            const btn = document.querySelector('.section:last-child .section-title .btn-expand');
+            if (hiddenSignals) {
+                hiddenSignals.classList.remove('hidden');
+                btn.textContent = '▼ Свернуть';
             }
         };
 
