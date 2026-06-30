@@ -1,13 +1,5 @@
-// ============================================
-//  МОДУЛЬ РАБОТЫ С БИРЖАМИ
-// ============================================
-
 const crypto = require('crypto');
 const axios = require('axios');
-
-// ============================================
-//  ШИФРОВАНИЕ API КЛЮЧЕЙ
-// ============================================
 
 const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || 'your-secret-key-change-me';
 const algorithm = 'aes-256-cbc';
@@ -25,13 +17,8 @@ function decrypt(encrypted, ivHex) {
     const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(ivHex, 'hex'));
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    // Убираем все непечатаемые символы, оставляем только буквы, цифры и базовые символы
     return decrypted.replace(/[^\x20-\x7E]/g, '').trim();
 }
-
-// ============================================
-//  ПРОВЕРКА API КЛЮЧЕЙ
-// ============================================
 
 async function testExchangeCredentials(exchange, apiKey, secretKey) {
     try {
@@ -43,7 +30,7 @@ async function testExchangeCredentials(exchange, apiKey, secretKey) {
             case 'okx':
                 return await testOKX(apiKey, secretKey);
             case 'bingx':
-                return await testBingXFutures(apiKey, secretKey);
+                return await testBingX(apiKey, secretKey); // <--- ИСПРАВЛЕНО
             default:
                 return false;
         }
@@ -118,17 +105,12 @@ async function testBingX(apiKey, secretKey) {
             timeout: 10000
         });
 
-        // Если код 0 — ключи валидны
         return response.data && response.data.code === 0;
     } catch (error) {
         console.error('❌ Ошибка проверки BingX:', error.message);
         return false;
     }
 }
-
-// ============================================
-//  ВРЕМЕННАЯ ЭМУЛЯЦИЯ ПОДКЛЮЧЕНИЯ БИРЖИ
-// ============================================
 
 async function forceConnectExchange(email, exchange, supabase) {
     const { data: user, error } = await supabase
