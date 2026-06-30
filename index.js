@@ -598,8 +598,7 @@ app.post('/api/exchange/disconnect', async (req, res) => {
 // ============================================
 
 async function getBingXFuturesBalance(apiKey, secretKey) {
-    try {console.log('🔑 Получен API Key:', apiKey.substring(0, 10) + '...');
-console.log('🔑 Получен Secret Key:', secretKey.substring(0, 10) + '...');
+    try {
         const timestamp = Date.now().toString();
         const payload = `timestamp=${timestamp}`;
         const signature = crypto.createHmac('sha256', secretKey)
@@ -664,6 +663,8 @@ app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
     const { email, exchange } = req.params;
 
     try {
+        console.log(`📡 Запрос баланса для ${email} на ${exchange}`);
+
         const { data: user, error } = await supabase
             .from('users')
             .select('exchange_credentials')
@@ -671,21 +672,29 @@ app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
             .single();
 
         if (error || !user) {
+            console.error('❌ Пользователь не найден:', error);
             return res.status(404).json({ error: 'Пользователь не найден' });
         }
 
         const credentials = user.exchange_credentials?.[exchange];
         if (!credentials || !credentials.api_key_encrypted) {
+            console.error('❌ Ключи не найдены для', exchange);
             return res.status(404).json({ error: 'Ключи не найдены' });
         }
 
+        console.log('🔑 Расшифровка ключей...');
         const apiKey = decrypt(credentials.api_key_encrypted, credentials.iv);
         const secretKey = decrypt(credentials.secret_key_encrypted, credentials.iv);
+
+        console.log('🔑 API Key (первые 10 символов):', apiKey.substring(0, 10));
+        console.log('🔑 Secret Key (первые 10 символов):', secretKey.substring(0, 10));
 
         let balance = 0;
         switch (exchange) {
             case 'bingx':
+                console.log('📡 Вызов getBingXFuturesBalance...');
                 balance = await getBingXFuturesBalance(apiKey, secretKey);
+                console.log('📡 Баланс получен:', balance);
                 break;
             case 'binance':
                 balance = await getBinanceBalance(apiKey, secretKey);
@@ -702,7 +711,7 @@ app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
         });
 
     } catch (err) {
-        console.error(`❌ Ошибка получения баланса ${exchange}:`, err.message);
+        console.error('❌ Ошибка получения баланса:', err.message);
         res.status(500).json({ error: err.message });
     }
 });
