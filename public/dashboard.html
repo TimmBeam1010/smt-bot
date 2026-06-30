@@ -149,6 +149,24 @@
             color: #64748b;
             margin-top: 4px;
         }
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+        .radio-group input[type="radio"] {
+            width: auto;
+            accent-color: #4f46e5;
+        }
 
         /* --- EXCHANGE LIST --- */
         .exchange-item {
@@ -339,9 +357,9 @@
                     <div class="section">
                         <div class="section-title">
                             <span>🔌 Подключение биржи</span>
-                            <button class="toggle-btn" onclick="toggleExchangeForm()">${hasExchange ? '▼ Свернуть' : '▼ Свернуть'}</button>
+                            <button class="toggle-btn" onclick="toggleExchangeForm()">▼ Свернуть</button>
                         </div>
-                        <div id="exchangeFormContainer" class="${hasExchange ? 'hidden' : ''}">
+                        <div id="exchangeFormContainer">
                             <form id="connectExchangeForm">
                                 <div class="form-group">
                                     <label for="exchangeSelect">Биржа</label>
@@ -410,93 +428,59 @@
                     </div>
                 `;
 
-                // --- БЛОК: СОЗДАНИЕ БОТА (ПОЛНЫЙ ФУНКЦИОНАЛ) ---
+                // --- БЛОК: СОЗДАНИЕ БОТА (УПРОЩЁННЫЙ) ---
                 html += `
                     <div class="section">
-                        <div class="section-title">🚀 Создание бота</div>
-                        <form id="createBotForm">
-                            <div class="form-group">
-                                <label for="botName">Название бота</label>
-                                <input type="text" id="botName" placeholder="Например: Мой первый бот" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="botExchange">Биржа</label>
-                                <select id="botExchange" required>
-                                    ${connectedExchanges.map(ex => `<option value="${ex.exchange}">${ex.exchange.toUpperCase()}</option>`).join('')}
-                                    ${connectedExchanges.length === 0 ? '<option value="">Нет подключенных бирж</option>' : ''}
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="botMode">Режим работы</label>
-                                <select id="botMode" required>
-                                    <option value="signals_only">📡 Только сигналы</option>
-                                    <option value="auto_trade">🤖 Автоторговля</option>
-                                    <option value="hybrid">🔀 Гибридный</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Стратегии (выберите от 1 до 3)</label>
-                                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
-                                        <input type="checkbox" value="smc" checked> SMC
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
-                                        <input type="checkbox" value="rsi" checked> RSI + MACD
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
-                                        <input type="checkbox" value="bollinger"> Bollinger
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
-                                        <input type="checkbox" value="ichimoku"> Ichimoku
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
-                                        <input type="checkbox" value="volume"> Volume
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Активы (выберите до 5)</label>
-                                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
-                                        <input type="checkbox" value="BTC-USDT" checked> BTC
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
-                                        <input type="checkbox" value="ETH-USDT" checked> ETH
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
-                                        <input type="checkbox" value="SOL-USDT"> SOL
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
-                                        <input type="checkbox" value="XRP-USDT"> XRP
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
-                                        <input type="checkbox" value="ADA-USDT"> ADA
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="form-row">
+                        <div class="section-title">
+                            <span>🚀 Создание бота</span>
+                            <button class="toggle-btn" onclick="toggleBotForm()">▼ Свернуть</button>
+                        </div>
+                        <div id="botFormContainer">
+                            <form id="createBotForm">
                                 <div class="form-group">
-                                    <label for="riskPercent">Риск на сделку (%)</label>
-                                    <input type="number" id="riskPercent" value="2.0" step="0.5" min="0.5" max="5">
+                                    <label for="botName">Название бота</label>
+                                    <input type="text" id="botName" placeholder="Например: Мой первый бот" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="stopLossPercent">Стоп-лосс (%)</label>
-                                    <input type="number" id="stopLossPercent" value="1.5" step="0.5" min="0.5" max="10">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="takeProfitPercent">Тейк-профит (%)</label>
-                                    <input type="number" id="takeProfitPercent" value="3.0" step="0.5" min="0.5" max="20">
+                                    <label for="botExchange">Биржа</label>
+                                    <select id="botExchange" required>
+                                        ${connectedExchanges.map(ex => `<option value="${ex.exchange}">${ex.exchange.toUpperCase()}</option>`).join('')}
+                                        ${connectedExchanges.length === 0 ? '<option value="">Нет подключенных бирж</option>' : ''}
+                                    </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="maxPositions">Макс. позиций</label>
-                                    <input type="number" id="maxPositions" value="3" min="1" max="10">
+                                    <label for="botMode">Режим работы</label>
+                                    <select id="botMode" required>
+                                        <option value="signals_only">📡 Только сигналы</option>
+                                        <option value="auto_trade">🤖 Автоторговля</option>
+                                        <option value="hybrid">🔀 Гибридный</option>
+                                    </select>
                                 </div>
-                            </div>
-                            <button type="submit" class="btn-primary" style="margin-top:12px;">🚀 Создать бота</button>
-                            <div id="createBotMessage" style="margin-top:8px;"></div>
-                        </form>
+                                <div class="form-group">
+                                    <label>Уровень сигналов</label>
+                                    <div class="radio-group">
+                                        <label><input type="radio" name="signalLevel" value="low" checked> 🟢 Низкий</label>
+                                        <label><input type="radio" name="signalLevel" value="medium"> 🟡 Средний</label>
+                                        <label><input type="radio" name="signalLevel" value="high"> 🔴 Высокий</label>
+                                    </div>
+                                    <div class="form-hint">Сигналы только с выбранным уровнем уверенности</div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="riskPercent">Риск на сделку (%)</label>
+                                        <input type="number" id="riskPercent" value="2.0" step="0.5" min="0.5" max="5">
+                                        <div class="form-hint">% от депозита</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="maxPositions">Макс. позиций</label>
+                                        <input type="number" id="maxPositions" value="3" min="1" max="10">
+                                        <div class="form-hint">Одновременно открытых</div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn-primary" style="margin-top:12px;">🚀 Создать бота</button>
+                                <div id="createBotMessage" style="margin-top:8px;"></div>
+                            </form>
+                        </div>
                     </div>
                 `;
 
@@ -613,15 +597,8 @@
                     const name = document.getElementById('botName').value.trim();
                     const exchange = document.getElementById('botExchange').value;
                     const mode = document.getElementById('botMode').value;
-                    const strategies = Array.from(document.querySelectorAll('#createBotForm input[type="checkbox"][value]'))
-                        .filter(cb => cb.checked)
-                        .map(cb => cb.value);
-                    const symbols = Array.from(document.querySelectorAll('#createBotForm input[type="checkbox"][value]'))
-                        .filter(cb => cb.checked)
-                        .map(cb => cb.value);
+                    const signalLevel = document.querySelector('input[name="signalLevel"]:checked')?.value || 'medium';
                     const riskPercent = parseFloat(document.getElementById('riskPercent').value) || 2.0;
-                    const stopLossPercent = parseFloat(document.getElementById('stopLossPercent').value) || 1.5;
-                    const takeProfitPercent = parseFloat(document.getElementById('takeProfitPercent').value) || 3.0;
                     const maxPositions = parseInt(document.getElementById('maxPositions').value) || 3;
 
                     if (!name || name.length < 3) {
@@ -629,19 +606,14 @@
                         return;
                     }
 
-                    if (strategies.length === 0) {
-                        msgEl.innerHTML = '<div class="message error">Выберите хотя бы одну стратегию</div>';
-                        return;
-                    }
-
-                    if (symbols.length === 0) {
-                        msgEl.innerHTML = '<div class="message error">Выберите хотя бы один актив</div>';
-                        return;
-                    }
-
                     msgEl.innerHTML = '<div class="message info">⏳ Создание бота...</div>';
 
                     try {
+                        // Все стратегии по умолчанию
+                        const strategies = ['smc', 'rsi', 'bollinger', 'ichimoku', 'volume'];
+                        // Все символы по умолчанию (топ-5)
+                        const symbols = ['BTC-USDT', 'ETH-USDT', 'SOL-USDT', 'XRP-USDT', 'ADA-USDT'];
+
                         const result = await apiCall('/bot/create', {
                             method: 'POST',
                             body: JSON.stringify({
@@ -655,9 +627,10 @@
                                     risk: {
                                         max_positions: maxPositions,
                                         risk_percent: riskPercent,
-                                        stop_loss_percent: stopLossPercent,
-                                        take_profit_percent: takeProfitPercent,
-                                        trailing_stop: false
+                                        stop_loss_percent: 1.5,
+                                        take_profit_percent: 3.0,
+                                        trailing_stop: false,
+                                        signal_level: signalLevel
                                     }
                                 }
                             })
@@ -722,11 +695,20 @@
         };
 
         // ============================================
-        //  СВОРАЧИВАНИЕ ФОРМЫ
+        //  СВОРАЧИВАНИЕ ФОРМ
         // ============================================
         window.toggleExchangeForm = function() {
             const container = document.getElementById('exchangeFormContainer');
-            const btn = document.querySelector('.section-title .toggle-btn');
+            const btn = document.querySelector('.section:first-child .section-title .toggle-btn');
+            if (container) {
+                container.classList.toggle('hidden');
+                btn.textContent = container.classList.contains('hidden') ? '▶ Развернуть' : '▼ Свернуть';
+            }
+        };
+
+        window.toggleBotForm = function() {
+            const container = document.getElementById('botFormContainer');
+            const btn = document.querySelector('.section:nth-child(3) .section-title .toggle-btn');
             if (container) {
                 container.classList.toggle('hidden');
                 btn.textContent = container.classList.contains('hidden') ? '▶ Развернуть' : '▼ Свернуть';
