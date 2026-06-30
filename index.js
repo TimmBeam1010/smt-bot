@@ -677,38 +677,14 @@ app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
     const { email, exchange } = req.params;
 
     try {
-        console.log(`📡 Запрос баланса для ${email} на ${exchange}`);
-
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('exchange_credentials')
-            .eq('email', email)
-            .single();
-
-        if (error || !user) {
-            console.error('❌ Пользователь не найден:', error);
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        const credentials = user.exchange_credentials?.[exchange];
-        if (!credentials || !credentials.api_key_encrypted) {
-            console.error('❌ Ключи не найдены для', exchange);
-            return res.status(404).json({ error: 'Ключи не найдены' });
-        }
-
-        console.log('🔑 Расшифровка ключей...');
-        const apiKey = decrypt(credentials.api_key_encrypted, credentials.iv);
-        const secretKey = decrypt(credentials.secret_key_encrypted, credentials.iv);
-
-        console.log('🔑 API Key (первые 10 символов):', apiKey.substring(0, 10));
-        console.log('🔑 Secret Key (первые 10 символов):', secretKey.substring(0, 10));
+        // ВРЕМЕННО: используем ключи в открытом виде
+        const apiKey = "nHFoaj3c6FLee3a92JcnTby6DlWa5zxqNYAyy5hT6PWUn94Lc7gXeoE5tB0ZjMGOcrs7fwlqVPJuAKciBQ";
+        const secretKey = "TXIjZad6isPqduYR2hpiVcgSJ9PE8wd2uo4zGOXwTLXZZs6slyv86YS72RAJoe9TMOgfDSzozxPmeUHLqZGMg";
 
         let balance = 0;
         switch (exchange) {
             case 'bingx':
-                console.log('📡 Вызов getBingXFuturesBalance...');
                 balance = await getBingXFuturesBalance(apiKey, secretKey);
-                console.log('📡 Баланс получен:', balance);
                 break;
             case 'binance':
                 balance = await getBinanceBalance(apiKey, secretKey);
