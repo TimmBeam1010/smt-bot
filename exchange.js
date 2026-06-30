@@ -1,6 +1,10 @@
 const crypto = require('crypto');
 const axios = require('axios');
 
+// ============================================
+//  ШИФРОВАНИЕ И РАСШИФРОВКА
+// ============================================
+
 const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || 'your-secret-key-change-me';
 const algorithm = 'aes-256-cbc';
 const key = crypto.scryptSync(ENCRYPTION_SECRET, 'salt', 32);
@@ -14,11 +18,21 @@ function encrypt(text) {
 }
 
 function decrypt(encrypted, ivHex) {
-    const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(ivHex, 'hex'));
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted.replace(/[^\x20-\x7E]/g, '').trim();
+    try {
+        const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(ivHex, 'hex'));
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        // Очищаем от непечатаемых символов
+        return decrypted.replace(/[^\x20-\x7E]/g, '').trim();
+    } catch (error) {
+        console.error('❌ Ошибка расшифровки:', error.message);
+        return null;
+    }
 }
+
+// ============================================
+//  ПРОВЕРКА КЛЮЧЕЙ
+// ============================================
 
 async function testExchangeCredentials(exchange, apiKey, secretKey) {
     try {
@@ -30,7 +44,7 @@ async function testExchangeCredentials(exchange, apiKey, secretKey) {
             case 'okx':
                 return await testOKX(apiKey, secretKey);
             case 'bingx':
-                return await testBingX(apiKey, secretKey); // <--- ИСПРАВЛЕНО
+                return await testBingX(apiKey, secretKey);
             default:
                 return false;
         }
@@ -89,7 +103,6 @@ async function testOKX(apiKey, secretKey) {
 
 async function testBingX(apiKey, secretKey) {
     try {
-        const crypto = require('crypto');
         const timestamp = Date.now().toString();
         const payload = `timestamp=${timestamp}`;
         const signature = crypto.createHmac('sha256', secretKey)
@@ -111,6 +124,10 @@ async function testBingX(apiKey, secretKey) {
         return false;
     }
 }
+
+// ============================================
+//  ПРИНУДИТЕЛЬНОЕ ПОДКЛЮЧЕНИЕ БИРЖИ (ТЕСТОВОЕ)
+// ============================================
 
 async function forceConnectExchange(email, exchange, supabase) {
     const { data: user, error } = await supabase
