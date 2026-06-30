@@ -601,26 +601,30 @@ async function getBingXFuturesBalance(apiKey, secretKey) {
     try {
         const crypto = require('crypto');
 
-        // Проверяем, что API-ключ не пустой
+        // Проверяем API-ключ
         if (!apiKey || apiKey.length < 10) {
             console.error('❌ API-ключ пустой или слишком короткий');
             return 0;
         }
 
+        // Очищаем ключи от лишних пробелов
+        const cleanApiKey = apiKey.trim();
+        const cleanSecretKey = secretKey.trim();
+
         const timestamp = Date.now().toString();
         const payload = `timestamp=${timestamp}`;
-        const signature = crypto.createHmac('sha256', secretKey)
+        const signature = crypto.createHmac('sha256', cleanSecretKey)
             .update(payload)
             .digest('hex');
 
         const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
 
-        console.log('📡 Запрос к BingX (URL):', url.replace(apiKey, '***'));
-        console.log('📡 API-ключ (первые 10 символов):', apiKey.substring(0, 10));
+        console.log('📡 API-ключ (первые 10 символов):', cleanApiKey.substring(0, 10));
+        console.log('📡 Заголовок X-BX-APIKEY:', cleanApiKey);
 
         const response = await axios.get(url, {
             headers: {
-                'X-BX-APIKEY': apiKey
+                'X-BX-APIKEY': cleanApiKey
             },
             timeout: 10000
         });
