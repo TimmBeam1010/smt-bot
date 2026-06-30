@@ -4,7 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const axios = require('axios');
-const crypto = require('crypto');
+const crypto = require('crypto'); // <--- ЭТО ГЛАВНОЕ ИСПРАВЛЕНИЕ
 const trading = require('./trading');
 const { encrypt, decrypt, testExchangeCredentials, forceConnectExchange } = require('./exchange');
 const { executeSignal } = require('./executor');
@@ -617,16 +617,12 @@ async function getBingXFuturesBalance(apiKey, secretKey) {
         console.log('📊 BingX Futures Balance Response:', JSON.stringify(response.data, null, 2));
 
         if (response.data && response.data.code === 0 && response.data.data) {
-            // Ищем USDT в массиве данных
             const usdtData = response.data.data.find(item => item.asset === 'USDT');
             if (usdtData) {
-                // Возвращаем balance или equity
                 const balance = parseFloat(usdtData.balance) || 0;
                 const equity = parseFloat(usdtData.equity) || 0;
-                // Возвращаем equity (капитал) или balance
                 return equity > 0 ? equity : balance;
             }
-            // Если USDT нет, берём первый элемент
             const firstAsset = response.data.data[0];
             if (firstAsset) {
                 const balance = parseFloat(firstAsset.balance) || 0;
