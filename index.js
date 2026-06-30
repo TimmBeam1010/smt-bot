@@ -608,7 +608,9 @@ async function getBingXFuturesBalance(apiKey, secretKey) {
 
         const cleanApiKey = apiKey.trim();
         const cleanSecretKey = secretKey.trim();
+
         console.log('🔑 Расшифрованный Secret Key (первые 10 символов):', cleanSecretKey.substring(0, 10));
+
         const timestamp = Date.now().toString();
         const payload = `timestamp=${timestamp}`;
         const signature = crypto.createHmac('sha256', cleanSecretKey)
@@ -617,7 +619,7 @@ async function getBingXFuturesBalance(apiKey, secretKey) {
 
         const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
 
-        console.log('📡 URL запроса:', url.replace(cleanApiKey, '***'));
+        console.log('📡 URL запроса:', url.replace(cleanApiKey, '***').replace(cleanSecretKey, '***'));
         console.log('📡 X-BX-APIKEY:', cleanApiKey);
 
         const response = await axios({
