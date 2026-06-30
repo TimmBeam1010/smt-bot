@@ -601,13 +601,11 @@ async function getBingXFuturesBalance(apiKey, secretKey) {
     try {
         const crypto = require('crypto');
 
-        // Проверяем API-ключ
         if (!apiKey || apiKey.length < 10) {
             console.error('❌ API-ключ пустой или слишком короткий');
             return 0;
         }
 
-        // Очищаем ключи от лишних пробелов
         const cleanApiKey = apiKey.trim();
         const cleanSecretKey = secretKey.trim();
 
@@ -617,10 +615,11 @@ async function getBingXFuturesBalance(apiKey, secretKey) {
             .update(payload)
             .digest('hex');
 
+        // Подпись передаётся ТОЛЬКО в параметре signature в URL
         const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
 
-        console.log('📡 API-ключ (первые 10 символов):', cleanApiKey.substring(0, 10));
-        console.log('📡 Заголовок X-BX-APIKEY:', cleanApiKey);
+        console.log('📡 URL запроса:', url.replace(cleanApiKey, '***').replace(cleanSecretKey, '***'));
+        console.log('📡 X-BX-APIKEY:', cleanApiKey);
 
         const response = await axios.get(url, {
             headers: {
