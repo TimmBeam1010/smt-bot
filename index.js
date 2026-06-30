@@ -599,8 +599,13 @@ app.post('/api/exchange/disconnect', async (req, res) => {
 
 async function getBingXFuturesBalance(apiKey, secretKey) {
     try {
-        // Принудительно используем глобальный crypto
-        const crypto = require('crypto'); // <--- ЭТО ВРЕМЕННОЕ РЕШЕНИЕ
+        const crypto = require('crypto');
+
+        // Проверяем, что API-ключ не пустой
+        if (!apiKey || apiKey.length < 10) {
+            console.error('❌ API-ключ пустой или слишком короткий');
+            return 0;
+        }
 
         const timestamp = Date.now().toString();
         const payload = `timestamp=${timestamp}`;
@@ -611,6 +616,7 @@ async function getBingXFuturesBalance(apiKey, secretKey) {
         const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
 
         console.log('📡 Запрос к BingX (URL):', url.replace(apiKey, '***'));
+        console.log('📡 API-ключ (первые 10 символов):', apiKey.substring(0, 10));
 
         const response = await axios.get(url, {
             headers: {
