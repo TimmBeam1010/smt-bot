@@ -599,6 +599,9 @@ app.post('/api/exchange/disconnect', async (req, res) => {
 
 async function getBingXFuturesBalance(apiKey, secretKey) {
     try {
+        // Принудительно используем глобальный crypto
+        const crypto = require('crypto'); // <--- ЭТО ВРЕМЕННОЕ РЕШЕНИЕ
+
         const timestamp = Date.now().toString();
         const payload = `timestamp=${timestamp}`;
         const signature = crypto.createHmac('sha256', secretKey)
@@ -607,6 +610,8 @@ async function getBingXFuturesBalance(apiKey, secretKey) {
 
         const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
 
+        console.log('📡 Запрос к BingX (URL):', url.replace(apiKey, '***'));
+
         const response = await axios.get(url, {
             headers: {
                 'X-BX-APIKEY': apiKey
@@ -614,7 +619,7 @@ async function getBingXFuturesBalance(apiKey, secretKey) {
             timeout: 10000
         });
 
-        console.log('📊 BingX Futures Balance Response:', JSON.stringify(response.data, null, 2));
+        console.log('📊 Ответ BingX:', JSON.stringify(response.data, null, 2));
 
         if (response.data && response.data.code === 0 && response.data.data) {
             const usdtData = response.data.data.find(item => item.asset === 'USDT');
