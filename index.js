@@ -598,7 +598,8 @@ app.post('/api/exchange/disconnect', async (req, res) => {
 // ============================================
 
 async function getBingXFuturesBalance(apiKey, secretKey) {
-    try {
+    try {console.log('🔑 Получен API Key:', apiKey.substring(0, 10) + '...');
+console.log('🔑 Получен Secret Key:', secretKey.substring(0, 10) + '...');
         const timestamp = Date.now().toString();
         const payload = `timestamp=${timestamp}`;
         const signature = crypto.createHmac('sha256', secretKey)
