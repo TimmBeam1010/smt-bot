@@ -92,11 +92,28 @@
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .section-title small {
             font-size: 13px;
             font-weight: 400;
             color: #94a3b8;
+        }
+        .section-title .toggle-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid #1e293b;
+        }
+        .section-title .toggle-btn:hover {
+            background: #1e293b;
+            color: #fff;
         }
 
         /* --- FORM --- */
@@ -149,8 +166,8 @@
         .exchange-item .status { font-size: 13px; }
         .status.active { color: #22c55e; }
         .status.inactive { color: #64748b; }
-        .exchange-item .balance { 
-            font-size: 14px; 
+        .exchange-item .balance {
+            font-size: 14px;
             color: #94a3b8;
             background: #0a0e17;
             padding: 2px 12px;
@@ -167,6 +184,8 @@
             align-items: center;
             padding: 12px 0;
             border-bottom: 1px solid #1e293b;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .bot-item:last-child { border-bottom: none; }
         .bot-item .info { display: flex; flex-direction: column; gap: 4px; }
@@ -204,12 +223,16 @@
         .message.error { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; }
         .message.info { background: #4f46e520; color: #4f46e5; border: 1px solid #4f46e540; }
 
+        /* --- HIDDEN --- */
+        .hidden { display: none; }
+
         /* --- RESPONSIVE --- */
         @media (max-width: 768px) {
             .form-row { grid-template-columns: 1fr; }
             .exchange-item { flex-direction: column; align-items: flex-start; gap: 8px; }
             .bot-item { flex-direction: column; align-items: flex-start; gap: 8px; }
             .header { flex-wrap: wrap; gap: 8px; }
+            .section-title { flex-wrap: wrap; gap: 8px; }
         }
         @media (min-width: 768px) {
             body { padding: 0 20px; }
@@ -302,7 +325,6 @@
             document.getElementById('userEmail').textContent = user.email || '';
 
             try {
-                // Загружаем данные
                 const exchangesRes = await fetch(`${API_BASE}/exchange/list/${encodeURIComponent(user.email)}`);
                 const exchangesData = await exchangesRes.json();
 
@@ -312,50 +334,45 @@
 
                 let html = '';
 
-                // --- СООБЩЕНИЕ, ЕСЛИ НЕТ БИРЖ ---
-                if (!hasExchange) {
-                    html += `
-                        <div class="message info">
-                            🔐 Для создания бота необходимо подключить хотя бы одну биржу по API.
-                            Ключи шифруются и хранятся в безопасности.
-                        </div>
-                    `;
-                }
-
-                // --- БЛОК: ПОДКЛЮЧЕНИЕ БИРЖИ ---
+                // --- БЛОК: ПОДКЛЮЧЕНИЕ БИРЖИ (СВОРАЧИВАЕМЫЙ) ---
                 html += `
                     <div class="section">
-                        <div class="section-title">🔌 Подключение биржи</div>
-                        <form id="connectExchangeForm">
-                            <div class="form-group">
-                                <label for="exchangeSelect">Биржа</label>
-                                <select id="exchangeSelect" required>
-                                    <option value="binance">Binance</option>
-                                    <option value="bybit">Bybit</option>
-                                    <option value="okx">OKX</option>
-                                    <option value="bingx">BingX</option>
-                                </select>
-                            </div>
-                            <div class="form-row">
+                        <div class="section-title">
+                            <span>🔌 Подключение биржи</span>
+                            <button class="toggle-btn" onclick="toggleExchangeForm()">${hasExchange ? '▼ Свернуть' : '▼ Свернуть'}</button>
+                        </div>
+                        <div id="exchangeFormContainer" class="${hasExchange ? 'hidden' : ''}">
+                            <form id="connectExchangeForm">
                                 <div class="form-group">
-                                    <label for="apiKeyInput">API Key</label>
-                                    <input type="text" id="apiKeyInput" placeholder="Введите API ключ" required>
+                                    <label for="exchangeSelect">Биржа</label>
+                                    <select id="exchangeSelect" required>
+                                        <option value="binance">Binance</option>
+                                        <option value="bybit">Bybit</option>
+                                        <option value="okx">OKX</option>
+                                        <option value="bingx">BingX</option>
+                                    </select>
                                 </div>
-                                <div class="form-group">
-                                    <label for="secretKeyInput">Secret Key</label>
-                                    <input type="password" id="secretKeyInput" placeholder="Введите Secret ключ" required>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="apiKeyInput">API Key</label>
+                                        <input type="text" id="apiKeyInput" placeholder="Введите API ключ" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="secretKeyInput">Secret Key</label>
+                                        <input type="password" id="secretKeyInput" placeholder="Введите Secret ключ" required>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="form-hint">
-                                ⚠️ Ключи нужны только для чтения баланса и торговли. Они шифруются перед сохранением.
-                            </div>
-                            <button type="submit" class="btn-primary" style="margin-top:12px;">✅ Подключить биржу</button>
-                            <div id="connectMessage" style="margin-top:8px;"></div>
-                        </form>
+                                <div class="form-hint">
+                                    ⚠️ Ключи нужны только для чтения баланса и торговли. Они шифруются перед сохранением.
+                                </div>
+                                <button type="submit" class="btn-primary" style="margin-top:12px;">✅ Подключить биржу</button>
+                                <div id="connectMessage" style="margin-top:8px;"></div>
+                            </form>
+                        </div>
                     </div>
                 `;
 
-                // --- БЛОК: МОИ БИРЖИ (С БАЛАНСОМ) ---
+                // --- БЛОК: МОИ БИРЖИ ---
                 html += `
                     <div class="section">
                         <div class="section-title">🏦 Мои биржи <small>(${connectedExchanges.length})</small></div>
@@ -393,6 +410,96 @@
                     </div>
                 `;
 
+                // --- БЛОК: СОЗДАНИЕ БОТА (ПОЛНЫЙ ФУНКЦИОНАЛ) ---
+                html += `
+                    <div class="section">
+                        <div class="section-title">🚀 Создание бота</div>
+                        <form id="createBotForm">
+                            <div class="form-group">
+                                <label for="botName">Название бота</label>
+                                <input type="text" id="botName" placeholder="Например: Мой первый бот" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="botExchange">Биржа</label>
+                                <select id="botExchange" required>
+                                    ${connectedExchanges.map(ex => `<option value="${ex.exchange}">${ex.exchange.toUpperCase()}</option>`).join('')}
+                                    ${connectedExchanges.length === 0 ? '<option value="">Нет подключенных бирж</option>' : ''}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="botMode">Режим работы</label>
+                                <select id="botMode" required>
+                                    <option value="signals_only">📡 Только сигналы</option>
+                                    <option value="auto_trade">🤖 Автоторговля</option>
+                                    <option value="hybrid">🔀 Гибридный</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Стратегии (выберите от 1 до 3)</label>
+                                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
+                                        <input type="checkbox" value="smc" checked> SMC
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
+                                        <input type="checkbox" value="rsi" checked> RSI + MACD
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
+                                        <input type="checkbox" value="bollinger"> Bollinger
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
+                                        <input type="checkbox" value="ichimoku"> Ichimoku
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
+                                        <input type="checkbox" value="volume"> Volume
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Активы (выберите до 5)</label>
+                                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
+                                        <input type="checkbox" value="BTC-USDT" checked> BTC
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
+                                        <input type="checkbox" value="ETH-USDT" checked> ETH
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
+                                        <input type="checkbox" value="SOL-USDT"> SOL
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
+                                        <input type="checkbox" value="XRP-USDT"> XRP
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#94a3b8;">
+                                        <input type="checkbox" value="ADA-USDT"> ADA
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="riskPercent">Риск на сделку (%)</label>
+                                    <input type="number" id="riskPercent" value="2.0" step="0.5" min="0.5" max="5">
+                                </div>
+                                <div class="form-group">
+                                    <label for="stopLossPercent">Стоп-лосс (%)</label>
+                                    <input type="number" id="stopLossPercent" value="1.5" step="0.5" min="0.5" max="10">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="takeProfitPercent">Тейк-профит (%)</label>
+                                    <input type="number" id="takeProfitPercent" value="3.0" step="0.5" min="0.5" max="20">
+                                </div>
+                                <div class="form-group">
+                                    <label for="maxPositions">Макс. позиций</label>
+                                    <input type="number" id="maxPositions" value="3" min="1" max="10">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary" style="margin-top:12px;">🚀 Создать бота</button>
+                            <div id="createBotMessage" style="margin-top:8px;"></div>
+                        </form>
+                    </div>
+                `;
+
                 // --- БЛОК: МОИ БОТЫ ---
                 html += `
                     <div class="section">
@@ -412,7 +519,6 @@
                         <div class="empty-state">
                             <div class="icon">🤖</div>
                             <p>У вас пока нет ботов. Создайте первого!</p>
-                            <button class="btn-primary" style="margin-top:12px;" onclick="alert('Форма создания бота в разработке')">➕ Создать бота</button>
                         </div>
                     `;
                 } else {
@@ -462,7 +568,7 @@
 
                 container.innerHTML = html;
 
-                // --- ПОДКЛЮЧЕНИЕ ФОРМЫ ---
+                // --- ПОДКЛЮЧЕНИЕ ФОРМ ---
                 document.getElementById('connectExchangeForm').addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const exchange = document.getElementById('exchangeSelect').value;
@@ -499,6 +605,78 @@
                     }
                 });
 
+                // --- ФОРМА СОЗДАНИЯ БОТА ---
+                document.getElementById('createBotForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const msgEl = document.getElementById('createBotMessage');
+
+                    const name = document.getElementById('botName').value.trim();
+                    const exchange = document.getElementById('botExchange').value;
+                    const mode = document.getElementById('botMode').value;
+                    const strategies = Array.from(document.querySelectorAll('#createBotForm input[type="checkbox"][value]'))
+                        .filter(cb => cb.checked)
+                        .map(cb => cb.value);
+                    const symbols = Array.from(document.querySelectorAll('#createBotForm input[type="checkbox"][value]'))
+                        .filter(cb => cb.checked)
+                        .map(cb => cb.value);
+                    const riskPercent = parseFloat(document.getElementById('riskPercent').value) || 2.0;
+                    const stopLossPercent = parseFloat(document.getElementById('stopLossPercent').value) || 1.5;
+                    const takeProfitPercent = parseFloat(document.getElementById('takeProfitPercent').value) || 3.0;
+                    const maxPositions = parseInt(document.getElementById('maxPositions').value) || 3;
+
+                    if (!name || name.length < 3) {
+                        msgEl.innerHTML = '<div class="message error">Название бота должно содержать минимум 3 символа</div>';
+                        return;
+                    }
+
+                    if (strategies.length === 0) {
+                        msgEl.innerHTML = '<div class="message error">Выберите хотя бы одну стратегию</div>';
+                        return;
+                    }
+
+                    if (symbols.length === 0) {
+                        msgEl.innerHTML = '<div class="message error">Выберите хотя бы один актив</div>';
+                        return;
+                    }
+
+                    msgEl.innerHTML = '<div class="message info">⏳ Создание бота...</div>';
+
+                    try {
+                        const result = await apiCall('/bot/create', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                email: user.email,
+                                config: {
+                                    name,
+                                    exchange,
+                                    mode,
+                                    strategies,
+                                    symbols,
+                                    risk: {
+                                        max_positions: maxPositions,
+                                        risk_percent: riskPercent,
+                                        stop_loss_percent: stopLossPercent,
+                                        take_profit_percent: takeProfitPercent,
+                                        trailing_stop: false
+                                    }
+                                }
+                            })
+                        });
+
+                        if (result.success) {
+                            msgEl.innerHTML = `<div class="message success">✅ Бот "${name}" успешно создан!</div>`;
+                            if (result.user) {
+                                saveUser(result.user);
+                            }
+                            renderDashboard(result.user || user);
+                        } else {
+                            msgEl.innerHTML = `<div class="message error">❌ ${result.error || 'Ошибка создания бота'}</div>`;
+                        }
+                    } catch (err) {
+                        msgEl.innerHTML = `<div class="message error">❌ Ошибка соединения: ${err.message}</div>`;
+                    }
+                });
+
                 // --- ЗАГРУЗКА БАЛАНСОВ ---
                 for (const ex of connectedExchanges) {
                     if (ex.enabled) {
@@ -519,17 +697,15 @@
         }
 
         // ============================================
-        //  ЗАГРУЗКА БАЛАНСА БИРЖИ
+        //  БАЛАНС
         // ============================================
         window.loadBalance = async function(email, exchange) {
             const balanceEl = document.getElementById(`balance-${exchange}`);
             if (!balanceEl) return;
-
             try {
                 balanceEl.innerHTML = '💰 Баланс: <strong>⏳</strong>';
                 const res = await fetch(`${API_BASE}/exchange/balance/${encodeURIComponent(email)}/${exchange}`);
                 const data = await res.json();
-
                 if (data.balance !== undefined) {
                     balanceEl.innerHTML = `💰 Баланс: <strong>$${data.balance.toFixed(2)}</strong>`;
                 } else {
@@ -543,6 +719,18 @@
 
         window.refreshBalance = function(email, exchange) {
             loadBalance(email, exchange);
+        };
+
+        // ============================================
+        //  СВОРАЧИВАНИЕ ФОРМЫ
+        // ============================================
+        window.toggleExchangeForm = function() {
+            const container = document.getElementById('exchangeFormContainer');
+            const btn = document.querySelector('.section-title .toggle-btn');
+            if (container) {
+                container.classList.toggle('hidden');
+                btn.textContent = container.classList.contains('hidden') ? '▶ Развернуть' : '▼ Свернуть';
+            }
         };
 
         // ============================================
@@ -621,7 +809,7 @@
         };
 
         // ============================================
-        //  ЛОГИН ФОРМА
+        //  ЛОГИН
         // ============================================
         function renderLoginForm() {
             const container = document.getElementById('mainContent');
