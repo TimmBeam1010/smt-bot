@@ -94,6 +94,13 @@ class BingXExchange {
                 .update(payload)
                 .digest('hex');
     
+            console.log('📝 Подпись для ордера:', {
+                timestamp,
+                queryString,
+                signature,
+                payload
+            });
+    
             // ЭНДПОИНТ: v2 для фьючерсов
             const url = 'https://open-api.bingx.com/openApi/swap/v2/trade/order';
     
