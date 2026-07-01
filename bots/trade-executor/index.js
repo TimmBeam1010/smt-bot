@@ -32,16 +32,17 @@ const { executeSignal } = require('../../shared/executor');
 //  МОНИТОРИНГ НОВЫХ СИГНАЛОВ
 // ============================================
 
-let lastSignalCheck = new Date(0);
+const MAX_SIGNALS_PER_BATCH = 5; // Ограничиваем количество сигналов за раз
+const DELAY_BETWEEN_ORDERS = 500; // 500 мс задержки между ордерами
 
 async function checkNewSignals() {
     try {
-        // Получаем новые сигналы (не исполненные)
         const { data: signals, error } = await supabase
             .from('signals')
             .select('*')
             .eq('executed', false)
-            .order('created_at', { ascending: true });
+            .order('created_at', { ascending: true })
+            .limit(MAX_SIGNALS_PER_BATCH); // Берём только 5 сигналов за раз
 
         if (error) {
             console.error('❌ Trade Executor: Ошибка получения сигналов:', error);
@@ -56,7 +57,6 @@ async function checkNewSignals() {
 
         for (const signal of signals) {
             try {
-                // Получаем пользователя и его ботов
                 const { data: user, error: userError } = await supabase
                     .from('users')
                     .select('*')
@@ -68,7 +68,6 @@ async function checkNewSignals() {
                     continue;
                 }
 
-                // Проверяем, есть ли у пользователя активные боты в режиме auto_trade или hybrid
                 const bots = user.bots || [];
                 const activeBots = bots.filter(bot => 
                     bot.active && 
@@ -80,9 +79,7 @@ async function checkNewSignals() {
                     continue;
                 }
 
-                // Для каждого активного бота
                 for (const bot of activeBots) {
-                    // Проверяем уровень сигнала
                     const signalLevels = bot.risk?.signal_levels || ['low', 'medium', 'high'];
                     if (!signalLevels.includes(signal.confidence)) {
                         continue;
@@ -96,6 +93,9 @@ async function checkNewSignals() {
                     } else {
                         console.log(`⚠️ Trade Executor: Сделка не открыта: ${result.reason}`);
                     }
+
+                    // Задержка между ордерами
+                    await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ORDERS));
                 }
 
             } catch (err) {
