@@ -4,7 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const axios = require('axios');
-const crypto = require('crypto'); // <--- ЭТО ГЛАВНОЕ ИСПРАВЛЕНИЕ
+const crypto = require('crypto');
 const trading = require('./trading');
 const { encrypt, decrypt, testExchangeCredentials, forceConnectExchange } = require('./exchange');
 const { executeSignal } = require('./executor');
@@ -599,7 +599,7 @@ app.post('/api/exchange/disconnect', async (req, res) => {
 
 async function getBingXFuturesBalance(apiKey, secretKey) {
     try {
-        // НЕ ПЕРЕОПРЕДЕЛЯЕМ crypto — он уже есть в начале файла
+        const crypto = require('crypto');
 
         if (!apiKey || apiKey.length < 10) {
             console.error('❌ API-ключ пустой или слишком короткий');
@@ -677,9 +677,23 @@ app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
     const { email, exchange } = req.params;
 
     try {
-        // ВРЕМЕННО: используем ключи в открытом виде
-        const apiKey = "nHFoaj3c6FLee3a92JcnTby6DlWa5zxqNYAyy5hT6PWUn94Lc7gXeoE5tB0ZjMGOcrs7fwlqVPJuAKciBQ";
-        const secretKey = "TXIjZad6isPqduYR2hpiVcgSJ9PE8wd2uo4zGOXwTLXZZs6slyv86YS72RAJoe9TMOgfDSzozxPmeUHLqZGMg";
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('exchange_credentials')
+            .eq('email', email)
+            .single();
+
+        if (error || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const credentials = user.exchange_credentials?.[exchange];
+        if (!credentials || !credentials.api_key_encrypted) {
+            return res.status(404).json({ error: 'Ключи не найдены' });
+        }
+
+        const apiKey = decrypt(credentials.api_key_encrypted, credentials.iv);
+        const secretKey = decrypt(credentials.secret_key_encrypted, credentials.iv);
 
         let balance = 0;
         switch (exchange) {
@@ -701,7 +715,7 @@ app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
         });
 
     } catch (err) {
-        console.error('❌ Ошибка получения баланса:', err.message);
+        console.error(`❌ Ошибка получения баланса ${exchange}:`, err.message);
         res.status(500).json({ error: err.message });
     }
 });
@@ -795,7 +809,8 @@ app.post('/api/bot/create', async (req, res) => {
                 risk_percent: config.risk?.risk_percent || 2.0,
                 stop_loss_percent: config.risk?.stop_loss_percent || 1.5,
                 take_profit_percent: config.risk?.take_profit_percent || 3.0,
-                trailing_stop: config.risk?.trailing_stop || false
+                trailing_stop: config.risk?.trailing_stop || false,
+                signal_levels: config.risk?.signal_levels || ['low', 'medium', 'high']
             },
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -1443,7 +1458,7 @@ app.get('/api/user/pnl-history/:email', async (req, res) => {
 });
 
 // ============================================
-//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА
+//  ПЛАНИРОВЩИК ТОРГОВОГО БОТА (С ПОДДЕРЖКОЙ ВСЕХ МОНЕТ И СТРАТЕГИЙ)
 // ============================================
 
 const {
@@ -1502,10 +1517,32 @@ cron.schedule('*/1 * * * *', async () => {
                 const exchanges = userExchangesMap.get(userId) || ['binance', 'bybit', 'okx'];
 
                 for (const bot of activeBots) {
+                    // Получаем символы из бота, или используем дефолтные (все монеты)
                     let symbols = bot.symbols || [];
                     if (symbols.length === 0) {
-                        symbols = ['BTC-USDT', 'ETH-USDT', 'BNB-USDT', 'SOL-USDT', 'XRP-USDT'];
-                        console.log(`⚠️ У бота ${bot.name || 'без названия'} нет символов, используем дефолтные`);
+                        // ВСЕ МОНЕТЫ (100+) — если у бота нет символов
+                        symbols = [
+                            'BTC-USDT', 'ETH-USDT', 'BNB-USDT', 'SOL-USDT', 'XRP-USDT',
+                            'ADA-USDT', 'DOGE-USDT', 'TRX-USDT', 'DOT-USDT', 'MATIC-USDT',
+                            'SHIB-USDT', 'LTC-USDT', 'AVAX-USDT', 'UNI-USDT', 'ATOM-USDT',
+                            'LINK-USDT', 'ETC-USDT', 'XLM-USDT', 'BCH-USDT', 'ALGO-USDT',
+                            'VET-USDT', 'ICP-USDT', 'FIL-USDT', 'EGLD-USDT', 'THETA-USDT',
+                            'HNT-USDT', 'XMR-USDT', 'ARB-USDT', 'MKR-USDT', 'AAVE-USDT',
+                            'APE-USDT', 'QNT-USDT', 'FTM-USDT', 'RNDR-USDT', 'SNX-USDT',
+                            'MANA-USDT', 'SAND-USDT', 'GALA-USDT', 'AXS-USDT', 'ENJ-USDT',
+                            'BONK-USDT', 'DOGS-USDT', 'PEPE-USDT', 'WIF-USDT', 'FLOKI-USDT',
+                            'NOT-USDT', 'JUP-USDT', 'JTO-USDT', 'PYTH-USDT', 'TIA-USDT',
+                            'SEI-USDT', 'SUI-USDT', 'APT-USDT', 'OP-USDT', 'LDO-USDT',
+                            'AR-USDT', 'RUNE-USDT', 'KAS-USDT', 'CFX-USDT', 'CORE-USDT',
+                            'CRV-USDT', 'CVX-USDT', 'BAL-USDT', 'YFI-USDT', 'COMP-USDT',
+                            'SUSHI-USDT', '1INCH-USDT', 'CAKE-USDT', 'BAKE-USDT', 'DODO-USDT',
+                            'GRT-USDT', 'LPT-USDT', 'RLC-USDT', 'IOTX-USDT', 'IOTA-USDT',
+                            'NEO-USDT', 'ONT-USDT', 'VTHO-USDT', 'HOT-USDT', 'STX-USDT',
+                            'ILV-USDT', 'YGG-USDT', 'ALICE-USDT', 'TLM-USDT', 'SIDUS-USDT',
+                            'MEME-USDT', 'PEPE2-USDT', 'WOJAK-USDT', 'TOSHI-USDT',
+                            'USDC-USDT', 'DAI-USDT', 'FDUSD-USDT'
+                        ];
+                        console.log(`⚠️ У бота ${bot.name || 'без названия'} нет символов, используем все монеты (${symbols.length})`);
                     }
 
                     const prices = {};
@@ -1532,9 +1569,16 @@ cron.schedule('*/1 * * * *', async () => {
                         if (history.length >= 20) {
                             const signal = generateSignal(symbol, history);
                             if (signal) {
+                                // Проверяем уровень сигнала
+                                const signalLevels = bot.risk?.signal_levels || ['low', 'medium', 'high'];
+                                if (!signalLevels.includes(signal.confidence)) {
+                                    continue; // Пропускаем сигнал, если его уровень не выбран
+                                }
+
                                 console.log(`📈 СИГНАЛ для ${userId} (${symbol}): ${signal.side} (${signal.confidence})`);
 
                                 try {
+                                    // Сохраняем сигнал в БД
                                     const { data: savedSignal, error: insertError } = await supabase
                                         .from('signals')
                                         .insert({
@@ -1556,6 +1600,7 @@ cron.schedule('*/1 * * * *', async () => {
                                         continue;
                                     }
 
+                                    // --- АВТОТОРГОВЛЯ ---
                                     if (bot.mode === 'auto_trade' || bot.mode === 'hybrid') {
                                         const userData = await supabase
                                             .from('users')
