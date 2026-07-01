@@ -2,7 +2,7 @@
 //  МОДУЛЬ BINGX (С ИСПОЛЬЗОВАНИЕМ ОФИЦИАЛЬНОЙ БИБЛИОТЕКИ)
 // ============================================
 
-const BingXClient = require('bingx-api').default;
+const { BingXClient } = require('bingx-api');
 
 class BingXExchange {
     constructor(apiKey, secretKey) {
@@ -21,7 +21,6 @@ class BingXExchange {
     // Получение баланса фьючерсного счёта
     async getBalance() {
         try {
-            // Используем официальный метод библиотеки
             const response = await this.client.futuresAccountBalance();
             
             if (response && response.code === 0) {
@@ -44,10 +43,9 @@ class BingXExchange {
         try {
             const symbolFormatted = symbol.replace('-', '_');
             
-            // Параметры ордера для библиотеки
             const orderParams = {
                 symbol: symbolFormatted,
-                side: side, // 'BUY' или 'SELL'
+                side: side,
                 type: 'MARKET',
                 quantity: quantity.toString(),
                 positionSide: side === 'BUY' ? 'LONG' : 'SHORT'
@@ -60,7 +58,6 @@ class BingXExchange {
 
             console.log('📝 Отправка ордера через библиотеку:', orderParams);
 
-            // Используем официальный метод библиотеки
             const response = await this.client.futuresPlaceOrder(orderParams);
 
             if (response && response.code === 0) {
