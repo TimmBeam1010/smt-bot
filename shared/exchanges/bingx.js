@@ -73,11 +73,12 @@ class BingXExchange {
             const timestamp = Date.now().toString();
             const formattedSymbol = symbol.replace('-', '_');
     
+            // Параметры должны быть отсортированы по алфавиту
             const params = {
-                symbol: formattedSymbol,
+                quantity: quantity.toString(),
                 side: side,
-                type: 'MARKET',
-                quantity: quantity.toString()
+                symbol: formattedSymbol,
+                type: 'MARKET'
             };
     
             // Сортируем параметры для подписи
@@ -88,21 +89,20 @@ class BingXExchange {
                 queryString += `${key}=${params[key]}`;
             }
     
-            // Подпись: timestamp + queryString
-            const payload = timestamp + '&' + queryString;
+            // ПОДПИСЬ: timestamp + queryString (без &)
+            const payload = timestamp + queryString;
             const signature = crypto.createHmac('sha256', this.secretKey)
                 .update(payload)
                 .digest('hex');
     
-            console.log('📝 Подпись для ордера (v1):', {
+            console.log('📝 Подпись для ордера (v2, исправлено):', {
                 timestamp,
                 queryString,
                 signature,
                 payload
             });
     
-            // Пробуем v1 эндпоинт
-            const url = 'https://open-api.bingx.com/openApi/swap/v1/trade/order';
+            const url = 'https://open-api.bingx.com/openApi/swap/v2/trade/order';
     
             const response = await axios.post(url, params, {
                 headers: {
@@ -124,7 +124,7 @@ class BingXExchange {
                     status: 'filled'
                 };
             }
-            console.error('❌ BingX: Ошибка ордера (v1)', response.data);
+            console.error('❌ BingX: Ошибка ордера (v2)', response.data);
             return null;
         } catch (error) {
             console.error('❌ BingX: Ошибка placeOrder', error.response?.data || error.message);
