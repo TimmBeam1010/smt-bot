@@ -160,28 +160,35 @@ async function getExchangeBalance(exchange, apiKey, secretKey) {
  * Баланс BingX
  */
 async function getBingXBalance(apiKey, secretKey) {
-    const timestamp = Date.now().toString();
-    const signature = crypto.createHmac('sha256', secretKey)
-        .update(timestamp)
-        .digest('hex');
+    try {
+        const crypto = require('crypto');
+        const axios = require('axios');
 
-    const response = await axios.get(
-        'https://open-api.bingx.com/openApi/spot/v1/account',
-        {
-            headers: {
-                'X-BX-APIKEY': apiKey,
-                'X-BX-SIGNATURE': signature,
-                'X-BX-TIMESTAMP': timestamp
-            },
+        const timestamp = Date.now().toString();
+        const payload = `timestamp=${timestamp}`;
+        const signature = crypto.createHmac('sha256', secretKey)
+            .update(payload)
+            .digest('hex');
+
+        const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
+
+        const response = await axios.get(url, {
+            headers: { 'X-BX-APIKEY': apiKey },
             timeout: 10000
-        }
-    );
+        });
 
-    if (response.data && response.data.data && response.data.data.balances) {
-        const usdtBalance = response.data.data.balances.find(b => b.asset === 'USDT');
-        return usdtBalance ? parseFloat(usdtBalance.free) : 0;
+        if (response.data && response.data.code === 0 && response.data.data) {
+            const usdtData = response.data.data.find(item => item.asset === 'USDT');
+            if (usdtData) {
+                return parseFloat(usdtData.equity) || parseFloat(usdtData.balance) || 0;
+            }
+            return 0;
+        }
+        return 0;
+    } catch (error) {
+        console.error('❌ Ошибка получения баланса BingX:', error.message);
+        return null;
     }
-    return null;
 }
 
 /**
