@@ -518,7 +518,7 @@ function analyzeNewsSentiment(news) {
 }
 
 // ============================================
-//  ГЕНЕРАЦИЯ СИГНАЛА
+//  ГЕНЕРАЦИЯ СИГНАЛА (С НАСТРОЙКОЙ УРОВНЕЙ)
 // ============================================
 function generateSignal(symbol, prices, extras = {}) {
     if (!prices || prices.length < 30) return null;
@@ -625,16 +625,31 @@ function generateSignal(symbol, prices, extras = {}) {
     if (sentiment === 'positive') { longScore += 1; reasons.push('Положительный новостной фон'); }
     if (sentiment === 'negative') { shortScore += 1; reasons.push('Отрицательный новостной фон'); }
 
-    const threshold = 3;
+    // НОВЫЕ ПОРОГИ
+    const threshold = 2; // Снижен для low сигналов
     let side = null;
     let confidence = 'low';
 
     if (longScore - shortScore >= threshold) {
         side = 'LONG';
-        confidence = longScore - shortScore >= 6 ? 'high' : 'medium';
+        const diff = longScore - shortScore;
+        if (diff >= 5) {
+            confidence = 'high';
+        } else if (diff >= 3) {
+            confidence = 'medium';
+        } else {
+            confidence = 'low';
+        }
     } else if (shortScore - longScore >= threshold) {
         side = 'SHORT';
-        confidence = shortScore - longScore >= 6 ? 'high' : 'medium';
+        const diff = shortScore - longScore;
+        if (diff >= 5) {
+            confidence = 'high';
+        } else if (diff >= 3) {
+            confidence = 'medium';
+        } else {
+            confidence = 'low';
+        }
     } else {
         return null;
     }
@@ -644,7 +659,7 @@ function generateSignal(symbol, prices, extras = {}) {
         side,
         entry: lastPrice,
         confidence,
-        reasons: reasons.slice(0, 5),
+        reasons: reasons.slice(0, 7), // Увеличено до 7 причин
         rsi: rsi !== null ? parseFloat(rsi.toFixed(1)) : null,
         macd: macd !== null ? parseFloat(macd.histogram.toFixed(6)) : null,
         bollinger: bollinger !== null ? {
