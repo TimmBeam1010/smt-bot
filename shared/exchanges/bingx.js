@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ BINGX (ФЬЮЧЕРСЫ) - ОКОНЧАТЕЛЬНОЕ ИСПРАВЛЕНИЕ
+//  МОДУЛЬ BINGX (ФЬЮЧЕРСЫ) - ФИНАЛ
 // ============================================
 
 const crypto = require('crypto');
@@ -43,13 +43,12 @@ class BingXExchange {
         }
     }
 
-    // Создание ордера (ПАРАМЕТРЫ В ТЕЛЕ, ПОДПИСЬ В ЗАГОЛОВКЕ)
+    // Создание ордера (ИСПРАВЛЕННАЯ ВЕРСИЯ)
     async placeOrder(symbol, side, quantity, price = null) {
         try {
             const timestamp = Date.now().toString();
             const formattedSymbol = symbol.replace('-', '_');
 
-            // Параметры для тела запроса
             const params = {
                 symbol: formattedSymbol,
                 side: side,
@@ -60,20 +59,23 @@ class BingXExchange {
                 recvWindow: '5000'
             };
 
-            // Сортируем параметры для подписи
-            const sortedKeys = Object.keys(params).sort();
+            // Сортируем параметры для подписи (ИСКЛЮЧАЯ timestamp)
+            const paramsForSignature = { ...params };
+            delete paramsForSignature.timestamp;
+
+            const sortedKeys = Object.keys(paramsForSignature).sort();
             let queryString = '';
             for (const key of sortedKeys) {
                 if (queryString) queryString += '&';
-                queryString += `${key}=${params[key]}`;
+                queryString += `${key}=${paramsForSignature[key]}`;
             }
 
-            // ПОДПИСЬ: HMAC-SHA256 от queryString
+            // ПОДПИСЬ: HMAC-SHA256 от queryString (без timestamp)
             const signature = crypto.createHmac('sha256', this.secretKey)
                 .update(queryString)
                 .digest('hex');
 
-            console.log('📝 Подпись для ордера (тело запроса):', {
+            console.log('📝 Подпись для ордера (финал):', {
                 params,
                 signature,
                 queryString
@@ -101,7 +103,7 @@ class BingXExchange {
                     status: 'filled'
                 };
             }
-            console.error('❌ BingX: Ошибка ордера (тело запроса)', response.data);
+            console.error('❌ BingX: Ошибка ордера (финал)', response.data);
             return null;
         } catch (error) {
             console.error('❌ BingX: Ошибка placeOrder', error.response?.data || error.message);
