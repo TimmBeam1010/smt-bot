@@ -1,8 +1,4 @@
-// ============================================
-//  МОДУЛЬ BINGX (С ИСПОЛЬЗОВАНИЕМ ОФИЦИАЛЬНОЙ БИБЛИОТЕКИ)
-// ============================================
-
-const BingXClient = require('bingx-api').default;
+const { BingxApiClient } = require('bingx-api');
 
 class BingXExchange {
     constructor(apiKey, secretKey) {
@@ -10,60 +6,49 @@ class BingXExchange {
         this.secretKey = secretKey;
         this.name = 'bingx';
 
-        // Инициализируем клиент для фьючерсов
-        this.client = new BingXClient({
+        // Создаём клиент
+        this.client = new BingxApiClient({
             apiKey: this.apiKey,
             apiSecret: this.secretKey,
             baseURL: 'https://open-api.bingx.com'
         });
     }
 
-    // Получение баланса фьючерсного счёта
     async getBalance() {
         try {
-            // Используем официальный метод библиотеки
-            const response = await this.client.futuresAccountBalance();
-            
-            if (response && response.code === 0) {
-                const usdtData = response.data.find(item => item.asset === 'USDT');
+            // Используем официальный метод
+            const response = await this.client.account.balance();
+            if (response?.code === 0) {
+                const usdtData = response.data?.balance?.find(item => item.asset === 'USDT');
                 if (usdtData) {
                     return parseFloat(usdtData.equity) || parseFloat(usdtData.balance) || 0;
                 }
                 return 0;
             }
-            console.error('❌ BingX: Ошибка баланса', response);
+            console.error('❌ Баланс:', response);
             return null;
         } catch (error) {
-            console.error('❌ BingX: Ошибка getBalance', error.message);
+            console.error('❌ Ошибка getBalance:', error.message);
             return null;
         }
     }
 
-    // Создание ордера на фьючерсном рынке
     async placeOrder(symbol, side, quantity, price = null) {
         try {
             const symbolFormatted = symbol.replace('-', '_');
-            
-            // Параметры ордера для библиотеки
             const orderParams = {
                 symbol: symbolFormatted,
-                side: side, // 'BUY' или 'SELL'
-                type: 'MARKET',
-                quantity: quantity.toString(),
-                positionSide: side === 'BUY' ? 'LONG' : 'SHORT'
+                side: side,
+                type: price ? 'LIMIT' : 'MARKET',
+                quantity: quantity.toString()
             };
-
-            if (price && price > 0) {
-                orderParams.type = 'LIMIT';
+            if (price) {
                 orderParams.price = price.toString();
+                orderParams.positionSide = side === 'BUY' ? 'LONG' : 'SHORT';
             }
-
-            console.log('📝 Отправка ордера через библиотеку:', orderParams);
-
-            // Используем официальный метод библиотеки
-            const response = await this.client.futuresPlaceOrder(orderParams);
-
-            if (response && response.code === 0) {
+            console.log('📤 Отправка ордера через библиотеку:', orderParams);
+            const response = await this.client.trade.order(orderParams);
+            if (response?.code === 0) {
                 return {
                     orderId: response.data.orderId,
                     symbol: symbol,
@@ -73,15 +58,14 @@ class BingXExchange {
                     status: 'filled'
                 };
             }
-            console.error('❌ BingX: Ошибка ордера (библиотека)', response);
+            console.error('❌ Ошибка ордера:', response);
             return null;
         } catch (error) {
-            console.error('❌ BingX: Ошибка placeOrder', error.response?.data || error.message);
+            console.error('❌ Ошибка placeOrder:', error.message);
             return null;
         }
     }
 
-    // Проверка ключей
     async testCredentials() {
         const balance = await this.getBalance();
         return balance !== null && balance !== undefined;
