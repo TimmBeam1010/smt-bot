@@ -67,7 +67,7 @@ class BingXExchange {
             const params = {
                 symbol: symbolFormatted,
                 side: side,
-                positionSide: side === 'BUY' ? 'LONG' : 'SHORT',
+                positionSide: side,
                 type: 'MARKET',
                 quantity: quantity.toString()
             };
