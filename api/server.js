@@ -1,7 +1,3 @@
-// ============================================
-//  МОДУЛЬ API СЕРВЕРА (САЙТ И ЛК)
-// ============================================
-
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
@@ -11,9 +7,10 @@ const crypto = require('crypto');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-// ============================================
-//  КОНФИГУРАЦИЯ
-// ============================================
+// === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
+const WebSocket = require('ws');
+global.WebSocket = WebSocket;
+// =============================================
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -181,7 +178,6 @@ app.get('/api/market-data', async (req, res) => {
 //  МАРШРУТЫ ДЛЯ СИГНАЛОВ И БОТОВ (ПРОКСИ)
 // ============================================
 
-// Прокси для сигналов (читаем из БД)
 app.get('/api/signals/user/:email', async (req, res) => {
     const { email } = req.params;
     try {
@@ -209,7 +205,6 @@ app.get('/api/signals/user/:email', async (req, res) => {
     }
 });
 
-// Прокси для ботов (читаем из БД)
 app.get('/api/bot/list/:email', async (req, res) => {
     const { email } = req.params;
     try {
