@@ -49,7 +49,6 @@ class BingXExchange {
             const timestamp = Date.now().toString();
             const formattedSymbol = symbol.replace('-', '_');
 
-            // Для фьючерсов используем рыночный ордер
             const params = {
                 symbol: formattedSymbol,
                 side: side,
@@ -57,7 +56,6 @@ class BingXExchange {
                 quantity: quantity.toString()
             };
 
-            // Сортируем параметры для подписи
             const sortedKeys = Object.keys(params).sort();
             const queryString = sortedKeys.map(key => `${key}=${params[key]}`).join('&');
 
@@ -66,8 +64,8 @@ class BingXExchange {
                 .update(payload)
                 .digest('hex');
 
-            // ФЬЮЧЕРСНЫЙ ЭНДПОИНТ
-            const url = 'https://open-api.bingx.com/openApi/swap/v1/trade/order';
+            // ИСПРАВЛЕНО: v2 эндпоинт для фьючерсов
+            const url = 'https://open-api.bingx.com/openApi/swap/v2/trade/order';
 
             const response = await axios.post(url, params, {
                 headers: {
