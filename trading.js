@@ -31,20 +31,27 @@ const SYMBOLS_HOT = [
 ];
 
 const SYMBOLS_COLD = [
+    // Топ-20 (дополнительные)
     'VET-USDT', 'ICP-USDT', 'FIL-USDT', 'EGLD-USDT', 'THETA-USDT',
     'HNT-USDT', 'XMR-USDT', 'ARB-USDT', 'MKR-USDT', 'AAVE-USDT',
     'APE-USDT', 'QNT-USDT', 'FTM-USDT', 'RNDR-USDT', 'SNX-USDT',
     'MANA-USDT', 'SAND-USDT', 'GALA-USDT', 'AXS-USDT', 'ENJ-USDT',
+    // Альткоины (популярные)
     'BONK-USDT', 'DOGS-USDT', 'PEPE-USDT', 'WIF-USDT', 'FLOKI-USDT',
     'NOT-USDT', 'JUP-USDT', 'JTO-USDT', 'PYTH-USDT', 'TIA-USDT',
     'SEI-USDT', 'SUI-USDT', 'APT-USDT', 'OP-USDT', 'LDO-USDT',
     'AR-USDT', 'RUNE-USDT', 'KAS-USDT', 'CFX-USDT', 'CORE-USDT',
+    // DeFi
     'CRV-USDT', 'CVX-USDT', 'BAL-USDT', 'YFI-USDT', 'COMP-USDT',
     'SUSHI-USDT', '1INCH-USDT', 'CAKE-USDT', 'BAKE-USDT', 'DODO-USDT',
+    // Инфраструктура
     'GRT-USDT', 'LPT-USDT', 'RLC-USDT', 'IOTX-USDT', 'IOTA-USDT',
     'NEO-USDT', 'ONT-USDT', 'VTHO-USDT', 'HOT-USDT', 'STX-USDT',
+    // Игровые / метавселенная
     'ILV-USDT', 'YGG-USDT', 'ALICE-USDT', 'TLM-USDT', 'SIDUS-USDT',
+    // Мемы
     'MEME-USDT', 'PEPE2-USDT', 'WOJAK-USDT', 'TOSHI-USDT',
+    // Стейблкоины и другие
     'USDC-USDT', 'DAI-USDT', 'FDUSD-USDT'
 ];
 
