@@ -22,12 +22,25 @@ async function executeSignal(signal, bot, user, supabase) {
         // 3. Получаем ключи пользователя
         const exchange = bot.exchange;
         const credentials = user.exchange_credentials?.[exchange];
-        if (!credentials || !credentials.api_key) {
+
+        // Логируем для отладки
+        console.log('🔑 Получены credentials:', JSON.stringify(credentials, null, 2));
+
+        if (!credentials) {
+            return { executed: false, reason: `Нет credentials для ${exchange}` };
+        }
+
+        // Проверяем наличие ключей в разных форматах
+        const apiKey = credentials.api_key || credentials.apiKey || credentials.api_key_encrypted;
+        const secretKey = credentials.secret_key || credentials.secretKey || credentials.secret_key_encrypted;
+
+        if (!apiKey || !secretKey) {
+            console.error('❌ Не найдены ключи в credentials:', Object.keys(credentials));
             return { executed: false, reason: `Нет API-ключей для ${exchange}` };
         }
 
         // 4. Создаём клиент биржи через фабрику
-        const exchangeClient = getExchange(exchange, credentials.api_key, credentials.secret_key);
+        const exchangeClient = getExchange(exchange, apiKey, secretKey);
 
         // 5. Получаем баланс
         const balance = await exchangeClient.getBalance();
