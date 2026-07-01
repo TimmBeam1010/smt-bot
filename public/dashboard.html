@@ -372,7 +372,7 @@
         }
 
         // ============================================
-        //  RENDER DASHBOARD
+        //  RENDER DASHBOARD (БЛОКИ СВЕРНУТЫ ПО УМОЛЧАНИЮ)
         // ============================================
         async function renderDashboard(user) {
             const container = document.getElementById('mainContent');
@@ -386,21 +386,20 @@
                 const connectedExchanges = exchangesData.exchanges || [];
                 const hasExchange = connectedExchanges.length > 0;
 
-                // Загружаем сигналы
                 const signalsRes = await fetch(`${API_BASE}/signals/user/${encodeURIComponent(user.email)}`);
                 const signalsData = await signalsRes.json();
                 const signals = signalsData.signals || [];
 
                 let html = '';
 
-                // --- БЛОК: ПОДКЛЮЧЕНИЕ БИРЖИ (СВОРАЧИВАЕМЫЙ) ---
+                // --- ПОДКЛЮЧЕНИЕ БИРЖИ (СВЕРНУТ) ---
                 html += `
                     <div class="section">
                         <div class="section-title">
                             <span>🔌 Подключение биржи</span>
-                            <button class="toggle-btn" onclick="toggleExchangeForm()">▼ Свернуть</button>
+                            <button class="toggle-btn" onclick="toggleExchangeForm()">▶ Развернуть</button>
                         </div>
-                        <div id="exchangeFormContainer">
+                        <div id="exchangeFormContainer" class="hidden">
                             <form id="connectExchangeForm">
                                 <div class="form-group">
                                     <label for="exchangeSelect">Биржа</label>
@@ -431,7 +430,7 @@
                     </div>
                 `;
 
-                // --- БЛОК: МОИ БИРЖИ ---
+                // --- МОИ БИРЖИ (всегда видим) ---
                 html += `
                     <div class="section">
                         <div class="section-title">🏦 Мои биржи <small>(${connectedExchanges.length})</small></div>
@@ -469,14 +468,14 @@
                     </div>
                 `;
 
-                // --- БЛОК: СОЗДАНИЕ БОТА (УПРОЩЁННЫЙ) ---
+                // --- СОЗДАНИЕ БОТА (СВЕРНУТ) ---
                 html += `
                     <div class="section">
                         <div class="section-title">
                             <span>🚀 Создание бота</span>
-                            <button class="toggle-btn" onclick="toggleBotForm()">▼ Свернуть</button>
+                            <button class="toggle-btn" onclick="toggleBotForm()">▶ Развернуть</button>
                         </div>
-                        <div id="botFormContainer">
+                        <div id="botFormContainer" class="hidden">
                             <form id="createBotForm">
                                 <div class="form-group">
                                     <label for="botName">Название бота</label>
@@ -518,7 +517,7 @@
                     </div>
                 `;
 
-                // --- БЛОК: МОИ БОТЫ ---
+                // --- МОИ БОТЫ (всегда видим) ---
                 html += `
                     <div class="section">
                         <div class="section-title">🤖 Мои боты <small>(${bots.length})</small></div>
@@ -584,14 +583,14 @@
                     </div>
                 `;
 
-                // --- БЛОК: СИГНАЛЫ ---
+                // --- СИГНАЛЫ (СВЕРНУТЫ) ---
                 html += `
                     <div class="section">
                         <div class="section-title">
                             <span>📡 Сигналы <small>(${signals.length})</small></span>
-                            <button class="btn-expand" onclick="toggleSignals()">${signals.length > 5 ? '▶ Развернуть все' : '▼ Свернуть'}</button>
+                            <button class="btn-expand" onclick="toggleSignals()">${signals.length > 5 ? '▶ Развернуть все' : '▶ Развернуть'}</button>
                         </div>
-                        <div id="signalsContainer">
+                        <div id="signalsContainer" class="${signals.length <= 5 ? '' : 'hidden'}">
                 `;
 
                 if (signals.length === 0) {
@@ -688,9 +687,7 @@
                     msgEl.innerHTML = '<div class="message info">⏳ Создание бота...</div>';
 
                     try {
-                        // ВСЕ СТРАТЕГИИ ПО УМОЛЧАНИЮ
                         const strategies = ['smc', 'rsi', 'macd', 'bollinger', 'ichimoku', 'volume'];
-                        // ВСЕ СИМВОЛЫ (100+)
                         const symbols = [
                             'BTC-USDT', 'ETH-USDT', 'BNB-USDT', 'SOL-USDT', 'XRP-USDT',
                             'ADA-USDT', 'DOGE-USDT', 'TRX-USDT', 'DOT-USDT', 'MATIC-USDT',
@@ -713,9 +710,6 @@
                             'USDC-USDT', 'DAI-USDT', 'FDUSD-USDT'
                         ];
 
-                        // Проверяем, что symbols и strategies — это массивы
-                        console.log('📤 Отправка:', { name, exchange, mode, strategies, symbols, maxPositions, signalLevels });
-
                         const result = await apiCall('/bot/create', {
                             method: 'POST',
                             body: JSON.stringify({
@@ -724,8 +718,8 @@
                                     name,
                                     exchange,
                                     mode,
-                                    strategies: strategies, // Убеждаемся, что это массив
-                                    symbols: symbols,       // Убеждаемся, что это массив
+                                    strategies: strategies,
+                                    symbols: symbols,
                                     risk: {
                                         max_positions: maxPositions,
                                         risk_percent: 2.0,
@@ -845,16 +839,11 @@
         //  СИГНАЛЫ
         // ============================================
         window.toggleSignals = function() {
-            const hiddenSignals = document.getElementById('hiddenSignals');
+            const container = document.getElementById('signalsContainer');
             const btn = document.querySelector('.section:last-child .section-title .btn-expand');
-            if (hiddenSignals) {
-                if (hiddenSignals.classList.contains('hidden')) {
-                    hiddenSignals.classList.remove('hidden');
-                    btn.textContent = '▼ Свернуть';
-                } else {
-                    hiddenSignals.classList.add('hidden');
-                    btn.textContent = '▶ Развернуть все';
-                }
+            if (container) {
+                container.classList.toggle('hidden');
+                btn.textContent = container.classList.contains('hidden') ? '▶ Развернуть' : '▼ Свернуть';
             }
         };
 
