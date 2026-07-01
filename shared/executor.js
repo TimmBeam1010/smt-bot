@@ -23,14 +23,13 @@ async function executeSignal(signal, bot, user, supabase) {
         const exchange = bot.exchange;
         const credentials = user.exchange_credentials?.[exchange];
 
-        // Логируем для отладки
         console.log('🔑 Получены credentials:', JSON.stringify(credentials, null, 2));
 
         if (!credentials) {
             return { executed: false, reason: `Нет credentials для ${exchange}` };
         }
 
-        // Проверяем наличие ключей в разных форматах
+        // Извлекаем ключи из разных возможных полей
         const apiKey = credentials.api_key || credentials.apiKey || credentials.api_key_encrypted;
         const secretKey = credentials.secret_key || credentials.secretKey || credentials.secret_key_encrypted;
 
@@ -38,6 +37,9 @@ async function executeSignal(signal, bot, user, supabase) {
             console.error('❌ Не найдены ключи в credentials:', Object.keys(credentials));
             return { executed: false, reason: `Нет API-ключей для ${exchange}` };
         }
+
+        console.log('🔑 API Key (первые 10):', apiKey.substring(0, 10));
+        console.log('🔑 Secret Key (первые 10):', secretKey.substring(0, 10));
 
         // 4. Создаём клиент биржи через фабрику
         const exchangeClient = getExchange(exchange, apiKey, secretKey);
@@ -47,6 +49,8 @@ async function executeSignal(signal, bot, user, supabase) {
         if (balance === null || balance === undefined) {
             return { executed: false, reason: 'Не удалось получить баланс' };
         }
+
+        console.log(`💰 Баланс: $${balance}`);
 
         // 6. Рассчитываем размер позиции
         const entryPrice = parseFloat(signal.entry_price);
