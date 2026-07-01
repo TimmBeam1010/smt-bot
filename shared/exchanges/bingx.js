@@ -2,7 +2,7 @@
 //  МОДУЛЬ BINGX (С ИСПОЛЬЗОВАНИЕМ ОФИЦИАЛЬНОЙ БИБЛИОТЕКИ)
 // ============================================
 
-const { BingXClient } = require('bingx-api');
+const { BingxApiClient } = require('bingx-api');
 
 class BingXExchange {
     constructor(apiKey, secretKey) {
@@ -10,8 +10,8 @@ class BingXExchange {
         this.secretKey = secretKey;
         this.name = 'bingx';
 
-        // Инициализируем клиент для фьючерсов
-        this.client = new BingXClient({
+        // Инициализируем клиент
+        this.client = new BingxApiClient({
             apiKey: this.apiKey,
             apiSecret: this.secretKey,
             baseURL: 'https://open-api.bingx.com'
@@ -21,10 +21,11 @@ class BingXExchange {
     // Получение баланса фьючерсного счёта
     async getBalance() {
         try {
-            const response = await this.client.futuresAccountBalance();
+            // Используем метод для получения баланса
+            const response = await this.client.account.balance();
             
             if (response && response.code === 0) {
-                const usdtData = response.data.find(item => item.asset === 'USDT');
+                const usdtData = response.data?.balance?.find(item => item.asset === 'USDT');
                 if (usdtData) {
                     return parseFloat(usdtData.equity) || parseFloat(usdtData.balance) || 0;
                 }
@@ -56,9 +57,10 @@ class BingXExchange {
                 orderParams.price = price.toString();
             }
 
-            console.log('📝 Отправка ордера через библиотеку:', orderParams);
+            console.log('📝 Отправка ордера:', orderParams);
 
-            const response = await this.client.futuresPlaceOrder(orderParams);
+            // Используем метод для создания ордера
+            const response = await this.client.trade.order(orderParams);
 
             if (response && response.code === 0) {
                 return {
@@ -70,7 +72,7 @@ class BingXExchange {
                     status: 'filled'
                 };
             }
-            console.error('❌ BingX: Ошибка ордера (библиотека)', response);
+            console.error('❌ BingX: Ошибка ордера', response);
             return null;
         } catch (error) {
             console.error('❌ BingX: Ошибка placeOrder', error.response?.data || error.message);
