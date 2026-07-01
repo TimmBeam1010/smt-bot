@@ -32,8 +32,8 @@ const { executeSignal } = require('../../shared/executor');
 //  МОНИТОРИНГ НОВЫХ СИГНАЛОВ
 // ============================================
 
-const MAX_SIGNALS_PER_BATCH = 5; // Ограничиваем количество сигналов за раз
-const DELAY_BETWEEN_ORDERS = 500; // 500 мс задержки между ордерами
+const MAX_SIGNALS_PER_BATCH = 1; // Ограничиваем количество сигналов за раз
+const DELAY_BETWEEN_ORDERS = 2000; // 500 мс задержки между ордерами
 
 async function checkNewSignals() {
     try {
