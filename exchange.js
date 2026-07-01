@@ -2,17 +2,32 @@ const crypto = require('crypto');
 const axios = require('axios');
 
 // ============================================
-//  ШИФРОВАНИЕ (ВРЕМЕННО ОТКЛЮЧЕНО)
+//  ШИФРОВАНИЕ И РАСШИФРОВКА
 // ============================================
 
+const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || 'your-secret-key-change-me';
+const algorithm = 'aes-256-cbc';
+const key = crypto.scryptSync(ENCRYPTION_SECRET, 'salt', 32);
+
 function encrypt(text) {
-    // Возвращаем текст как есть, без шифрования
-    return { encrypted: text, iv: 'dummy' };
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return { encrypted, iv: iv.toString('hex') };
 }
 
 function decrypt(encrypted, ivHex) {
-    // Возвращаем текст как есть, без расшифровки
-    return encrypted;
+    try {
+        const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(ivHex, 'hex'));
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        // Очищаем от непечатаемых символов
+        return decrypted.replace(/[^\x20-\x7E]/g, '').trim();
+    } catch (error) {
+        console.error('❌ Ошибка расшифровки:', error.message);
+        return null;
+    }
 }
 
 // ============================================
