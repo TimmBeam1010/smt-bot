@@ -1,7 +1,4 @@
-// ============================================
-//  ФАБРИКА БИРЖ
-// ============================================
-
+// shared/exchanges/index.js
 const BingXExchange = require('./bingx');
 
 function getExchange(exchange, apiKey, secretKey) {
