@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ BINGX (ФЬЮЧЕРСЫ) - ИСПРАВЛЕННЫЙ
+//  МОДУЛЬ BINGX (ФЬЮЧЕРСЫ) - ОКОНЧАТЕЛЬНОЕ ИСПРАВЛЕНИЕ
 // ============================================
 
 const crypto = require('crypto');
@@ -43,18 +43,19 @@ class BingXExchange {
         }
     }
 
-    // Создание ордера (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+    // Создание ордера (ПАРАМЕТРЫ В QUERY STRING)
     async placeOrder(symbol, side, quantity, price = null) {
         try {
             const timestamp = Date.now().toString();
             const formattedSymbol = symbol.replace('-', '_');
 
-            // Параметры с recvWindow (обязательно для подписи)
+            // Параметры для query string
             const params = {
                 quantity: quantity.toString(),
                 recvWindow: '5000',
                 side: side,
                 symbol: formattedSymbol,
+                timestamp: timestamp,
                 type: 'MARKET'
             };
 
@@ -66,27 +67,26 @@ class BingXExchange {
                 queryString += `${key}=${params[key]}`;
             }
 
-            // ПОДПИСЬ: timestamp + queryString
-            const payload = timestamp + queryString;
+            // ПОДПИСЬ: queryString (включая timestamp)
             const signature = crypto.createHmac('sha256', this.secretKey)
-                .update(payload)
+                .update(queryString)
                 .digest('hex');
 
-            console.log('📝 Подпись для ордера:', {
-                timestamp,
+            // Добавляем подпись в query string
+            const fullQueryString = queryString + '&signature=' + signature;
+
+            console.log('📝 Подпись для ордера (query string):', {
                 queryString,
                 signature,
-                payload
+                fullQueryString
             });
 
-            // Эндпоинт для фьючерсов (v2)
-            const url = 'https://open-api.bingx.com/openApi/swap/v2/trade/order';
+            // Эндпоинт с параметрами в query string
+            const url = `https://open-api.bingx.com/openApi/swap/v2/trade/order?${fullQueryString}`;
 
-            const response = await axios.post(url, params, {
+            const response = await axios.post(url, null, {
                 headers: {
                     'X-BX-APIKEY': this.apiKey,
-                    'X-BX-SIGNATURE': signature,
-                    'X-BX-TIMESTAMP': timestamp,
                     'Content-Type': 'application/json'
                 },
                 timeout: 10000
@@ -102,7 +102,7 @@ class BingXExchange {
                     status: 'filled'
                 };
             }
-            console.error('❌ BingX: Ошибка ордера', response.data);
+            console.error('❌ BingX: Ошибка ордера (query string)', response.data);
             return null;
         } catch (error) {
             console.error('❌ BingX: Ошибка placeOrder', error.response?.data || error.message);
