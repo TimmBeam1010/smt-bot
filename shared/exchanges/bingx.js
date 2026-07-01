@@ -88,21 +88,21 @@ class BingXExchange {
                 queryString += `${key}=${params[key]}`;
             }
     
-            // ПОДПИСЬ: timestamp + queryString
-            const payload = timestamp + queryString;
+            // Подпись: timestamp + queryString
+            const payload = timestamp + '&' + queryString;
             const signature = crypto.createHmac('sha256', this.secretKey)
                 .update(payload)
                 .digest('hex');
     
-            console.log('📝 Подпись для ордера:', {
+            console.log('📝 Подпись для ордера (v1):', {
                 timestamp,
                 queryString,
                 signature,
                 payload
             });
     
-            // ЭНДПОИНТ: v2 для фьючерсов
-            const url = 'https://open-api.bingx.com/openApi/swap/v2/trade/order';
+            // Пробуем v1 эндпоинт
+            const url = 'https://open-api.bingx.com/openApi/swap/v1/trade/order';
     
             const response = await axios.post(url, params, {
                 headers: {
@@ -124,7 +124,7 @@ class BingXExchange {
                     status: 'filled'
                 };
             }
-            console.error('❌ BingX: Ошибка ордера', response.data);
+            console.error('❌ BingX: Ошибка ордера (v1)', response.data);
             return null;
         } catch (error) {
             console.error('❌ BingX: Ошибка placeOrder', error.response?.data || error.message);
