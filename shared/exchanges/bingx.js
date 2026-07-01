@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ BINGX (РУЧНАЯ ПОДПИСЬ)
+//  МОДУЛЬ BINGX (РУЧНАЯ ПОДПИСЬ - FULL FIX)
 // ============================================
 
 const crypto = require('crypto');
@@ -13,29 +13,38 @@ class BingXExchange {
         this.baseURL = 'https://open-api.bingx.com';
     }
 
-    // Генерация подписи
+    /**
+     * Генерация подписи для BingX API
+     * @param {Object} params - параметры запроса
+     * @param {string} timestamp - временная метка
+     * @returns {string} - подпись в hex формате
+     */
     _generateSignature(params, timestamp) {
-        // Сортируем параметры
+        // Сортируем параметры по алфавиту
         const sortedParams = Object.keys(params)
             .sort()
             .map(key => `${key}=${params[key]}`)
             .join('&');
         
-        // Строка для подписи: timestamp + sortedParams
+        // Строка для подписи: timestamp + параметры
         const signatureString = `${timestamp}${sortedParams}`;
         
-        // HMAC-SHA256
+        console.log('🔐 Строка для подписи:', signatureString.substring(0, 100) + '...');
+        
+        // Генерируем HMAC-SHA256
         return crypto
             .createHmac('sha256', this.secretKey)
             .update(signatureString)
             .digest('hex');
     }
 
-    // HTTP-запрос с подписью
+    /**
+     * Выполнение подписанного запроса к API
+     */
     async _signedRequest(method, endpoint, params = {}) {
         const timestamp = Date.now().toString();
         
-        // Добавляем обязательные параметры
+        // Объединяем параметры
         const allParams = {
             ...params,
             timestamp: timestamp
@@ -44,39 +53,60 @@ class BingXExchange {
         // Генерируем подпись
         const signature = this._generateSignature(allParams, timestamp);
         
-        // URL с параметрами
+        // Формируем URL
         const url = `${this.baseURL}${endpoint}`;
-        const queryString = Object.keys(allParams)
-            .map(key => `${key}=${encodeURIComponent(allParams[key])}`)
-            .join('&');
-
-        const fullUrl = method === 'GET' ? `${url}?${queryString}` : url;
+        
+        // Параметры для строки запроса (GET) или тела (POST)
+        const requestParams = {
+            ...allParams,
+            signature: signature
+        };
 
         const headers = {
             'X-BX-APIKEY': this.apiKey,
             'Content-Type': 'application/json'
         };
 
-        const config = {
+        let config = {
             method: method,
-            url: fullUrl,
+            url: url,
             headers: headers
         };
 
-        if (method === 'POST') {
-            config.data = allParams;
+        if (method === 'GET') {
+            // Для GET - параметры в строке запроса
+            const queryString = Object.keys(requestParams)
+                .map(key => `${key}=${encodeURIComponent(requestParams[key])}`)
+                .join('&');
+            config.url = `${url}?${queryString}`;
+        } else if (method === 'POST') {
+            // Для POST - параметры в теле
+            config.data = requestParams;
         }
 
         try {
+            console.log(`📡 ${method} запрос к ${endpoint}`);
             const response = await axios(config);
+            
+            // Логируем ответ для отладки
+            if (response.data && response.data.code !== 0) {
+                console.error(`⚠️ Ответ с ошибкой:`, response.data);
+            }
+            
             return response.data;
         } catch (error) {
-            console.error(`❌ BingX: Ошибка запроса ${endpoint}`, error.response?.data || error.message);
+            console.error(`❌ BingX: Ошибка запроса ${endpoint}`, {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
             throw error;
         }
     }
 
-    // Получение баланса (фьючерсы)
+    /**
+     * Получение баланса фьючерсного счёта
+     */
     async getBalance() {
         try {
             const response = await this._signedRequest(
@@ -85,13 +115,25 @@ class BingXExchange {
             );
 
             if (response && response.code === 0) {
-                const usdtData = response.data?.balance?.find(item => item.asset === 'USDT');
+                // Проверяем структуру ответа
+                const balanceData = response.data?.balance || response.data || [];
+                
+                // Ищем USDT
+                const usdtData = Array.isArray(balanceData) 
+                    ? balanceData.find(item => item.asset === 'USDT')
+                    : null;
+                
                 if (usdtData) {
-                    return parseFloat(usdtData.equity) || parseFloat(usdtData.balance) || 0;
+                    const balance = parseFloat(usdtData.equity) || parseFloat(usdtData.balance) || 0;
+                    console.log(`💰 Баланс USDT: $${balance}`);
+                    return balance;
                 }
+                
+                console.log('ℹ️ USDT не найден в балансе', balanceData);
                 return 0;
             }
-            console.error('❌ BingX: Ошибка баланса', response);
+            
+            console.error('❌ BingX: Ошибка получения баланса', response);
             return null;
         } catch (error) {
             console.error('❌ BingX: Ошибка getBalance', error.message);
@@ -99,29 +141,38 @@ class BingXExchange {
         }
     }
 
-    // Создание ордера (фьючерсы)
+    /**
+     * Создание ордера на фьючерсном рынке
+     */
     async placeOrder(symbol, side, quantity, price = null) {
         try {
-            // Формат символа для фьючерсов
+            // Формат символа для фьючерсов BTC_USDT
             const symbolFormatted = symbol.replace('-', '_');
 
+            // Базовые параметры ордера
             const params = {
                 symbol: symbolFormatted,
-                side: side, // BUY или SELL
+                side: side, // 'BUY' или 'SELL'
                 type: 'MARKET',
                 quantity: quantity.toString(),
-                positionSide: 'LONG' // или 'SHORT' в зависимости от side
+                positionSide: side === 'BUY' ? 'LONG' : 'SHORT',
+                recvWindow: '5000'
             };
 
-            // Для LIMIT ордеров добавляем цену
-            if (price && params.type === 'LIMIT') {
+            // Если указана цена и тип LIMIT
+            if (price && price > 0) {
+                params.type = 'LIMIT';
                 params.price = price.toString();
             }
 
-            // Добавляем recvWindow (обязательно для фьючерсов)
-            params.recvWindow = '5000';
-
-            console.log('📝 Отправка ордера:', { ...params, timestamp: '***' });
+            console.log('📝 Параметры ордера:', {
+                symbol: params.symbol,
+                side: params.side,
+                type: params.type,
+                quantity: params.quantity,
+                positionSide: params.positionSide,
+                price: params.price || 'MARKET'
+            });
 
             const response = await this._signedRequest(
                 'POST',
@@ -130,27 +181,124 @@ class BingXExchange {
             );
 
             if (response && response.code === 0) {
+                const orderData = response.data;
+                console.log(`✅ Ордер создан: ${orderData.orderId}`);
+                
                 return {
-                    orderId: response.data.orderId,
+                    orderId: orderData.orderId,
                     symbol: symbol,
                     side: side,
                     quantity: quantity,
-                    price: price,
-                    status: 'filled'
+                    price: price || parseFloat(orderData.price) || 0,
+                    status: orderData.status || 'filled',
+                    executedQty: parseFloat(orderData.executedQty) || 0,
+                    avgPrice: parseFloat(orderData.avgPrice) || 0
                 };
             }
-            console.error('❌ BingX: Ошибка ордера', response);
+            
+            console.error('❌ BingX: Ошибка создания ордера', {
+                code: response?.code,
+                msg: response?.msg,
+                fullResponse: response
+            });
             return null;
         } catch (error) {
-            console.error('❌ BingX: Ошибка placeOrder', error.response?.data || error.message);
+            console.error('❌ BingX: Ошибка placeOrder', {
+                message: error.message,
+                response: error.response?.data,
+                stack: error.stack
+            });
             return null;
         }
     }
 
-    // Проверка ключей
+    /**
+     * Проверка действительности API ключей
+     */
     async testCredentials() {
-        const balance = await this.getBalance();
-        return balance !== null && balance !== undefined;
+        try {
+            const balance = await this.getBalance();
+            const isValid = balance !== null && balance !== undefined;
+            console.log(`🔑 Проверка ключей: ${isValid ? '✅ OK' : '❌ FAIL'}`);
+            return isValid;
+        } catch (error) {
+            console.error('❌ Ошибка проверки ключей:', error.message);
+            return false;
+        }
+    }
+
+    /**
+     * Отмена ордера
+     */
+    async cancelOrder(symbol, orderId) {
+        try {
+            const symbolFormatted = symbol.replace('-', '_');
+            
+            const params = {
+                symbol: symbolFormatted,
+                orderId: orderId,
+                recvWindow: '5000'
+            };
+
+            const response = await this._signedRequest(
+                'POST',
+                '/openApi/swap/v3/trade/cancelOrder',
+                params
+            );
+
+            if (response && response.code === 0) {
+                console.log(`✅ Ордер ${orderId} отменён`);
+                return true;
+            }
+            
+            console.error('❌ Ошибка отмены ордера:', response);
+            return false;
+        } catch (error) {
+            console.error('❌ Ошибка cancelOrder:', error.message);
+            return false;
+        }
+    }
+
+    /**
+     * Получение информации о позиции
+     */
+    async getPosition(symbol) {
+        try {
+            const symbolFormatted = symbol.replace('-', '_');
+            
+            const params = {
+                symbol: symbolFormatted,
+                recvWindow: '5000'
+            };
+
+            const response = await this._signedRequest(
+                'GET',
+                '/openApi/swap/v3/position/list',
+                params
+            );
+
+            if (response && response.code === 0) {
+                const positions = response.data || [];
+                const position = positions.find(p => p.symbol === symbolFormatted);
+                
+                if (position) {
+                    return {
+                        symbol: symbol,
+                        size: parseFloat(position.positionAmt) || 0,
+                        entryPrice: parseFloat(position.entryPrice) || 0,
+                        markPrice: parseFloat(position.markPrice) || 0,
+                        pnl: parseFloat(position.unRealizedProfit) || 0
+                    };
+                }
+                return null;
+            }
+            
+            console.error('❌ Ошибка получения позиции:', response);
+            return null;
+        } catch (error) {
+            console.error('❌ Ошибка getPosition:', error.message);
+            return null;
+        }
     }
 }
 
