@@ -28,6 +28,15 @@ module.exports = {
             env: {
                 NODE_ENV: 'production'
             }
+        },
+        {
+            name: 'trade-executor',
+            script: 'bots/trade-executor/index.js',
+            instances: 1,
+            watch: false,
+            env: {
+                NODE_ENV: 'production'
+            }
         }
     ]
 };
