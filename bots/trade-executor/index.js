@@ -42,7 +42,7 @@ async function checkNewSignals() {
             .select('*')
             .eq('executed', false)
             .order('created_at', { ascending: true })
-            .limit(MAX_SIGNALS_PER_BATCH); // Берём только 5 сигналов за раз
+            .limit(MAX_SIGNALS_PER_BATCH);
 
         if (error) {
             console.error('❌ Trade Executor: Ошибка получения сигналов:', error);
@@ -68,6 +68,9 @@ async function checkNewSignals() {
                     continue;
                 }
 
+                // --- ЛОГИРОВАНИЕ ДОБАВЛЕНО ---
+                console.log(`👤 Пользователь: ${user.email}, Ботов: ${user.bots?.length || 0}`);
+
                 const bots = user.bots || [];
                 const activeBots = bots.filter(bot => 
                     bot.active && 
@@ -75,13 +78,18 @@ async function checkNewSignals() {
                     (bot.mode === 'auto_trade' || bot.mode === 'hybrid')
                 );
 
+                // --- ЛОГИРОВАНИЕ АКТИВНЫХ БОТОВ ---
+                console.log(`🤖 Активных ботов в режиме auto_trade/hybrid: ${activeBots.length}`);
+
                 if (activeBots.length === 0) {
+                    console.log(`⚠️ Trade Executor: Нет активных ботов для пользователя ${user.email}`);
                     continue;
                 }
 
                 for (const bot of activeBots) {
                     const signalLevels = bot.risk?.signal_levels || ['low', 'medium', 'high'];
                     if (!signalLevels.includes(signal.confidence)) {
+                        console.log(`⏭️ Trade Executor: Уровень сигнала ${signal.confidence} не подходит для бота ${bot.name}`);
                         continue;
                     }
 
@@ -94,7 +102,6 @@ async function checkNewSignals() {
                         console.log(`⚠️ Trade Executor: Сделка не открыта: ${result.reason}`);
                     }
 
-                    // Задержка между ордерами
                     await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ORDERS));
                 }
 
