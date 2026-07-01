@@ -226,6 +226,56 @@ app.get('/api/bot/list/:email', async (req, res) => {
 });
 
 // ============================================
+//  ПРОКСИ ДЛЯ EXCHANGE CONNECTOR
+// ============================================
+
+const EXCHANGE_CONNECTOR_URL = 'http://localhost:5001';
+
+// Прокси для подключения биржи
+app.post('/api/exchange/connect', async (req, res) => {
+    try {
+        const response = await axios.post(`${EXCHANGE_CONNECTOR_URL}/api/exchange/connect`, req.body);
+        res.json(response.data);
+    } catch (error) {
+        console.error('❌ Ошибка прокси exchange/connect:', error.message);
+        res.status(error.response?.status || 500).json(error.response?.data || { error: 'Ошибка подключения биржи' });
+    }
+});
+
+// Прокси для списка бирж
+app.get('/api/exchange/list/:email', async (req, res) => {
+    try {
+        const response = await axios.get(`${EXCHANGE_CONNECTOR_URL}/api/exchange/list/${req.params.email}`);
+        res.json(response.data);
+    } catch (error) {
+        console.error('❌ Ошибка прокси exchange/list:', error.message);
+        res.status(error.response?.status || 500).json(error.response?.data || { error: 'Ошибка получения списка бирж' });
+    }
+});
+
+// Прокси для отключения биржи
+app.post('/api/exchange/disconnect', async (req, res) => {
+    try {
+        const response = await axios.post(`${EXCHANGE_CONNECTOR_URL}/api/exchange/disconnect`, req.body);
+        res.json(response.data);
+    } catch (error) {
+        console.error('❌ Ошибка прокси exchange/disconnect:', error.message);
+        res.status(error.response?.status || 500).json(error.response?.data || { error: 'Ошибка отключения биржи' });
+    }
+});
+
+// Прокси для баланса
+app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
+    try {
+        const response = await axios.get(`${EXCHANGE_CONNECTOR_URL}/api/exchange/balance/${req.params.email}/${req.params.exchange}`);
+        res.json(response.data);
+    } catch (error) {
+        console.error('❌ Ошибка прокси exchange/balance:', error.message);
+        res.status(error.response?.status || 500).json(error.response?.data || { error: 'Ошибка получения баланса' });
+    }
+});
+
+// ============================================
 //  ЗАПУСК СЕРВЕРА
 // ============================================
 
