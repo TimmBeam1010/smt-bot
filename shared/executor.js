@@ -136,8 +136,16 @@ function calculatePositionSize(balance, riskPercent, stopLossPercent, entryPrice
     const stopLossPrice = entryPrice * (1 - stopLossPercent / 100);
     const priceDiff = entryPrice - stopLossPrice;
     const quantity = riskAmount / priceDiff;
+    
+    // Округляем до 8 знаков для BTC (минимальный шаг 0.00001)
+    const roundedQuantity = Math.round(quantity * 100000000) / 100000000;
+    
+    // Минимальный размер ордера для BTC на BingX - 0.0001
+    const minQuantity = 0.0001;
+    const finalQuantity = Math.max(roundedQuantity, minQuantity);
+    
     return {
-        quantity: Math.round(quantity * 100) / 100,
+        quantity: finalQuantity,
         stopLoss: Math.round(stopLossPrice * 100) / 100,
         takeProfit: Math.round(entryPrice * (1 + stopLossPercent * 2 / 100) * 100) / 100
     };
