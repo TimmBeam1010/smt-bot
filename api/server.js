@@ -276,6 +276,98 @@ app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
 });
 
 // ============================================
+//  МАРШРУТЫ ДЛЯ СОЗДАНИЯ БОТА
+// ============================================
+
+app.post('/api/bot/create', async (req, res) => {
+    try {
+        const { email, config } = req.body;
+
+        if (!email || !config) {
+            return res.status(400).json({ error: 'Email и конфигурация бота обязательны' });
+        }
+
+        // Получаем пользователя
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id, email, connected_exchanges, bots')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        // Проверяем, что биржа подключена
+        const connectedExchanges = (user.connected_exchanges || []).map(e => e.trim());
+        if (connectedExchanges.length === 0) {
+            return res.status(400).json({ error: 'Необходимо подключить хотя бы одну биржу' });
+        }
+
+        if (!connectedExchanges.includes(config.exchange)) {
+            return res.status(400).json({
+                error: `Биржа ${config.exchange} не подключена. Доступны: ${connectedExchanges.join(', ')}`
+            });
+        }
+
+        // Создаём нового бота
+        const newBot = {
+            id: `bot_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            name: config.name.trim(),
+            exchange: config.exchange,
+            mode: config.mode,
+            active: true,
+            paused: false,
+            strategies: config.strategies.map(s => ({
+                id: s,
+                enabled: true,
+                params: {}
+            })),
+            symbols: config.symbols || [],
+            risk: {
+                max_positions: config.risk?.max_positions || 3,
+                risk_percent: config.risk?.risk_percent || 2.0,
+                stop_loss_percent: config.risk?.stop_loss_percent || 1.5,
+                take_profit_percent: config.risk?.take_profit_percent || 3.0,
+                trailing_stop: config.risk?.trailing_stop || false,
+                signal_levels: config.risk?.signal_levels || ['low', 'medium', 'high']
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            stats: {
+                total_signals: 0,
+                total_trades: 0,
+                win_rate: 0,
+                pnl: 0
+            }
+        };
+
+        const bots = [...(user.bots || []), newBot];
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ bots, updated_at: new Date() })
+            .eq('email', email)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        delete updatedUser.password;
+        res.json({
+            success: true,
+            message: `Бот "${newBot.name}" успешно создан`,
+            bot: newBot,
+            user: updatedUser
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка создания бота:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
 //  ЗАПУСК СЕРВЕРА
 // ============================================
 
