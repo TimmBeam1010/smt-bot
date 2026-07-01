@@ -72,24 +72,31 @@ class BingXExchange {
         try {
             const timestamp = Date.now().toString();
             const formattedSymbol = symbol.replace('-', '_');
-
+    
             const params = {
                 symbol: formattedSymbol,
                 side: side,
                 type: 'MARKET',
                 quantity: quantity.toString()
             };
-
+    
+            // Сортируем параметры для подписи
             const sortedKeys = Object.keys(params).sort();
-            const queryString = sortedKeys.map(key => `${key}=${params[key]}`).join('&');
-
+            let queryString = '';
+            for (const key of sortedKeys) {
+                if (queryString) queryString += '&';
+                queryString += `${key}=${params[key]}`;
+            }
+    
+            // ПОДПИСЬ: timestamp + queryString
             const payload = timestamp + queryString;
             const signature = crypto.createHmac('sha256', this.secretKey)
                 .update(payload)
                 .digest('hex');
-
+    
+            // ЭНДПОИНТ: v2 для фьючерсов
             const url = 'https://open-api.bingx.com/openApi/swap/v2/trade/order';
-
+    
             const response = await axios.post(url, params, {
                 headers: {
                     'X-BX-APIKEY': this.apiKey,
@@ -99,7 +106,7 @@ class BingXExchange {
                 },
                 timeout: 10000
             });
-
+    
             if (response.data?.code === 0) {
                 return {
                     orderId: response.data.data.orderId,
