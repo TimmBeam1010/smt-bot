@@ -34,35 +34,24 @@ class BingXExchange {
     }
 
     async placeOrder(symbol, side, quantity, price = null) {
+        console.log('🔍 placeOrder получил price:', price, 'тип:', typeof price);
         try {
-            const symbolFormatted = symbol.replace('-', '_');
-            const orderParams = {
+            const symbolFormatted = symbol.replace('_', '-');
+            const params = {
                 symbol: symbolFormatted,
                 side: side,
-                type: price ? 'LIMIT' : 'MARKET',
+                type: 'MARKET',
                 quantity: quantity.toString()
             };
-            if (price) {
-                orderParams.price = price.toString();
-                orderParams.positionSide = side === 'BUY' ? 'LONG' : 'SHORT';
+            // positionSide и recvWindow ТОЛЬКО для LIMIT ордеров
+            if (price && price > 0) {
+                params.type = 'LIMIT';
+                params.price = price.toString();
+                params.positionSide = side === 'BUY' ? 'LONG' : 'SHORT';
+                params.recvWindow = '5000';
             }
-            console.log('📤 Отправка ордера через библиотеку:', orderParams);
-            const response = await this.client.trade.order(orderParams);
-            if (response?.code === 0) {
-                return {
-                    orderId: response.data.orderId,
-                    symbol: symbol,
-                    side: side,
-                    quantity: quantity,
-                    price: price,
-                    status: 'filled'
-                };
-            }
-            console.error('❌ Ошибка ордера:', response);
-            return null;
-        } catch (error) {
-            console.error('❌ Ошибка placeOrder:', error.message);
-            return null;
+            const response = await this._signedPost('/openApi/swap/v2/trade/order', params);
+            // ...
         }
     }
 
