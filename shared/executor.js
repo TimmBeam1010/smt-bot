@@ -1,22 +1,15 @@
 // ============================================
-//  ИСПОЛНИТЕЛЬ ТОРГОВЫХ СИГНАЛОВ (EXECUTOR)
+//  ИСПОЛНИТЕЛЬ СДЕЛОК (EXECUTOR)
 // ============================================
 
-const axios = require('axios');
-const crypto = require('crypto');
-const { decrypt } = require('./exchange');
+const { getExchange } = require('./exchanges');
 
 /**
  * Исполнение сигнала (открытие сделки)
- * @param {object} signal - Сигнал из БД
- * @param {object} bot - Конфигурация бота
- * @param {object} user - Пользователь (с ключами)
- * @param {object} supabase - Инстанс Supabase
- * @returns {Promise<object>} - Результат исполнения
  */
 async function executeSignal(signal, bot, user, supabase) {
     try {
-        // 1. Проверяем, что бот активен и не на паузе
+        // 1. Проверяем, что бот активен
         if (!bot.active || bot.paused) {
             return { executed: false, reason: 'Бот не активен или на паузе' };
         }
@@ -26,20 +19,19 @@ async function executeSignal(signal, bot, user, supabase) {
             return { executed: false, reason: 'Режим бота не предусматривает автоторговлю' };
         }
 
-        // 3. Проверяем наличие API-ключей
+        // 3. Получаем ключи пользователя
         const exchange = bot.exchange;
         const credentials = user.exchange_credentials?.[exchange];
-        if (!credentials || !credentials.api_key_encrypted || !credentials.secret_key_encrypted) {
+        if (!credentials || !credentials.api_key) {
             return { executed: false, reason: `Нет API-ключей для ${exchange}` };
         }
 
-        // 4. Расшифровываем ключи
-        const apiKey = decrypt(credentials.api_key_encrypted, credentials.iv);
-        const secretKey = decrypt(credentials.secret_key_encrypted, credentials.iv);
+        // 4. Создаём клиент биржи через фабрику
+        const exchangeClient = getExchange(exchange, credentials.api_key, credentials.secret_key);
 
-        // 5. Получаем текущий баланс пользователя
-        const balance = await getExchangeBalance(exchange, apiKey, secretKey);
-        if (balance === null) {
+        // 5. Получаем баланс
+        const balance = await exchangeClient.getBalance();
+        if (balance === null || balance === undefined) {
             return { executed: false, reason: 'Не удалось получить баланс' };
         }
 
@@ -59,14 +51,11 @@ async function executeSignal(signal, bot, user, supabase) {
         // 7. Определяем сторону ордера
         const orderSide = signal.side === 'LONG' ? 'BUY' : 'SELL';
 
-        // 8. Отправляем ордер на биржу
+        // 8. Отправляем ордер
         console.log(`📊 Исполнение ${signal.side} для ${signal.symbol} на ${exchange}: ${position.quantity} по ${entryPrice}`);
         console.log(`   Стоп-лосс: ${position.stopLoss}, Тейк-профит: ${position.takeProfit}`);
 
-        const orderResult = await placeOrder(
-            exchange,
-            apiKey,
-            secretKey,
+        const orderResult = await exchangeClient.placeOrder(
             signal.symbol,
             orderSide,
             position.quantity,
@@ -135,195 +124,6 @@ function calculatePositionSize(balance, riskPercent, stopLossPercent, entryPrice
         stopLoss: Math.round(stopLossPrice * 100) / 100,
         takeProfit: Math.round(entryPrice * (1 + stopLossPercent * 2 / 100) * 100) / 100
     };
-}
-
-/**
- * Получение баланса с биржи
- */
-async function getExchangeBalance(exchange, apiKey, secretKey) {
-    try {
-        switch (exchange) {
-            case 'bingx':
-                return await getBingXBalance(apiKey, secretKey);
-            case 'binance':
-                return await getBinanceBalance(apiKey, secretKey);
-            default:
-                return null;
-        }
-    } catch (error) {
-        console.error(`❌ Ошибка получения баланса ${exchange}:`, error.message);
-        return null;
-    }
-}
-
-/**
- * Баланс BingX
- */
-async function getBingXBalance(apiKey, secretKey) {
-    try {
-        const crypto = require('crypto');
-        const axios = require('axios');
-
-        const timestamp = Date.now().toString();
-        const payload = `timestamp=${timestamp}`;
-        const signature = crypto.createHmac('sha256', secretKey)
-            .update(payload)
-            .digest('hex');
-
-        const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
-
-        const response = await axios.get(url, {
-            headers: { 'X-BX-APIKEY': apiKey },
-            timeout: 10000
-        });
-
-        if (response.data && response.data.code === 0 && response.data.data) {
-            const usdtData = response.data.data.find(item => item.asset === 'USDT');
-            if (usdtData) {
-                return parseFloat(usdtData.equity) || parseFloat(usdtData.balance) || 0;
-            }
-            return 0;
-        }
-        return 0;
-    } catch (error) {
-        console.error('❌ Ошибка получения баланса BingX:', error.message);
-        return null;
-    }
-}
-
-/**
- * Баланс Binance
- */
-async function getBinanceBalance(apiKey, secretKey) {
-    const timestamp = Date.now();
-    const signature = crypto.createHmac('sha256', secretKey)
-        .update(`timestamp=${timestamp}&recvWindow=5000`)
-        .digest('hex');
-
-    const response = await axios.get(
-        `https://api.binance.com/api/v3/account?timestamp=${timestamp}&signature=${signature}`,
-        { headers: { 'X-MBX-APIKEY': apiKey }, timeout: 10000 }
-    );
-
-    if (response.data && response.data.balances) {
-        const usdtBalance = response.data.balances.find(b => b.asset === 'USDT');
-        return usdtBalance ? parseFloat(usdtBalance.free) : 0;
-    }
-    return null;
-}
-
-/**
- * Создание ордера на бирже
- */
-async function placeOrder(exchange, apiKey, secretKey, symbol, side, quantity, price) {
-    try {
-        switch (exchange) {
-            case 'bingx':
-                return await placeBingXOrder(apiKey, secretKey, symbol, side, quantity, price);
-            case 'binance':
-                return await placeBinanceOrder(apiKey, secretKey, symbol, side, quantity, price);
-            default:
-                return null;
-        }
-    } catch (error) {
-        console.error(`❌ Ошибка создания ордера ${exchange}:`, error.message);
-        return null;
-    }
-}
-
-/**
- * Ордер на BingX
- */
-async function placeBingXOrder(apiKey, secretKey, symbol, side, quantity, price) {
-    const timestamp = Date.now().toString();
-    const formattedSymbol = symbol.replace('-', '_');
-
-    // Для BingX используем рыночный ордер
-    const params = {
-        symbol: formattedSymbol,
-        side: side,
-        type: 'MARKET',
-        quantity: quantity.toString()
-    };
-
-    const queryString = Object.keys(params)
-        .sort()
-        .map(key => `${key}=${params[key]}`)
-        .join('&');
-
-    const signature = crypto.createHmac('sha256', secretKey)
-        .update(timestamp + queryString)
-        .digest('hex');
-
-    const response = await axios.post(
-        'https://open-api.bingx.com/openApi/spot/v1/trade/order',
-        params,
-        {
-            headers: {
-                'X-BX-APIKEY': apiKey,
-                'X-BX-SIGNATURE': signature,
-                'X-BX-TIMESTAMP': timestamp,
-                'Content-Type': 'application/json'
-            },
-            timeout: 10000
-        }
-    );
-
-    if (response.data && response.data.code === 0) {
-        return {
-            orderId: response.data.data.orderId,
-            symbol: symbol,
-            side: side,
-            quantity: quantity,
-            price: price,
-            status: 'filled'
-        };
-    }
-    return null;
-}
-
-/**
- * Ордер на Binance
- */
-async function placeBinanceOrder(apiKey, secretKey, symbol, side, quantity, price) {
-    const timestamp = Date.now();
-    const formattedSymbol = symbol.replace('-', '');
-
-    const params = {
-        symbol: formattedSymbol,
-        side: side,
-        type: 'MARKET',
-        quantity: quantity,
-        timestamp: timestamp,
-        recvWindow: 5000
-    };
-
-    const queryString = Object.keys(params)
-        .sort()
-        .map(key => `${key}=${params[key]}`)
-        .join('&');
-
-    const signature = crypto.createHmac('sha256', secretKey)
-        .update(queryString)
-        .digest('hex');
-
-    const response = await axios.post(
-        `https://api.binance.com/api/v3/order?${queryString}&signature=${signature}`,
-        {},
-        { headers: { 'X-MBX-APIKEY': apiKey }, timeout: 10000 }
-    );
-
-    if (response.data && response.data.orderId) {
-        return {
-            orderId: response.data.orderId,
-            symbol: symbol,
-            side: side,
-            quantity: quantity,
-            price: price,
-            status: response.data.status
-        };
-    }
-    return null;
 }
 
 module.exports = {
