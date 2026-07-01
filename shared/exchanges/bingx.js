@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ BINGX (ФЬЮЧЕРСЫ) - ИСПРАВЛЕННЫЙ
+//  МОДУЛЬ BINGX (ФЬЮЧЕРСЫ) - ОКОНЧАТЕЛЬНОЕ ИСПРАВЛЕНИЕ
 // ============================================
 
 const crypto = require('crypto');
@@ -43,17 +43,17 @@ class BingXExchange {
         }
     }
 
-    // Создание ордера (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+    // Создание ордера (ПАРАМЕТРЫ В ТЕЛЕ, ПОДПИСЬ В ЗАГОЛОВКЕ)
     async placeOrder(symbol, side, quantity, price = null) {
         try {
             const timestamp = Date.now().toString();
             const formattedSymbol = symbol.replace('-', '_');
 
-            // Параметры для v2 эндпоинта с обязательным positionSide
+            // Параметры для тела запроса
             const params = {
                 symbol: formattedSymbol,
-                side: side, // "BUY" или "SELL"
-                positionSide: side === "BUY" ? "LONG" : "SHORT", // КРИТИЧЕСКИ ВАЖНО
+                side: side,
+                positionSide: side === "BUY" ? "LONG" : "SHORT",
                 type: 'MARKET',
                 quantity: quantity.toString(),
                 timestamp: timestamp,
@@ -73,21 +73,19 @@ class BingXExchange {
                 .update(queryString)
                 .digest('hex');
 
-            // Добавляем подпись в query string
-            const fullQueryString = queryString + '&signature=' + signature;
-
-            console.log('📝 Подпись для ордера (v2 с positionSide):', {
-                queryString,
+            console.log('📝 Подпись для ордера (тело запроса):', {
+                params,
                 signature,
-                fullQueryString
+                queryString
             });
 
-            // ПРАВИЛЬНЫЙ ЭНДПОИНТ
-            const url = `https://open-api.bingx.com/openApi/swap/v2/trade/order?${fullQueryString}`;
+            const url = 'https://open-api.bingx.com/openApi/swap/v2/trade/order';
 
-            const response = await axios.post(url, null, {
+            const response = await axios.post(url, params, {
                 headers: {
                     'X-BX-APIKEY': this.apiKey,
+                    'X-BX-SIGNATURE': signature,
+                    'X-BX-TIMESTAMP': timestamp,
                     'Content-Type': 'application/json'
                 },
                 timeout: 10000
@@ -103,7 +101,7 @@ class BingXExchange {
                     status: 'filled'
                 };
             }
-            console.error('❌ BingX: Ошибка ордера (v2)', response.data);
+            console.error('❌ BingX: Ошибка ордера (тело запроса)', response.data);
             return null;
         } catch (error) {
             console.error('❌ BingX: Ошибка placeOrder', error.response?.data || error.message);
