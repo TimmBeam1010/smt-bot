@@ -1,0 +1,120 @@
+// ============================================
+//  МОДУЛЬ АВТОТОРГОВЛИ (TRADE EXECUTOR)
+// ============================================
+
+const { createClient } = require('@supabase/supabase-js');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
+// === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
+const WebSocket = require('ws');
+global.WebSocket = WebSocket;
+// =============================================
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error("❌ Ошибка: SUPABASE_URL и SUPABASE_KEY не заданы");
+    process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+console.log("✅ Trade Executor: Подключение к Supabase установлено");
+
+// ============================================
+//  ИМПОРТ ОБЩЕЙ ЛОГИКИ
+// ============================================
+
+const { executeSignal } = require('../../shared/executor');
+
+// ============================================
+//  МОНИТОРИНГ НОВЫХ СИГНАЛОВ
+// ============================================
+
+let lastSignalCheck = new Date(0);
+
+async function checkNewSignals() {
+    try {
+        // Получаем новые сигналы (не исполненные)
+        const { data: signals, error } = await supabase
+            .from('signals')
+            .select('*')
+            .is('executed', false)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('❌ Trade Executor: Ошибка получения сигналов:', error);
+            return;
+        }
+
+        if (signals.length === 0) {
+            return;
+        }
+
+        console.log(`📡 Trade Executor: Найдено ${signals.length} новых сигналов`);
+
+        for (const signal of signals) {
+            try {
+                // Получаем пользователя и его ботов
+                const { data: user, error: userError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', signal.user_id)
+                    .single();
+
+                if (userError || !user) {
+                    console.error(`❌ Trade Executor: Пользователь ${signal.user_id} не найден`);
+                    continue;
+                }
+
+                // Проверяем, есть ли у пользователя активные боты в режиме auto_trade или hybrid
+                const bots = user.bots || [];
+                const activeBots = bots.filter(bot => 
+                    bot.active && 
+                    !bot.paused && 
+                    (bot.mode === 'auto_trade' || bot.mode === 'hybrid')
+                );
+
+                if (activeBots.length === 0) {
+                    continue;
+                }
+
+                // Для каждого активного бота
+                for (const bot of activeBots) {
+                    // Проверяем уровень сигнала
+                    const signalLevels = bot.risk?.signal_levels || ['low', 'medium', 'high'];
+                    if (!signalLevels.includes(signal.confidence)) {
+                        continue;
+                    }
+
+                    console.log(`📈 Trade Executor: Исполнение сигнала ${signal.symbol} для ${user.email}`);
+
+                    const result = await executeSignal(signal, bot, user, supabase);
+                    if (result.executed) {
+                        console.log(`✅ Trade Executor: Сделка открыта для ${user.email} (${signal.symbol})`);
+                    } else {
+                        console.log(`⚠️ Trade Executor: Сделка не открыта: ${result.reason}`);
+                    }
+                }
+
+            } catch (err) {
+                console.error(`❌ Trade Executor: Ошибка обработки сигнала ${signal.id}:`, err.message);
+            }
+        }
+
+    } catch (err) {
+        console.error('❌ Trade Executor: Ошибка в мониторинге:', err.message);
+    }
+}
+
+// ============================================
+//  ЗАПУСК МОНИТОРИНГА (каждые 10 секунд)
+// ============================================
+
+console.log('⏰ Trade Executor: Запущен (мониторинг каждые 10 секунд)');
+
+setInterval(checkNewSignals, 10000);
+
+// Первый запуск сразу
+checkNewSignals();
