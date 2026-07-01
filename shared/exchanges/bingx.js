@@ -1,41 +1,38 @@
 // ============================================
-//  МОДУЛЬ BINGX (ФЬЮЧЕРСЫ) - ФИНАЛ
+//  МОДУЛЬ BINGX (С ИСПОЛЬЗОВАНИЕМ БИБЛИОТЕКИ)
 // ============================================
 
-const crypto = require('crypto');
-const axios = require('axios');
+const BingXClient = require('bingx-api').default;
 
 class BingXExchange {
     constructor(apiKey, secretKey) {
         this.apiKey = apiKey;
         this.secretKey = secretKey;
         this.name = 'bingx';
+
+        // Создаём клиент для фьючерсов
+        this.client = new BingXClient({
+            apiKey: this.apiKey,
+            apiSecret: this.secretKey,
+            // Важно: указываем, что работаем с фьючерсами
+            baseURL: 'https://open-api.bingx.com'
+        });
     }
 
-    // Получение баланса
+    // Получение баланса (v3)
     async getBalance() {
         try {
-            const timestamp = Date.now().toString();
-            const payload = `timestamp=${timestamp}`;
-            const signature = crypto.createHmac('sha256', this.secretKey)
-                .update(payload)
-                .digest('hex');
-
-            const url = `https://open-api.bingx.com/openApi/swap/v3/user/balance?${payload}&signature=${signature}`;
-
-            const response = await axios.get(url, {
-                headers: { 'X-BX-APIKEY': this.apiKey },
-                timeout: 10000
-            });
-
-            if (response.data?.code === 0 && response.data?.data) {
-                const usdtData = response.data.data.find(item => item.asset === 'USDT');
+            // Используем метод библиотеки для получения баланса
+            const response = await this.client.futuresAccountBalance();
+            
+            if (response && response.code === 0 && response.data) {
+                const usdtData = response.data.find(item => item.asset === 'USDT');
                 if (usdtData) {
                     return parseFloat(usdtData.equity) || parseFloat(usdtData.balance) || 0;
                 }
                 return 0;
             }
-            console.error('❌ BingX: Ошибка баланса', response.data);
+            console.error('❌ BingX: Ошибка баланса', response);
             return null;
         } catch (error) {
             console.error('❌ BingX: Ошибка getBalance', error.message);
@@ -43,59 +40,31 @@ class BingXExchange {
         }
     }
 
-    // Создание ордера (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+    // Создание ордера
     async placeOrder(symbol, side, quantity, price = null) {
         try {
-            const timestamp = Date.now().toString();
-            const formattedSymbol = symbol.replace('-', '_');
-
-            const params = {
-                symbol: formattedSymbol,
-                side: side,
-                positionSide: side === "BUY" ? "LONG" : "SHORT",
-                type: 'MARKET',
+            // Подготовка параметров для библиотеки
+            const orderParams = {
+                symbol: symbol.replace('-', '_'), // Библиотека ждёт формат с подчёркиванием
+                side: side, // 'BUY' или 'SELL'
+                type: 'MARKET', // или 'LIMIT'
                 quantity: quantity.toString(),
-                timestamp: timestamp,
-                recvWindow: '5000'
+                // Для MARKET ордера price не нужен
             };
 
-            // Сортируем параметры для подписи (ИСКЛЮЧАЯ timestamp)
-            const paramsForSignature = { ...params };
-            delete paramsForSignature.timestamp;
-
-            const sortedKeys = Object.keys(paramsForSignature).sort();
-            let queryString = '';
-            for (const key of sortedKeys) {
-                if (queryString) queryString += '&';
-                queryString += `${key}=${paramsForSignature[key]}`;
+            // Если цена передана и тип LIMIT, добавляем её
+            if (price && orderParams.type === 'LIMIT') {
+                orderParams.price = price.toString();
             }
 
-            // ПОДПИСЬ: HMAC-SHA256 от queryString (без timestamp)
-            const signature = crypto.createHmac('sha256', this.secretKey)
-                .update(queryString)
-                .digest('hex');
+            console.log('📝 Отправка ордера через библиотеку:', orderParams);
 
-            console.log('📝 Подпись для ордера (финал):', {
-                params,
-                signature,
-                queryString
-            });
+            // Используем метод библиотеки для создания ордера
+            const response = await this.client.futuresPlaceOrder(orderParams);
 
-            const url = 'https://open-api.bingx.com/openApi/swap/v2/trade/order';
-
-            const response = await axios.post(url, params, {
-                headers: {
-                    'X-BX-APIKEY': this.apiKey,
-                    'X-BX-SIGNATURE': signature,
-                    'X-BX-TIMESTAMP': timestamp,
-                    'Content-Type': 'application/json'
-                },
-                timeout: 10000
-            });
-
-            if (response.data?.code === 0) {
+            if (response && response.code === 0) {
                 return {
-                    orderId: response.data.data.orderId,
+                    orderId: response.data.orderId,
                     symbol: symbol,
                     side: side,
                     quantity: quantity,
@@ -103,7 +72,7 @@ class BingXExchange {
                     status: 'filled'
                 };
             }
-            console.error('❌ BingX: Ошибка ордера (финал)', response.data);
+            console.error('❌ BingX: Ошибка ордера (библиотека)', response);
             return null;
         } catch (error) {
             console.error('❌ BingX: Ошибка placeOrder', error.response?.data || error.message);
