@@ -40,7 +40,7 @@ async function checkNewSignals() {
         const { data: signals, error } = await supabase
             .from('signals')
             .select('*')
-            .is('executed', false)
+            .eq('executed', false)
             .order('created_at', { ascending: true });
 
         if (error) {
