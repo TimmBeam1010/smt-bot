@@ -100,7 +100,7 @@ async function executeSignal(signal, bot, user, supabase) {
         }
 
         // 7. Рассчитываем позицию
-        const riskPercent = bot.risk?.risk_percent || 2.0;
+        const riskPercent = bot.risk?.risk_percent || 0.5;
         const stopLossPercent = bot.risk?.stop_loss_percent || 1.5;
         
         const position = calculatePositionSize(
