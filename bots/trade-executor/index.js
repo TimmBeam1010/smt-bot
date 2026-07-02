@@ -1,10 +1,15 @@
 // ============================================
-//  МОДУЛЬ АВТОТОРГОВЛИ (TRADE EXECUTOR)
+//  МОДУЛЬ АВТОТОРГОВЛИ (TRADE EXECUTOR) - с логгером и кешем
 // ============================================
 
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
+// Импорт логгера и кеша
+const { logger } = require('../../shared/logger');
+const cache = require('../../shared/cache');
+const log = logger('trade-executor');
 
 const notifier = require('../../shared/notifier');
 
@@ -17,12 +22,12 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-    console.error("❌ Ошибка: SUPABASE_URL и SUPABASE_KEY не заданы");
+    log.error('SUPABASE_URL и SUPABASE_KEY не заданы');
     process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-console.log("✅ Trade Executor: Подключение к Supabase установлено");
+log.info('✅ Подключение к Supabase установлено');
 
 // ============================================
 //  ИМПОРТ ОБЩЕЙ ЛОГИКИ
@@ -36,10 +41,12 @@ const { executeSignal } = require('../../shared/executor');
 
 const MAX_SIGNALS_PER_BATCH = 1;
 const DELAY_BETWEEN_ORDERS = 2000;
-let consecutiveErrors = 0; // Счетчик ошибок
-const MAX_CONSECUTIVE_ERRORS = 5; // Максимум ошибок подряд
+let consecutiveErrors = 0;
+const MAX_CONSECUTIVE_ERRORS = 5;
 
 async function checkNewSignals() {
+    log.debug('🔄 Проверка новых сигналов');
+
     try {
         const { data: signals, error } = await supabase
             .from('signals')
@@ -49,19 +56,18 @@ async function checkNewSignals() {
             .limit(MAX_SIGNALS_PER_BATCH);
 
         if (error) {
-            console.error('❌ Trade Executor: Ошибка получения сигналов:', error);
+            log.error('Ошибка получения сигналов', { error: error.message });
             await notifier.notifyError(`Ошибка получения сигналов: ${error.message}`, 'Supabase');
             consecutiveErrors++;
             return;
         }
 
-        // Если нет сигналов — сбрасываем счетчик ошибок
         if (signals.length === 0) {
             consecutiveErrors = 0;
             return;
         }
 
-        console.log(`📡 Trade Executor: Найдено ${signals.length} новых сигналов`);
+        log.info(`📡 Найдено ${signals.length} новых сигналов`);
 
         for (const signal of signals) {
             try {
@@ -72,13 +78,13 @@ async function checkNewSignals() {
                     .single();
 
                 if (userError || !user) {
-                    console.error(`❌ Trade Executor: Пользователь ${signal.user_id} не найден`);
+                    log.error('Пользователь не найден', { userId: signal.user_id, signalId: signal.id });
                     await notifier.notifyError(`Пользователь ${signal.user_id} не найден`, `Сигнал ${signal.id}`);
                     consecutiveErrors++;
                     continue;
                 }
 
-                console.log(`👤 Пользователь: ${user.email}, Ботов: ${user.bots?.length || 0}`);
+                log.debug(`👤 Пользователь: ${user.email}, Ботов: ${user.bots?.length || 0}`);
 
                 const bots = user.bots || [];
                 const activeBots = bots.filter(bot => 
@@ -87,30 +93,34 @@ async function checkNewSignals() {
                     (bot.mode === 'auto_trade' || bot.mode === 'hybrid')
                 );
 
-                console.log(`🤖 Активных ботов в режиме auto_trade/hybrid: ${activeBots.length}`);
+                log.debug(`🤖 Активных ботов в режиме auto_trade/hybrid: ${activeBots.length}`);
 
                 if (activeBots.length === 0) {
-                    console.log(`⚠️ Trade Executor: Нет активных ботов для пользователя ${user.email}`);
+                    log.warn('Нет активных ботов', { email: user.email });
                     continue;
                 }
 
                 for (const bot of activeBots) {
                     const signalLevels = bot.risk?.signal_levels || ['low', 'medium', 'high'];
                     if (!signalLevels.includes(signal.confidence)) {
-                        console.log(`⏭️ Trade Executor: Уровень сигнала ${signal.confidence} не подходит для бота ${bot.name}`);
+                        log.debug(`Уровень сигнала ${signal.confidence} не подходит для бота ${bot.name}`);
                         continue;
                     }
 
-                    console.log(`📈 Trade Executor: Исполнение сигнала ${signal.symbol} для ${user.email}`);
+                    log.info(`📈 Исполнение сигнала ${signal.symbol} для ${user.email}`);
 
                     const result = await executeSignal(signal, bot, user, supabase);
                     
                     if (result.executed) {
-                        console.log(`✅ Trade Executor: Сделка открыта для ${user.email} (${signal.symbol})`);
+                        log.info(`✅ Сделка открыта для ${user.email} (${signal.symbol})`, { 
+                            symbol: signal.symbol,
+                            side: signal.side,
+                            tradeId: result.trade?.id
+                        });
                         await notifier.notifyTrade(signal, result.trade);
-                        consecutiveErrors = 0; // Сбрасываем ошибки при успехе
+                        consecutiveErrors = 0;
                     } else {
-                        console.log(`⚠️ Trade Executor: Сделка не открыта: ${result.reason}`);
+                        log.warn(`⚠️ Сделка не открыта: ${result.reason}`);
                         await notifier.notifyError(
                             `Сделка не открыта: ${result.reason}`,
                             `${signal.symbol} | ${signal.side} | Пользователь: ${user.email}`
@@ -122,7 +132,10 @@ async function checkNewSignals() {
                 }
 
             } catch (err) {
-                console.error(`❌ Trade Executor: Ошибка обработки сигнала ${signal.id}:`, err.message);
+                log.error('Ошибка обработки сигнала', { 
+                    signalId: signal.id, 
+                    error: err.message 
+                });
                 await notifier.notifyError(
                     `Ошибка обработки сигнала ${signal.id}: ${err.message}`,
                     `Сигнал: ${signal.symbol} | ${signal.side}`
@@ -131,31 +144,29 @@ async function checkNewSignals() {
             }
         }
 
-        // Если ошибок слишком много — делаем паузу
         if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-            console.warn(`⚠️ Слишком много ошибок подряд (${consecutiveErrors}). Пауза 60 секунд...`);
+            log.warn(`⚠️ Слишком много ошибок подряд (${consecutiveErrors}). Пауза 60 секунд...`);
             await notifier.notifyError(
                 `Слишком много ошибок (${consecutiveErrors}). Бот делает паузу на 60 секунд.`,
                 'Trade Executor'
             );
             await new Promise(resolve => setTimeout(resolve, 60000));
-            consecutiveErrors = 0; // Сбрасываем после паузы
+            consecutiveErrors = 0;
         }
 
     } catch (err) {
-        console.error('❌ Trade Executor: Ошибка в мониторинге:', err.message);
+        log.error('Ошибка в мониторинге', { error: err.message });
         await notifier.notifyError(`Ошибка в мониторинге: ${err.message}`, 'Trade Executor');
         consecutiveErrors++;
     }
 }
 
 // ============================================
-//  ЗАПУСК МОНИТОРИНГА (каждые 30 секунд)
+//  ЗАПУСК
 // ============================================
 
-console.log('⏰ Trade Executor: Запущен (мониторинг каждые 30 секунд)');
+log.info('⏰ Trade Executor: Запущен (мониторинг каждые 30 секунд)');
 
-// ⚠️ Увеличен интервал с 10 до 30 секунд
 setInterval(checkNewSignals, 30000);
 
 // Первый запуск сразу
