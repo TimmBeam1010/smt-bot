@@ -1,0 +1,610 @@
+[2026-07-02T21:13:49.504Z] [INFO] [trade-executor] ✅ Подключение к Supabase установлено
+[2026-07-02T21:13:49.506Z] [INFO] [trade-executor] ⏰ Trade Executor: Запущен (мониторинг каждые 30 секунд)
+[2026-07-02T21:13:49.729Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:13:49.797Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:13:50.153Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:13:52.310Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:13:52.599Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:14:19.701Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:14:19.776Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:14:20.151Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:14:22.332Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:14:22.643Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:14:49.673Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:14:49.746Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:14:50.127Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:14:52.305Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:14:52.599Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:14:54.674Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:15:19.660Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:15:19.732Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:15:20.082Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:15:22.247Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:15:22.546Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:15:24.618Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:15:49.710Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:15:49.787Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:15:50.220Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:15:52.388Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:15:52.705Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:16:19.667Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:16:19.738Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:16:20.087Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:16:22.244Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:16:22.538Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:16:49.687Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:16:49.782Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:16:50.168Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:16:52.330Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:16:52.660Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:17:19.671Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:17:19.733Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:17:20.107Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:17:22.282Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:17:22.578Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:17:49.647Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:17:49.711Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:17:50.083Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:17:52.238Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:17:52.541Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:17:54.609Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:18:19.645Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:18:19.722Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:18:20.114Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:18:22.287Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:18:22.580Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:18:24.663Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:18:49.655Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:18:49.730Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:18:50.069Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:18:52.245Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:18:52.536Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:18:54.621Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T21:19:19.655Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:19:19.734Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:19:20.088Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:19:22.255Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:19:22.554Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:19:49.639Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:19:49.706Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:19:50.081Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:19:52.250Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:19:52.551Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:20:19.670Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:20:19.745Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:20:20.124Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:20:22.282Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:20:22.613Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:20:49.703Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:20:49.768Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:20:50.132Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:20:52.291Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:20:52.584Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:21:19.704Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:21:19.821Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:21:20.372Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:21:22.590Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:21:22.888Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:21:25.082Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:21:49.652Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:21:49.719Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:21:50.072Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:21:52.226Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:21:52.530Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:21:54.596Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:22:19.639Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:22:19.710Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:22:20.065Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:22:22.216Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:22:22.509Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:22:24.573Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T21:22:49.648Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:22:49.710Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:22:50.103Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:22:52.277Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:22:52.565Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:23:19.639Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:23:19.708Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:23:20.061Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:23:22.224Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:23:22.516Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:23:49.657Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:23:49.730Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:23:50.102Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:23:52.258Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:23:52.626Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:24:19.656Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:24:19.729Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:24:20.086Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:24:22.249Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:24:22.564Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:24:24.632Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (5). Пауза 60 секунд...
+[2026-07-02T21:24:49.653Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:24:49.723Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:24:50.119Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:24:52.272Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:24:52.567Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:24:54.639Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (7). Пауза 60 секунд...
+[2026-07-02T21:25:19.665Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:25:19.742Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:25:20.103Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:25:22.316Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:25:22.624Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:25:24.690Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (9). Пауза 60 секунд...
+[2026-07-02T21:25:49.686Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:25:49.758Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:25:50.118Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:25:55.267Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:25:55.712Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:26:19.661Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:26:19.730Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:26:20.094Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:26:22.258Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:26:22.571Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:26:49.644Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:26:49.710Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:26:50.084Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:26:59.150Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:26:59.538Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:27:19.668Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:27:19.746Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:27:20.103Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:27:22.253Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:27:22.572Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:27:49.674Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:27:49.742Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:27:50.111Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:27:52.267Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:27:52.564Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:27:54.684Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:28:19.667Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:28:19.736Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:28:20.113Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:28:22.251Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:28:22.537Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:28:31.603Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:28:49.672Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:28:49.752Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:28:50.134Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:28:52.310Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:28:52.617Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:28:54.669Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T21:29:19.654Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:29:19.734Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:29:20.087Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:29:25.187Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:29:25.567Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:29:49.644Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:29:49.717Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:29:50.087Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:29:52.474Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:29:52.766Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:30:19.673Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:30:19.740Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:30:20.109Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:30:22.252Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:30:22.552Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:30:49.654Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:30:49.729Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:30:50.081Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:30:52.227Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:30:52.522Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:31:19.665Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:31:19.758Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:31:20.167Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:31:22.313Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:31:22.612Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:31:24.666Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:31:49.677Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:31:49.746Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:31:50.099Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:31:52.266Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:31:52.554Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:31:54.628Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:32:19.646Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:32:19.730Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:32:20.099Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:32:22.250Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:32:22.566Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:32:24.622Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T21:32:49.676Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:32:49.742Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:32:50.110Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:32:52.256Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:32:52.554Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:33:19.684Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:33:19.756Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:33:20.125Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:33:22.268Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:33:22.561Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:33:49.698Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:33:49.779Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:33:50.134Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:33:52.274Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:33:52.587Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:34:19.646Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:34:19.721Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:34:20.077Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:34:22.221Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:34:22.509Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:34:49.674Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:34:49.757Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:34:50.144Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:34:52.364Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:34:52.716Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:34:54.777Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:35:19.693Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:35:19.782Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:35:20.156Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:35:22.298Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:35:22.598Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:35:24.669Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:35:49.718Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:35:49.810Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:35:50.204Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:35:52.372Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:35:52.665Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:35:54.738Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T21:36:19.669Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:36:19.738Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:36:20.092Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:36:22.335Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:36:22.628Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:36:49.730Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:36:49.800Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:36:50.171Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:36:52.309Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:36:52.605Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:37:19.655Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:37:19.724Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:37:20.102Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:37:22.261Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:37:22.552Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:37:49.679Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:37:49.748Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:37:50.098Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:37:52.245Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:37:52.539Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:38:19.660Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:38:19.748Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:38:20.122Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:38:22.276Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:38:22.589Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:38:24.642Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:38:49.801Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:38:49.875Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:38:50.237Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:38:52.378Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:38:52.672Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:38:54.725Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:39:19.662Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:39:19.729Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:39:20.085Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:39:22.221Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:39:22.519Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:39:24.572Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T21:39:49.657Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:39:49.733Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:39:50.118Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:39:52.336Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:39:52.633Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:40:19.650Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:40:19.724Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:40:20.090Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:40:22.248Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:40:22.547Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:40:49.700Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:40:49.775Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:40:50.142Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:40:52.279Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:40:52.583Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:41:19.696Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:41:19.764Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:41:20.122Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:41:22.271Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:41:22.571Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:41:49.642Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:41:49.704Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:41:50.054Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:41:52.201Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:41:52.492Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:41:54.546Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:42:19.641Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:42:19.716Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:42:20.070Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:42:22.311Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:42:22.607Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:42:24.662Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:42:49.658Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:42:49.727Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:42:50.111Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:42:52.325Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:42:52.650Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:43:19.668Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:43:19.735Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:43:20.085Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:43:22.303Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:43:22.601Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:43:49.699Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:43:49.770Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:43:50.160Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:43:52.310Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:43:52.602Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:44:19.656Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:44:19.721Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:44:20.067Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:44:22.216Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:44:22.522Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:44:49.666Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:44:49.747Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:44:50.113Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:44:52.259Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:44:52.555Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:44:54.609Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:45:19.664Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:45:19.728Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:45:20.098Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:45:22.235Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:45:22.535Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:45:24.591Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:45:49.690Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:45:49.757Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:45:50.130Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:45:52.273Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:45:52.572Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:45:54.625Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T21:46:19.692Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:46:19.756Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:46:20.096Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:46:22.244Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:46:22.530Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:46:49.653Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:46:49.723Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:46:50.057Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:46:52.205Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:46:52.496Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:47:19.651Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:47:19.715Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:47:20.053Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:47:22.205Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:47:22.510Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:47:49.649Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:47:49.712Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:47:50.070Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:47:52.207Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:47:52.491Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:48:19.695Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:48:19.776Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:48:20.187Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:48:22.324Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:48:22.621Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:48:24.674Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:48:49.685Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:48:49.754Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:48:50.120Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:48:52.388Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:48:52.728Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:48:54.803Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:49:19.672Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:49:19.743Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:49:20.075Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:49:22.211Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:49:22.503Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:49:24.556Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T21:49:49.684Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:49:49.756Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:49:50.088Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:49:52.230Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:49:52.520Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:50:19.674Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:50:19.756Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:50:20.141Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:50:22.280Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:50:22.592Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:50:49.661Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:50:49.734Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:50:50.072Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:50:52.234Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:50:52.563Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:51:19.679Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:51:19.754Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:51:20.096Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:51:22.256Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:51:22.549Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:51:49.654Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:51:49.722Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:51:50.077Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:51:52.219Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:51:52.514Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:51:54.569Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:52:19.654Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:52:19.723Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:52:20.040Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:52:22.200Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:52:22.496Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:52:24.565Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:52:49.652Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:52:49.719Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:52:50.046Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:52:52.211Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:52:52.543Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:52:54.604Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T21:53:19.698Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:53:19.769Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:53:20.108Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:53:22.255Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:53:22.545Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:53:49.650Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:53:49.719Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:53:50.053Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:53:55.231Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:53:55.598Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:54:19.650Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:54:19.715Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:54:20.095Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:54:22.283Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:54:22.586Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:54:49.659Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:54:49.723Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:54:50.055Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:54:52.236Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:54:52.521Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:54:54.594Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (5). Пауза 60 секунд...
+[2026-07-02T21:55:19.658Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:55:19.723Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:55:20.085Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:55:22.263Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:55:22.558Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:55:24.624Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (7). Пауза 60 секунд...
+[2026-07-02T21:55:49.654Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:55:49.726Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:55:50.090Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:55:52.245Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:55:52.540Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:55:54.608Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (9). Пауза 60 секунд...
+[2026-07-02T21:56:19.683Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:56:19.755Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:56:20.126Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:56:22.302Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:56:22.595Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:56:49.655Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:56:49.719Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:56:50.044Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:56:52.222Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:56:52.527Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:57:19.654Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:57:19.723Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:57:20.082Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:57:29.179Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:57:29.582Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:57:49.653Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:57:49.725Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:57:50.065Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:58:02.185Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:58:02.571Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:58:19.660Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:58:19.732Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:58:20.051Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:58:22.212Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:58:22.495Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:58:32.194Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T21:58:49.685Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:58:49.754Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:58:50.107Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:58:52.241Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:58:52.529Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:59:02.145Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T21:59:19.669Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:59:19.735Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:59:20.092Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:59:22.273Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:59:22.568Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:59:32.194Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T21:59:49.670Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T21:59:49.737Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:59:50.113Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T21:59:52.247Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T21:59:52.551Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:00:19.730Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:00:19.848Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:00:20.247Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:00:22.392Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:00:22.688Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:00:49.731Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:00:49.820Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:00:50.182Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:00:52.322Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:00:52.636Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:01:19.721Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:01:19.801Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:01:20.168Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:01:22.329Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:01:22.628Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:01:49.683Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:01:49.748Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:01:50.098Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:01:52.235Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:01:52.546Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:01:54.601Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T22:02:19.677Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:02:19.750Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:02:20.108Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:02:22.252Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:02:22.569Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:02:24.652Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T22:02:49.664Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:02:49.734Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:02:50.092Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:02:52.239Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:02:52.563Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:02:54.615Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T22:03:19.666Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:03:19.740Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:03:20.078Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:03:22.229Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:03:22.512Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:03:49.661Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:03:49.734Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:03:50.101Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:03:52.251Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:03:52.546Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:04:19.679Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:04:19.749Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:04:20.083Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:04:22.276Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:04:22.572Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:04:49.681Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:04:49.749Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:04:50.084Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:04:52.240Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:04:52.534Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:05:19.701Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:05:19.768Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:05:20.126Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:05:22.287Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:05:22.594Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:05:24.684Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T22:05:49.688Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:05:49.753Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:05:50.095Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:05:52.238Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:05:52.535Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:05:54.621Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
+[2026-07-02T22:06:19.688Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:06:19.771Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:06:20.110Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:06:22.269Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:06:22.566Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:06:24.625Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (10). Пауза 60 секунд...
+[2026-07-02T22:06:49.682Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:06:49.748Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:06:50.075Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:06:52.250Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:06:52.556Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:07:19.691Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:07:19.772Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:07:20.104Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:07:22.268Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:07:22.556Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:07:49.697Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:07:49.772Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:07:50.108Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:07:52.253Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:07:52.556Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:08:19.673Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:08:19.742Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:08:20.084Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:08:22.224Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:08:22.511Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:08:49.694Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:08:49.764Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:08:50.097Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:08:55.876Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:08:56.283Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:09:01.573Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (6). Пауза 60 секунд...
+[2026-07-02T22:09:19.680Z] [INFO] [trade-executor] 📡 Найдено 1 новых сигналов
+[2026-07-02T22:09:19.753Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:09:20.115Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:09:28.234Z] [INFO] [trade-executor] 📈 Исполнение сигнала BTC-USDT для trnabiev@gmail.com
+[2026-07-02T22:09:28.605Z] [WARN] [trade-executor] ⚠️ Сделка не открыта: Уже есть открытая позиция на бирже
+[2026-07-02T22:09:30.669Z] [WARN] [trade-executor] ⚠️ Слишком много ошибок подряд (8). Пауза 60 секунд...
