@@ -6,6 +6,8 @@ const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
+const notifier = require('../../shared/notifier');
+
 // === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
 const WebSocket = require('ws');
 global.WebSocket = WebSocket;
