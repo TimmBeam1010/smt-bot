@@ -7,6 +7,18 @@ class BingXExchange {
         this.secretKey = secretKey;
         this.name = 'bingx';
         this.baseURL = 'https://open-api.bingx.com';
+        this.lastRequestTime = 0;
+        this.MIN_REQUEST_INTERVAL = 500; // 500 мс между запросами
+    }
+
+    // ⚠️ НОВЫЙ МЕТОД: ограничение частоты запросов
+    async _waitForRateLimit() {
+        const now = Date.now();
+        const waitTime = Math.max(0, this.MIN_REQUEST_INTERVAL - (now - this.lastRequestTime));
+        if (waitTime > 0) {
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        this.lastRequestTime = Date.now();
     }
 
     _generateGetSignature() {
@@ -37,6 +49,7 @@ class BingXExchange {
     }
 
     async _signedGet(endpoint) {
+        await this._waitForRateLimit(); // ⚠️ Ждём перед запросом
         const { signature, timestamp } = this._generateGetSignature();
         const url = `${this.baseURL}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
         console.log('📤 GET URL:', url);
@@ -47,6 +60,7 @@ class BingXExchange {
     }
 
     async _signedPost(endpoint, params = {}) {
+        await this._waitForRateLimit(); // ⚠️ Ждём перед запросом
         const { signature, timestamp } = this._generatePostSignature(params);
         const queryParams = { ...params, timestamp, signature };
         const queryString = Object.keys(queryParams)
@@ -64,7 +78,6 @@ class BingXExchange {
     async getBalance() {
         try {
             const response = await this._signedGet('/openApi/swap/v3/user/balance');
-            console.log('📥 Сырой ответ баланса:', JSON.stringify(response, null, 2));
             if (response?.code === 0) {
                 const assets = response.data || [];
                 const usdtData = assets.find(item => item.asset === 'USDT');
