@@ -3,24 +3,23 @@
 // ============================================
 
 const axios = require('axios');
+const { logger } = require('./logger');
+const log = logger('notifier');
 
-// Настройки (возьми из .env или укажи здесь)
-const TELEGRAM_BOT_TOKEN = '8626291636:AAFBB-M7HbWacbk801z89Ea9xiNb5ztFHX8';
+// Настройки
+const TELEGRAM_BOT_TOKEN = '8626291636:AAHS6vk8hTgbEeVfM2B1gOOCCEcTe3HRsr0';
 const TELEGRAM_CHAT_ID = '1744745843';
 
 /**
  * Отправить сообщение в Telegram
- * @param {string} message - Текст сообщения
- * @param {string} level - Уровень: info, success, warning, error
  */
 async function sendTelegram(message, level = 'info') {
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-        console.warn('⚠️ Telegram не настроен: пропуск уведомления');
+        log.warn('Telegram не настроен: пропуск уведомления');
         return;
     }
 
     try {
-        // Эмодзи для разных уровней
         const emojis = {
             info: '📘',
             success: '✅',
@@ -39,9 +38,11 @@ async function sendTelegram(message, level = 'info') {
             parse_mode: 'HTML'
         });
 
-        console.log(`📨 Уведомление отправлено в Telegram (${level})`);
+        log.debug(`Уведомление отправлено в Telegram (${level})`);
     } catch (error) {
-        console.error('❌ Ошибка отправки в Telegram:', error.response?.data || error.message);
+        log.error('Ошибка отправки в Telegram', { 
+            error: error.response?.data || error.message 
+        });
     }
 }
 
