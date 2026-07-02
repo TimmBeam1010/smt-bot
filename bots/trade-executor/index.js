@@ -34,8 +34,8 @@ const { executeSignal } = require('../../shared/executor');
 //  МОНИТОРИНГ НОВЫХ СИГНАЛОВ
 // ============================================
 
-const MAX_SIGNALS_PER_BATCH = 1; // Ограничиваем количество сигналов за раз
-const DELAY_BETWEEN_ORDERS = 2000; // 500 мс задержки между ордерами
+const MAX_SIGNALS_PER_BATCH = 1;
+const DELAY_BETWEEN_ORDERS = 2000;
 
 async function checkNewSignals() {
     try {
@@ -48,6 +48,7 @@ async function checkNewSignals() {
 
         if (error) {
             console.error('❌ Trade Executor: Ошибка получения сигналов:', error);
+            await notifier.notifyError(`Ошибка получения сигналов: ${error.message}`, 'Supabase');
             return;
         }
 
@@ -67,10 +68,10 @@ async function checkNewSignals() {
 
                 if (userError || !user) {
                     console.error(`❌ Trade Executor: Пользователь ${signal.user_id} не найден`);
+                    await notifier.notifyError(`Пользователь ${signal.user_id} не найден`, `Сигнал ${signal.id}`);
                     continue;
                 }
 
-                // --- ЛОГИРОВАНИЕ ДОБАВЛЕНО ---
                 console.log(`👤 Пользователь: ${user.email}, Ботов: ${user.bots?.length || 0}`);
 
                 const bots = user.bots || [];
@@ -80,7 +81,6 @@ async function checkNewSignals() {
                     (bot.mode === 'auto_trade' || bot.mode === 'hybrid')
                 );
 
-                // --- ЛОГИРОВАНИЕ АКТИВНЫХ БОТОВ ---
                 console.log(`🤖 Активных ботов в режиме auto_trade/hybrid: ${activeBots.length}`);
 
                 if (activeBots.length === 0) {
@@ -98,10 +98,18 @@ async function checkNewSignals() {
                     console.log(`📈 Trade Executor: Исполнение сигнала ${signal.symbol} для ${user.email}`);
 
                     const result = await executeSignal(signal, bot, user, supabase);
+                    
                     if (result.executed) {
                         console.log(`✅ Trade Executor: Сделка открыта для ${user.email} (${signal.symbol})`);
+                        // 🔔 Уведомление об успешной сделке
+                        await notifier.notifyTrade(signal, result.trade);
                     } else {
                         console.log(`⚠️ Trade Executor: Сделка не открыта: ${result.reason}`);
+                        // 🔔 Уведомление об ошибке
+                        await notifier.notifyError(
+                            `Сделка не открыта: ${result.reason}`,
+                            `${signal.symbol} | ${signal.side} | Пользователь: ${user.email}`
+                        );
                     }
 
                     await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ORDERS));
@@ -109,11 +117,16 @@ async function checkNewSignals() {
 
             } catch (err) {
                 console.error(`❌ Trade Executor: Ошибка обработки сигнала ${signal.id}:`, err.message);
+                await notifier.notifyError(
+                    `Ошибка обработки сигнала ${signal.id}: ${err.message}`,
+                    `Сигнал: ${signal.symbol} | ${signal.side}`
+                );
             }
         }
 
     } catch (err) {
         console.error('❌ Trade Executor: Ошибка в мониторинге:', err.message);
+        await notifier.notifyError(`Ошибка в мониторинге: ${err.message}`, 'Trade Executor');
     }
 }
 
