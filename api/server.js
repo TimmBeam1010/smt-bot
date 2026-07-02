@@ -1,9 +1,10 @@
+// ============================================
+//  API СЕРВЕР (SMT BOT)
+// ============================================
+
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
-const bcrypt = require('bcryptjs');
-const axios = require('axios');
-const crypto = require('crypto');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
@@ -13,12 +14,9 @@ global.WebSocket = WebSocket;
 // =============================================
 
 const app = express();
-const port = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
-
+// Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 
@@ -30,184 +28,113 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("✅ Подключение к Supabase установлено");
 
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Статика
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Импорт модулей
+const exchanges = require('../shared/exchanges');
+const { executeSignal } = require('../shared/executor');
+
 // ============================================
-//  БАЗОВЫЕ МАРШРУТЫ
+//  ЭНДПОИНТЫ
 // ============================================
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
+// Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'SMT Bot API работает!' });
 });
 
-// ============================================
-//  МАРШРУТЫ АВТОРИЗАЦИИ
-// ============================================
-
-app.post('/api/register', async (req, res) => {
-    const { email, password, username } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email и пароль обязательны' });
-    }
-    if (password.length < 6) {
-        return res.status(400).json({ error: 'Пароль должен быть минимум 6 символов' });
-    }
-
-    try {
-        const { data: existingUser } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .maybeSingle();
-
-        if (existingUser) {
-            const isPasswordValid = await bcrypt.compare(password, existingUser.password);
-            if (!isPasswordValid) {
-                const hashedPassword = await bcrypt.hash(password, 10);
-                await supabase
-                    .from('users')
-                    .update({ password: hashedPassword, updated_at: new Date() })
-                    .eq('email', email);
-            }
-            delete existingUser.password;
-            return res.status(200).json({ user: existingUser, message: 'Пользователь уже существует' });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const { data: newUser, error: createError } = await supabase
-            .from('users')
-            .insert({
-                email,
-                password: hashedPassword,
-                telegram_username: username || null,
-                auth_provider: 'email',
-                is_verified: true,
-                is_active: true
-            })
-            .select()
-            .single();
-
-        if (createError) {
-            console.error('Ошибка создания:', createError);
-            return res.status(500).json({ error: 'Ошибка создания пользователя' });
-        }
-
-        delete newUser.password;
-        res.status(201).json({ user: newUser });
-
-    } catch (err) {
-        console.error('Непредвиденная ошибка:', err);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-    }
-});
-
+// Login
 app.post('/api/login', async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email и пароль обязательны' });
-    }
-
     try {
+        const { email, password } = req.body;
         const { data: user, error } = await supabase
             .from('users')
             .select('*')
             .eq('email', email)
-            .maybeSingle();
+            .single();
 
         if (error || !user) {
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
+        // Простая проверка пароля (в реальном проекте использовать bcrypt)
+        if (user.password !== password) {
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
 
-        delete user.password;
-        res.json({ user });
-
-    } catch (err) {
-        console.error('Непредвиденная ошибка:', err);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-    }
-});
-
-// ============================================
-//  МАРШРУТЫ ДЛЯ НОВОСТЕЙ И РЫНКА
-// ============================================
-
-app.get('/api/news', async (req, res) => {
-    try {
-        const apiKey = process.env.NEWS_API_KEY || 'demo';
-        const url = `https://newsapi.org/v2/everything?q=crypto OR bitcoin OR trading&language=en&sortBy=publishedAt&apiKey=${apiKey}`;
-        const response = await axios.get(url, { timeout: 10000 });
-        const articles = response.data.articles?.slice(0, 6) || [];
-        res.json({ news: articles });
-    } catch (error) {
-        console.error('❌ Ошибка получения новостей:', error.message);
-        res.json({ news: [] });
-    }
-});
-
-app.get('/api/market-data', async (req, res) => {
-    try {
-        const fgRes = await axios.get('https://api.alternative.me/fng/?limit=1', { timeout: 8000 });
-        const fearGreed = parseInt(fgRes.data.data[0].value) || 50;
-
-        const btcRes = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', { timeout: 8000 });
-        const btcPrice = btcRes.data.bitcoin?.usd || null;
-
-        const capRes = await axios.get('https://api.coingecko.com/api/v3/global', { timeout: 8000 });
-        const totalCap = capRes.data.data?.total_market_cap?.usd || null;
-        const totalCapStr = totalCap ? '$' + (totalCap / 1e12).toFixed(2) + 'T' : '--';
-
         res.json({
-            fearGreed,
-            btcPrice: btcPrice ? btcPrice.toLocaleString() : '--',
-            totalCap: totalCapStr
+            success: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                bots: user.bots || [],
+                exchange_credentials: user.exchange_credentials || {}
+            }
         });
     } catch (error) {
-        console.error('❌ Ошибка получения рыночных данных:', error.message);
-        res.json({ fearGreed: 50, btcPrice: '--', totalCap: '--' });
+        console.error('Ошибка логина:', error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
-// ============================================
-//  МАРШРУТЫ ДЛЯ СИГНАЛОВ И БОТОВ (ПРОКСИ)
-// ============================================
-
-app.get('/api/signals/user/:email', async (req, res) => {
-    const { email } = req.params;
+// Register
+app.post('/api/register', async (req, res) => {
     try {
-        const { data: user, error: userError } = await supabase
+        const { email, password, name } = req.body;
+
+        const { data: existing, error: checkError } = await supabase
             .from('users')
-            .select('id')
+            .select('*')
             .eq('email', email)
             .single();
 
-        if (userError || !user) {
-            return res.json({ signals: [] });
+        if (existing) {
+            return res.status(400).json({ error: 'Пользователь уже существует' });
         }
 
-        const { data: signals, error } = await supabase
-            .from('signals')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
+        const { data: user, error } = await supabase
+            .from('users')
+            .insert({
+                email,
+                password,
+                name,
+                bots: [],
+                exchange_credentials: {}
+            })
+            .select()
+            .single();
 
-        if (error) throw error;
-        res.json({ signals });
-    } catch (err) {
-        console.error('Ошибка получения сигналов:', err);
-        res.status(500).json({ error: err.message });
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                bots: user.bots || [],
+                exchange_credentials: user.exchange_credentials || {}
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка регистрации:', error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
+// Получение списка ботов пользователя
 app.get('/api/bot/list/:email', async (req, res) => {
-    const { email } = req.params;
     try {
+        const { email } = req.params;
+
         const { data: user, error } = await supabase
             .from('users')
             .select('bots')
@@ -219,78 +146,20 @@ app.get('/api/bot/list/:email', async (req, res) => {
         }
 
         res.json({ bots: user.bots || [] });
-    } catch (err) {
-        console.error('❌ Ошибка получения списка ботов:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ============================================
-//  ПРОКСИ ДЛЯ EXCHANGE CONNECTOR
-// ============================================
-
-const EXCHANGE_CONNECTOR_URL = 'http://localhost:5001';
-
-// Прокси для подключения биржи
-app.post('/api/exchange/connect', async (req, res) => {
-    try {
-        const response = await axios.post(`${EXCHANGE_CONNECTOR_URL}/api/exchange/connect`, req.body);
-        res.json(response.data);
     } catch (error) {
-        console.error('❌ Ошибка прокси exchange/connect:', error.message);
-        res.status(error.response?.status || 500).json(error.response?.data || { error: 'Ошибка подключения биржи' });
+        console.error('Ошибка получения списка ботов:', error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Прокси для списка бирж
-app.get('/api/exchange/list/:email', async (req, res) => {
-    try {
-        const response = await axios.get(`${EXCHANGE_CONNECTOR_URL}/api/exchange/list/${req.params.email}`);
-        res.json(response.data);
-    } catch (error) {
-        console.error('❌ Ошибка прокси exchange/list:', error.message);
-        res.status(error.response?.status || 500).json(error.response?.data || { error: 'Ошибка получения списка бирж' });
-    }
-});
-
-// Прокси для отключения биржи
-app.post('/api/exchange/disconnect', async (req, res) => {
-    try {
-        const response = await axios.post(`${EXCHANGE_CONNECTOR_URL}/api/exchange/disconnect`, req.body);
-        res.json(response.data);
-    } catch (error) {
-        console.error('❌ Ошибка прокси exchange/disconnect:', error.message);
-        res.status(error.response?.status || 500).json(error.response?.data || { error: 'Ошибка отключения биржи' });
-    }
-});
-
-// Прокси для баланса
-app.get('/api/exchange/balance/:email/:exchange', async (req, res) => {
-    try {
-        const response = await axios.get(`${EXCHANGE_CONNECTOR_URL}/api/exchange/balance/${req.params.email}/${req.params.exchange}`);
-        res.json(response.data);
-    } catch (error) {
-        console.error('❌ Ошибка прокси exchange/balance:', error.message);
-        res.status(error.response?.status || 500).json(error.response?.data || { error: 'Ошибка получения баланса' });
-    }
-});
-
-// ============================================
-//  МАРШРУТЫ ДЛЯ СОЗДАНИЯ БОТА
-// ============================================
-
+// Создание бота
 app.post('/api/bot/create', async (req, res) => {
     try {
-        const { email, config } = req.body;
+        const { email, bot } = req.body;
 
-        if (!email || !config) {
-            return res.status(400).json({ error: 'Email и конфигурация бота обязательны' });
-        }
-
-        // Получаем пользователя
         const { data: user, error: userError } = await supabase
             .from('users')
-            .select('id, email, connected_exchanges, bots')
+            .select('*')
             .eq('email', email)
             .single();
 
@@ -298,72 +167,193 @@ app.post('/api/bot/create', async (req, res) => {
             return res.status(404).json({ error: 'Пользователь не найден' });
         }
 
-        // Проверяем, что биржа подключена
-        const connectedExchanges = (user.connected_exchanges || []).map(e => e.trim());
-        if (connectedExchanges.length === 0) {
-            return res.status(400).json({ error: 'Необходимо подключить хотя бы одну биржу' });
-        }
+        const bots = user.bots || [];
+        bots.push(bot);
 
-        if (!connectedExchanges.includes(config.exchange)) {
-            return res.status(400).json({
-                error: `Биржа ${config.exchange} не подключена. Доступны: ${connectedExchanges.join(', ')}`
-            });
-        }
-
-        // Создаём нового бота
-        const newBot = {
-            id: `bot_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-            name: config.name.trim(),
-            exchange: config.exchange,
-            mode: config.mode,
-            active: true,
-            paused: false,
-            strategies: config.strategies.map(s => ({
-                id: s,
-                enabled: true,
-                params: {}
-            })),
-            symbols: config.symbols || [],
-            risk: {
-                max_positions: config.risk?.max_positions || 3,
-                risk_percent: config.risk?.risk_percent || 2.0,
-                stop_loss_percent: config.risk?.stop_loss_percent || 1.5,
-                take_profit_percent: config.risk?.take_profit_percent || 3.0,
-                trailing_stop: config.risk?.trailing_stop || false,
-                signal_levels: config.risk?.signal_levels || ['low', 'medium', 'high']
-            },
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            stats: {
-                total_signals: 0,
-                total_trades: 0,
-                win_rate: 0,
-                pnl: 0
-            }
-        };
-
-        const bots = [...(user.bots || []), newBot];
-
-        const { data: updatedUser, error: updateError } = await supabase
+        const { error: updateError } = await supabase
             .from('users')
-            .update({ bots, updated_at: new Date() })
+            .update({ bots })
+            .eq('id', user.id);
+
+        if (updateError) {
+            return res.status(500).json({ error: updateError.message });
+        }
+
+        res.json({ success: true, bot });
+    } catch (error) {
+        console.error('Ошибка создания бота:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Обновление бота
+app.patch('/api/bot/update', async (req, res) => {
+    try {
+        const { email, botId, updates } = req.body;
+
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('*')
             .eq('email', email)
-            .select()
             .single();
 
-        if (updateError) throw updateError;
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
 
-        delete updatedUser.password;
+        const bots = user.bots || [];
+        const botIndex = bots.findIndex(b => b.id === botId);
+        if (botIndex === -1) {
+            return res.status(404).json({ error: 'Бот не найден' });
+        }
+
+        bots[botIndex] = { ...bots[botIndex], ...updates };
+
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ bots })
+            .eq('id', user.id);
+
+        if (updateError) {
+            return res.status(500).json({ error: updateError.message });
+        }
+
+        res.json({ success: true, bot: bots[botIndex] });
+    } catch (error) {
+        console.error('Ошибка обновления бота:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Удаление бота
+app.delete('/api/bot/delete', async (req, res) => {
+    try {
+        const { email, botId } = req.body;
+
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const bots = (user.bots || []).filter(b => b.id !== botId);
+
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ bots })
+            .eq('id', user.id);
+
+        if (updateError) {
+            return res.status(500).json({ error: updateError.message });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Ошибка удаления бота:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================
+//  ЭНДПОИНТ: ДАННЫЕ ДЛЯ КАРТОЧКИ БОТА
+// ============================================
+
+app.get('/api/bot/dashboard/:email/:botId', async (req, res) => {
+    try {
+        const { email, botId } = req.params;
+
+        // 1. Получаем пользователя
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        // 2. Находим нужного бота
+        const bot = (user.bots || []).find(b => b.id === botId);
+        if (!bot) {
+            return res.status(404).json({ error: 'Бот не найден' });
+        }
+
+        // 3. Получаем ключи для биржи
+        const exchange = bot.exchange || 'bingx';
+        const credentials = user.exchange_credentials?.[exchange];
+        let balance = 0;
+        let positions = [];
+        let totalPnl = 0;
+
+        if (credentials && credentials.api_key && credentials.secret_key) {
+            try {
+                const exchangeClient = exchanges.getExchange(
+                    exchange,
+                    credentials.api_key,
+                    credentials.secret_key
+                );
+
+                if (exchangeClient) {
+                    // Получаем баланс
+                    balance = await exchangeClient.getBalance() || 0;
+
+                    // Получаем список открытых позиций с биржи
+                    const rawPositions = await exchangeClient.getPositions() || [];
+
+                    // Форматируем позиции для отображения
+                    positions = rawPositions.map(pos => {
+                        const pnl = pos.unrealizedProfit || 0;
+                        totalPnl += pnl;
+                        return {
+                            symbol: pos.symbol || '—',
+                            side: pos.positionSide || '—',
+                            leverage: pos.leverage || bot.risk?.leverage || 10,
+                            margin: pos.initialMargin || pos.margin || 0,
+                            pnl: pnl,
+                            entryPrice: pos.entryPrice || 0,
+                            markPrice: pos.markPrice || 0,
+                            stopLoss: pos.stopLoss || null,
+                            takeProfit: pos.takeProfit || null
+                        };
+                    });
+                }
+            } catch (error) {
+                console.error(`Ошибка получения данных для ${exchange}:`, error.message);
+            }
+        }
+
+        // 4. Определяем статус бота
+        let status = 'active';
+        if (bot.paused) {
+            status = 'paused';
+        } else if (!bot.active) {
+            status = 'stopped';
+        }
+
+        // 5. Отправляем ответ
         res.json({
             success: true,
-            message: `Бот "${newBot.name}" успешно создан`,
-            bot: newBot,
-            user: updatedUser
+            data: {
+                bot: {
+                    id: bot.id,
+                    name: bot.name,
+                    mode: bot.mode || 'auto_trade'
+                },
+                status: status,
+                balance: balance,
+                totalPnl: totalPnl,
+                positions: positions
+            }
         });
 
-    } catch (err) {
-        console.error('❌ Ошибка создания бота:', err);
-        res.status(500).json({ error: err.message });
+    } catch (error) {
+        console.error('Ошибка в /api/bot/dashboard:', error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -371,7 +361,9 @@ app.post('/api/bot/create', async (req, res) => {
 //  ЗАПУСК СЕРВЕРА
 // ============================================
 
-app.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 API Server запущен на порту ${port}`);
-    console.log(`🌐 Открой: http://localhost:${port}/`);
+app.listen(PORT, () => {
+    console.log(`🚀 API Server запущен на порту ${PORT}`);
+    console.log(`🌐 Открой: http://localhost:${PORT}/`);
 });
+
+module.exports = app;
