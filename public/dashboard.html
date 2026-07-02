@@ -254,7 +254,6 @@
 
                 document.getElementById('userEmail').textContent = user.email;
 
-                // 1. Получаем список ботов пользователя
                 const botsResponse = await fetch(`/api/bot/list/${user.email}`);
                 const botsData = await botsResponse.json();
 
@@ -265,7 +264,6 @@
 
                 let html = '';
 
-                // 2. Для каждого бота загружаем данные с дашборда
                 for (const bot of botsData.bots) {
                     try {
                         const dashboardResponse = await fetch(`/api/bot/dashboard/${user.email}/${bot.id}`);
@@ -278,15 +276,21 @@
                         const statusLabel = data.status === 'active' ? '🟢 Активен' :
                             data.status === 'paused' ? '🟡 Пауза' : '🔴 Остановлен';
 
+                        // Приводим строки к числам
+                        const balance = parseFloat(data.balance) || 0;
+                        const totalPnl = parseFloat(data.totalPnl) || 0;
+
                         let positionsHtml = '';
                         if (data.positions && data.positions.length > 0) {
                             data.positions.forEach(pos => {
-                                const pnlClass = pos.pnl >= 0 ? 'positive' : 'negative';
+                                const pnl = parseFloat(pos.pnl) || 0;
+                                const margin = parseFloat(pos.margin) || 0;
+                                const pnlClass = pnl >= 0 ? 'positive' : 'negative';
                                 positionsHtml += `
                                     <div class="pos-item">
-                                        <span class="pos-symbol">${pos.symbol}</span>
-                                        <span class="pos-details">${pos.side} | ${pos.leverage}x | Маржа: $${pos.margin.toFixed(2)}</span>
-                                        <span class="pos-pnl ${pnlClass}">${pos.pnl >= 0 ? '+' : ''}$${pos.pnl.toFixed(2)}</span>
+                                        <span class="pos-symbol">${pos.symbol || '—'}</span>
+                                        <span class="pos-details">${pos.side || '—'} | ${pos.leverage || 10}x | Маржа: $${margin.toFixed(2)}</span>
+                                        <span class="pos-pnl ${pnlClass}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
                                         <span class="pos-details">SL: ${pos.stopLoss || '—'} | TP: ${pos.takeProfit || '—'}</span>
                                     </div>
                                 `;
@@ -295,7 +299,7 @@
                             positionsHtml = `<div class="no-positions">Нет открытых позиций</div>`;
                         }
 
-                        const totalPnlClass = data.totalPnl >= 0 ? 'positive' : 'negative';
+                        const totalPnlClass = totalPnl >= 0 ? 'positive' : 'negative';
 
                         html += `
                             <div class="bot-card ${statusClass}">
@@ -304,8 +308,8 @@
                                     <span class="bot-status-label">${statusLabel}</span>
                                 </div>
                                 <div class="bot-balance-pnl">
-                                    <div class="balance-item">💰 Баланс: <span>$${data.balance.toFixed(2)}</span></div>
-                                    <div class="balance-item">📊 Общий PNL: <span class="pnl-value ${totalPnlClass}">${data.totalPnl >= 0 ? '+' : ''}$${data.totalPnl.toFixed(2)}</span></div>
+                                    <div class="balance-item">💰 Баланс: <span>$${balance.toFixed(2)}</span></div>
+                                    <div class="balance-item">📊 Общий PNL: <span class="pnl-value ${totalPnlClass}">${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}</span></div>
                                 </div>
                                 <div class="positions-list">
                                     ${positionsHtml}
