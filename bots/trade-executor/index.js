@@ -90,9 +90,6 @@ function calculateSignalScore(signal) {
     const timeWeight = Math.max(0, 10 - ageMinutes * 0.2);
     score += timeWeight;
 
-    // 5. Направление тренда (макс 10) - заглушка, можно доработать
-    // score += 5;
-
     return Math.round(score);
 }
 
@@ -176,8 +173,7 @@ async function cleanupExpiredSignals() {
                 .from('signals')
                 .update({
                     status: 'expired',
-                    executed: true,
-                    executed_at: now.toISOString()
+                    executed: true
                 })
                 .in('id', expiredSignals);
 
@@ -213,7 +209,7 @@ function getBestSignalForSymbol(signals, currentPrice) {
 //  УПРАВЛЕНИЕ ПОЗИЦИЕЙ
 // ============================================
 
-async function handleOppositeSignal(signal, position, bot, user, supabase, exchangeClient) {
+async function handleOppositeSignal(signal, position, bot, user, exchangeClient) {
     const comparison = compareSignalWithPosition(signal, position);
 
     switch (comparison) {
@@ -239,7 +235,7 @@ async function handleOppositeSignal(signal, position, bot, user, supabase, excha
                 // 3. Помечаем сигнал как исполненный
                 await supabase
                     .from('signals')
-                    .update({ executed: true, executed_at: new Date().toISOString() })
+                    .update({ executed: true })
                     .eq('id', signal.id);
 
             } catch (error) {
@@ -262,7 +258,7 @@ async function handleOppositeSignal(signal, position, bot, user, supabase, excha
                 // 3. Помечаем сигнал как исполненный
                 await supabase
                     .from('signals')
-                    .update({ executed: true, executed_at: new Date().toISOString() })
+                    .update({ executed: true })
                     .eq('id', signal.id);
 
             } catch (error) {
@@ -281,7 +277,7 @@ async function handleOppositeSignal(signal, position, bot, user, supabase, excha
     }
 }
 
-async function handleSameDirectionSignal(signal, position, bot, user, supabase, exchangeClient) {
+async function handleSameDirectionSignal(signal, position, bot, user, exchangeClient) {
     const comparison = compareSignalWithPosition(signal, position);
 
     if (comparison === 'better' || comparison === 'equal') {
@@ -299,8 +295,7 @@ async function handleSameDirectionSignal(signal, position, bot, user, supabase, 
                 .from('trades')
                 .update({
                     stop_loss: signal.stop_loss,
-                    take_profit: signal.take_profit,
-                    updated_at: new Date().toISOString()
+                    take_profit: signal.take_profit
                 })
                 .eq('symbol', signal.symbol)
                 .eq('status', 'open');
@@ -315,7 +310,7 @@ async function handleSameDirectionSignal(signal, position, bot, user, supabase, 
             // 3. Помечаем сигнал как исполненный
             await supabase
                 .from('signals')
-                .update({ executed: true, executed_at: new Date().toISOString() })
+                .update({ executed: true })
                 .eq('id', signal.id);
 
         } catch (error) {
@@ -326,7 +321,7 @@ async function handleSameDirectionSignal(signal, position, bot, user, supabase, 
         // Сигнал хуже — удаляем
         await supabase
             .from('signals')
-            .update({ status: 'ignored', executed: true, executed_at: new Date().toISOString() })
+            .update({ status: 'ignored', executed: true })
             .eq('id', signal.id);
         log.debug(`⏭️ Сигнал ${signal.id} хуже позиции по ${signal.symbol}, удалён`);
     }
@@ -336,7 +331,7 @@ async function handleSameDirectionSignal(signal, position, bot, user, supabase, 
 //  ИСПОЛНЕНИЕ СИГНАЛА С УПРАВЛЕНИЕМ ПОЗИЦИЕЙ
 // ============================================
 
-async function executeSignalWithManagement(signal, bot, user, supabase) {
+async function executeSignalWithManagement(signal, bot, user) {
     try {
         // 1. Получаем клиент биржи
         const exchangeName = bot.exchange || 'bingx';
@@ -375,7 +370,7 @@ async function executeSignalWithManagement(signal, bot, user, supabase) {
             if (result.executed) {
                 await supabase
                     .from('signals')
-                    .update({ executed: true, executed_at: new Date().toISOString() })
+                    .update({ executed: true })
                     .eq('id', signal.id);
             }
 
@@ -388,11 +383,11 @@ async function executeSignalWithManagement(signal, bot, user, supabase) {
 
         if (signalSide === positionSide) {
             // Одно направление
-            await handleSameDirectionSignal(signal, position, bot, user, supabase, exchangeClient);
+            await handleSameDirectionSignal(signal, position, bot, user, exchangeClient);
             return { executed: true, reason: 'Обработан как улучшение позиции' };
         } else {
             // Противоположное направление
-            await handleOppositeSignal(signal, position, bot, user, supabase, exchangeClient);
+            await handleOppositeSignal(signal, position, bot, user, exchangeClient);
             return { executed: true, reason: 'Обработан как противоположный сигнал' };
         }
 
@@ -485,7 +480,7 @@ async function checkNewSignals() {
                     continue;
                 }
 
-                await executeSignalWithManagement(bestSignal, bot, user, supabase);
+                await executeSignalWithManagement(bestSignal, bot, user);
                 await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ORDERS));
             }
         }
