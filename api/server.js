@@ -62,8 +62,8 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
 
-        // Простая проверка пароля (в реальном проекте использовать bcrypt)
-        if (user.password !== password) {
+        // Проверка пароля с обрезкой пробелов (исправлено)
+        if (user.password.trim() !== password.trim()) {
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
 
@@ -102,7 +102,7 @@ app.post('/api/register', async (req, res) => {
             .from('users')
             .insert({
                 email,
-                password,
+                password: password.trim(),
                 name,
                 bots: [],
                 exchange_credentials: {}
