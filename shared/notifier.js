@@ -101,5 +101,6 @@ module.exports = {
     notifyError,
     notifyTrade,
     notifyClose,
-    notifySignal
+    notifySignal,
+    notifyInfo
 };
