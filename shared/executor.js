@@ -105,11 +105,14 @@ async function executeSignal(signal, bot, user, supabase) {
         console.log(`📊 Исполнение ${signal.side} для ${signal.symbol} на ${exchangeName}: ${position.quantity} по ${entryPrice}`);
         console.log(`   Стоп-лосс: ${position.stopLoss}, Тейк-профит: ${position.takeProfit}`);
 
+        // 🔧 ИСПРАВЛЕНИЕ: stopLoss и takeProfit должны быть строками
         const orderResult = await exchangeClient.placeOrder(
             signal.symbol,
             orderSide,
             position.quantity,
-            null  // MARKET ордер без цены
+            null,  // MARKET ордер без цены
+            position.stopLoss.toString(),      // <-- СТРОКА
+            position.takeProfit.toString()     // <-- СТРОКА
         );
 
         if (!orderResult || !orderResult.orderId) {
