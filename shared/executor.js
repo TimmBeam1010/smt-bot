@@ -33,7 +33,7 @@ const exchanges = require('../shared/exchanges');
 
 async function executeSignal(signal, bot, user, supabase) {
     try {
-        // 1. Проверяем, есть ли уже открытая позиция
+        // 1. Проверяем, есть ли уже открытая позиция в БД
         const { data: openTrades, error: tradeError } = await supabase
             .from('trades')
             .select('*')
@@ -47,7 +47,7 @@ async function executeSignal(signal, bot, user, supabase) {
         }
 
         if (openTrades && openTrades.length > 0) {
-            console.log(`⏭️ Уже есть открытая позиция по ${signal.symbol}`);
+            console.log(`⏭️ Уже есть открытая позиция по ${signal.symbol} в БД`);
             return { executed: false, reason: 'Уже есть открытая позиция' };
         }
 
@@ -67,21 +67,39 @@ async function executeSignal(signal, bot, user, supabase) {
             return { executed: false, reason: 'Биржа не поддерживается' };
         }
 
-        // 4. Получаем баланс
+        // 🆕 4. Проверяем реальные позиции на бирже
+        try {
+            const positions = await exchangeClient.getPositions();
+            if (positions && positions.length > 0) {
+                const existingPosition = positions.find(p => 
+                    p.symbol === signal.symbol || 
+                    p.symbol === signal.symbol.replace('-', '')
+                );
+                if (existingPosition) {
+                    console.log(`⏭️ Уже есть реальная позиция по ${signal.symbol} на бирже`);
+                    return { executed: false, reason: 'Уже есть открытая позиция на бирже' };
+                }
+            }
+        } catch (error) {
+            console.error('❌ Ошибка проверки позиций на бирже:', error.message);
+            // Не блокируем открытие, если не удалось проверить
+        }
+
+        // 5. Получаем баланс
         const balance = await exchangeClient.getBalance();
         if (balance === null || balance === undefined) {
             console.error(`❌ Не удалось получить баланс для ${user.email}`);
             return { executed: false, reason: 'Не удалось получить баланс' };
         }
 
-        // 5. Получаем цену входа
+        // 6. Получаем цену входа
         const entryPrice = parseFloat(signal.entry_price);
         if (!entryPrice || entryPrice <= 0) {
             console.error(`❌ Некорректная цена входа: ${signal.entry_price}`);
             return { executed: false, reason: 'Некорректная цена' };
         }
 
-        // 6. Рассчитываем позицию
+        // 7. Рассчитываем позицию
         const riskPercent = bot.risk?.risk_percent || 2.0;
         const stopLossPercent = bot.risk?.stop_loss_percent || 1.5;
         
@@ -98,21 +116,20 @@ async function executeSignal(signal, bot, user, supabase) {
             return { executed: false, reason: 'Некорректный размер позиции' };
         }
 
-        // 7. Определяем сторону ордера
+        // 8. Определяем сторону ордера
         const orderSide = signal.side === 'LONG' ? 'BUY' : 'SELL';
 
-        // 8. Отправляем MARKET ордер (без цены)
+        // 9. Отправляем MARKET ордер (без цены)
         console.log(`📊 Исполнение ${signal.side} для ${signal.symbol} на ${exchangeName}: ${position.quantity} по ${entryPrice}`);
         console.log(`   Стоп-лосс: ${position.stopLoss}, Тейк-профит: ${position.takeProfit}`);
 
-        // 🔧 ИСПРАВЛЕНИЕ: stopLoss и takeProfit должны быть строками
         const orderResult = await exchangeClient.placeOrder(
             signal.symbol,
             orderSide,
             position.quantity,
             null,  // MARKET ордер без цены
-            position.stopLoss.toString(),      // <-- СТРОКА
-            position.takeProfit.toString()     // <-- СТРОКА
+            position.stopLoss.toString(),
+            position.takeProfit.toString()
         );
 
         if (!orderResult || !orderResult.orderId) {
@@ -120,7 +137,7 @@ async function executeSignal(signal, bot, user, supabase) {
             return { executed: false, reason: 'Ошибка создания ордера' };
         }
 
-        // 9. Сохраняем сделку в БД
+        // 10. Сохраняем сделку в БД
         const { data: trade, error: saveError } = await supabase
             .from('trades')
             .insert({
@@ -145,7 +162,7 @@ async function executeSignal(signal, bot, user, supabase) {
             return { executed: false, reason: 'Ошибка сохранения сделки' };
         }
 
-        // 10. Обновляем сигнал
+        // 11. Обновляем сигнал
         await supabase
             .from('signals')
             .update({ executed: true, executed_at: new Date() })
@@ -176,26 +193,22 @@ function calculatePositionSize(balance, riskPercent, stopLossPercent, entryPrice
     let quantity = riskAmount / priceDiff;
     
     // Минимальные ограничения BingX для BTC-USDT
-    const minOrderValue = 2; // Минимальная стоимость ордера в USDT
-    const minOrderSize = 0.0001; // Минимальный размер в BTC
+    const minOrderValue = 2;
+    const minOrderSize = 0.0001;
     
-    // Проверяем минимальную стоимость
     const orderValue = quantity * entryPrice;
     if (orderValue < minOrderValue) {
         quantity = minOrderValue / entryPrice;
         console.log(`⚠️ Корректировка: минимальная стоимость $${minOrderValue}, новый размер: ${quantity}`);
     }
     
-    // Проверяем минимальный размер
     if (quantity < minOrderSize) {
         quantity = minOrderSize;
         console.log(`⚠️ Корректировка: минимальный размер ${minOrderSize} BTC`);
     }
     
-    // Округляем до 8 знаков (минимальный шаг на BingX)
     const roundedQuantity = Math.round(quantity * 100000000) / 100000000;
     
-    // Проверяем, что после округления не стало 0
     if (roundedQuantity <= 0) {
         console.error(`❌ Ошибка: рассчитанный размер позиции = 0 после округления`);
         return { quantity: 0, stopLoss: 0, takeProfit: 0 };
