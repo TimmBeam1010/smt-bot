@@ -3,10 +3,16 @@
 // ============================================
 
 const axios = require('axios');
+const { logger } = require('./logger');
+const log = logger('notifier');
 
-// Настройки (возьми из .env или укажи здесь)
+// Настройки
 const TELEGRAM_BOT_TOKEN = '8626291636:AAHS6vk8hTgbEeVfM2B1gOOCCEcTe3HRsr0';
 const TELEGRAM_CHAT_ID = '1744745843';
+
+// Ограничение частоты отправки (чтобы избежать 429 Too Many Requests)
+let lastNotificationTime = 0;
+const MIN_INTERVAL = 5000; // 5 секунд между уведомлениями
 
 /**
  * Отправить сообщение в Telegram
@@ -15,11 +21,19 @@ const TELEGRAM_CHAT_ID = '1744745843';
  */
 async function sendTelegram(message, level = 'info') {
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-        console.warn('⚠️ Telegram не настроен: пропуск уведомления');
+        log.warn('Telegram не настроен: пропуск уведомления');
         return;
     }
 
     try {
+        // Ограничение частоты
+        const now = Date.now();
+        const waitTime = Math.max(0, MIN_INTERVAL - (now - lastNotificationTime));
+        if (waitTime > 0) {
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        lastNotificationTime = Date.now();
+
         // Эмодзи для разных уровней
         const emojis = {
             info: '📘',
@@ -39,9 +53,16 @@ async function sendTelegram(message, level = 'info') {
             parse_mode: 'HTML'
         });
 
-        console.log(`📨 Уведомление отправлено в Telegram (${level})`);
+        log.debug(`Уведомление отправлено в Telegram (${level})`);
     } catch (error) {
-        console.error('❌ Ошибка отправки в Telegram:', error.response?.data || error.message);
+        // Логируем ошибку, но не прерываем выполнение
+        if (error.response?.status === 429) {
+            log.warn('Telegram: слишком много запросов, уведомление пропущено');
+        } else {
+            log.error('Ошибка отправки в Telegram', { 
+                error: error.response?.data || error.message 
+            });
+        }
     }
 }
 
@@ -94,6 +115,13 @@ async function notifySignal(signal) {
         `🎯 Уверенность: ${signal.confidence || 'medium'}\n` +
         `💰 Цена: $${signal.entry_price || '—'}`;
     await sendTelegram(text, 'info');
+}
+
+/**
+ * Уведомление об информационном событии
+ */
+async function notifyInfo(message) {
+    await sendTelegram(message, 'info');
 }
 
 module.exports = {
