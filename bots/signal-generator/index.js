@@ -1,16 +1,14 @@
-// === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
+// ============================================
+//  МОДУЛЬ ГЕНЕРАЦИИ СИГНАЛОВ
+// ============================================
+
 const WebSocket = require('ws');
 global.WebSocket = WebSocket;
-// =============================================
-// ============================================
-//  МОДУЛЬ ГЕНЕРАЦИИ СИГНАЛОВ (с логгером и кешем)
-// ============================================
 
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
-// Импорт логгера и кеша
 const { logger } = require('../../shared/logger');
 const cache = require('../../shared/cache');
 const log = logger('signal-generator');
@@ -26,47 +24,16 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 log.info('✅ Подключение к Supabase установлено');
 
-// Импорт торговой логики
-const trading = require('../../shared/trading');
 const notifier = require('../../shared/notifier');
-
-// ============================================
-//  ПОЛУЧЕНИЕ ЦЕН С КЕШИРОВАНИЕМ
-// ============================================
-
-const CACHE_TTL_PRICE = 10000; // 10 секунд
-
-async function getPriceWithCache(symbol, exchange = 'bingx') {
-    const cacheKey = `price:${exchange}:${symbol}`;
-    let price = cache.get(cacheKey);
-    
-    if (price) {
-        log.debug('Цена получена из кеша', { symbol, price });
-        return price;
-    }
-
-    try {
-        // Здесь должен быть реальный запрос к бирже
-        // Пока используем заглушку
-        price = 60000 + Math.random() * 1000;
-        cache.set(cacheKey, price, CACHE_TTL_PRICE);
-        log.debug('Цена получена с биржи', { symbol, price });
-        return price;
-    } catch (error) {
-        log.error('Ошибка получения цены', { symbol, error: error.message });
-        return null;
-    }
-}
 
 // ============================================
 //  ГЕНЕРАЦИЯ СИГНАЛОВ
 // ============================================
 
-const SIGNAL_INTERVAL = 30000; // 30 секунд
+const SIGNAL_INTERVAL = 30000;
 
 async function generateSignals() {
     try {
-        // Получаем всех пользователей с активными ботами
         const { data: users, error: usersError } = await supabase
             .from('users')
             .select('*');
@@ -91,16 +58,11 @@ async function generateSignals() {
 
                 for (const symbol of symbols) {
                     try {
-                        // Получаем цену с кешированием
-                        const price = await getPriceWithCache(symbol);
-                        if (!price) continue;
-
-                        // Генерируем сигнал (заглушка)
+                        // TODO: реальная логика генерации сигналов
                         const side = Math.random() > 0.5 ? 'LONG' : 'SHORT';
                         const confidence = ['low', 'medium', 'high'][Math.floor(Math.random() * 3)];
-                        const entryPrice = price;
+                        const entryPrice = 60000 + Math.random() * 1000;
 
-                        // Сохраняем сигнал в БД
                         const { data: signal, error: signalError } = await supabase
                             .from('signals')
                             .insert({
@@ -110,7 +72,8 @@ async function generateSignals() {
                                 confidence: confidence,
                                 entry_price: entryPrice,
                                 created_at: new Date(),
-                                executed: false
+                                executed: false,
+                                status: 'pending'
                             })
                             .select()
                             .single();
@@ -130,7 +93,6 @@ async function generateSignals() {
                             signalId: signal.id
                         });
 
-                        // Уведомление о новом сигнале
                         await notifier.notifySignal(signal);
 
                     } catch (error) {
@@ -148,13 +110,7 @@ async function generateSignals() {
     }
 }
 
-// ============================================
-//  ЗАПУСК
-// ============================================
-
 log.info('⏰ Signal Generator: Запущен (каждые 30 секунд)');
 
 setInterval(generateSignals, SIGNAL_INTERVAL);
-
-// Первый запуск сразу
 generateSignals();
