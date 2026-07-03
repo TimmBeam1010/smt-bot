@@ -27,10 +27,13 @@ if (!supabaseUrl || !supabaseKey) {
     process.exit(1);
 }
 
-const WebSocket = require('ws');
+// 🔧 Исправлено: добавлен transport: WebSocket и timeout
 const supabase = createClient(supabaseUrl, supabaseKey, {
     realtime: {
         transport: WebSocket
+    },
+    db: {
+        timeout: 60000 // 60 секунд
     }
 });
 log.info('✅ Подключение к Supabase установлено');
