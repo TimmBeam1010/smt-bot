@@ -22,7 +22,15 @@ if (!supabaseUrl || !supabaseKey) {
     process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// 🔧 Исправлено: добавлен transport: WebSocket и timeout
+const supabase = createClient(supabaseUrl, supabaseKey, {
+    realtime: {
+        transport: WebSocket
+    },
+    db: {
+        timeout: 60000
+    }
+});
 console.log("✅ Подключение к Supabase установлено");
 
 app.use(cors());
