@@ -2,21 +2,18 @@
 //  API СЕРВЕР (SMT BOT)
 // ============================================
 
+const WebSocket = require('ws');
+global.WebSocket = WebSocket;
+
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-// === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
-const WebSocket = require('ws');
-global.WebSocket = WebSocket;
-// =============================================
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 
@@ -28,27 +25,20 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("✅ Подключение к Supabase установлено");
 
-// Middleware
 app.use(cors());
 app.use(express.json());
-
-// Статика
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Импорт модулей
 const exchanges = require('../shared/exchanges');
-const { executeSignal } = require('../shared/executor');
 
 // ============================================
 //  ЭНДПОИНТЫ
 // ============================================
 
-// Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'SMT Bot API работает!' });
 });
 
-// Login
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -62,7 +52,6 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
 
-        // Проверка пароля с обрезкой пробелов (исправлено)
         if (user.password.trim() !== password.trim()) {
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
@@ -83,7 +72,6 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Register
 app.post('/api/register', async (req, res) => {
     try {
         const { email, password, name } = req.body;
@@ -130,7 +118,6 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Получение списка ботов пользователя
 app.get('/api/bot/list/:email', async (req, res) => {
     try {
         const { email } = req.params;
@@ -152,7 +139,6 @@ app.get('/api/bot/list/:email', async (req, res) => {
     }
 });
 
-// Создание бота
 app.post('/api/bot/create', async (req, res) => {
     try {
         const { email, bot } = req.body;
@@ -186,7 +172,6 @@ app.post('/api/bot/create', async (req, res) => {
     }
 });
 
-// Обновление бота
 app.patch('/api/bot/update', async (req, res) => {
     try {
         const { email, botId, updates } = req.body;
@@ -225,7 +210,6 @@ app.patch('/api/bot/update', async (req, res) => {
     }
 });
 
-// Удаление бота
 app.delete('/api/bot/delete', async (req, res) => {
     try {
         const { email, botId } = req.body;
@@ -258,15 +242,10 @@ app.delete('/api/bot/delete', async (req, res) => {
     }
 });
 
-// ============================================
-//  ЭНДПОИНТ: ДАННЫЕ ДЛЯ КАРТОЧКИ БОТА
-// ============================================
-
 app.get('/api/bot/dashboard/:email/:botId', async (req, res) => {
     try {
         const { email, botId } = req.params;
 
-        // 1. Получаем пользователя
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('*')
@@ -277,13 +256,11 @@ app.get('/api/bot/dashboard/:email/:botId', async (req, res) => {
             return res.status(404).json({ error: 'Пользователь не найден' });
         }
 
-        // 2. Находим нужного бота
         const bot = (user.bots || []).find(b => b.id === botId);
         if (!bot) {
             return res.status(404).json({ error: 'Бот не найден' });
         }
 
-        // 3. Получаем ключи для биржи
         const exchange = bot.exchange || 'bingx';
         const credentials = user.exchange_credentials?.[exchange];
         let balance = 0;
@@ -299,13 +276,9 @@ app.get('/api/bot/dashboard/:email/:botId', async (req, res) => {
                 );
 
                 if (exchangeClient) {
-                    // Получаем баланс
                     balance = await exchangeClient.getBalance() || 0;
-
-                    // Получаем список открытых позиций с биржи
                     const rawPositions = await exchangeClient.getPositions() || [];
 
-                    // Форматируем позиции для отображения
                     positions = rawPositions.map(pos => {
                         const pnl = pos.unrealizedProfit || 0;
                         totalPnl += pnl;
@@ -327,15 +300,10 @@ app.get('/api/bot/dashboard/:email/:botId', async (req, res) => {
             }
         }
 
-        // 4. Определяем статус бота
         let status = 'active';
-        if (bot.paused) {
-            status = 'paused';
-        } else if (!bot.active) {
-            status = 'stopped';
-        }
+        if (bot.paused) status = 'paused';
+        else if (!bot.active) status = 'stopped';
 
-        // 5. Отправляем ответ
         res.json({
             success: true,
             data: {
@@ -356,10 +324,6 @@ app.get('/api/bot/dashboard/:email/:botId', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
-// ============================================
-//  ЗАПУСК СЕРВЕРА
-// ============================================
 
 app.listen(PORT, () => {
     console.log(`🚀 API Server запущен на порту ${PORT}`);
