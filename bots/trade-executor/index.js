@@ -41,7 +41,7 @@ const { executeSignal } = require('../../shared/executor');
 //  КОНФИГУРАЦИЯ
 // ============================================
 
-const MAX_SIGNALS_PER_BATCH = 5;
+const MAX_SIGNALS_PER_BATCH = 3;
 const DELAY_BETWEEN_ORDERS = 2000;
 const CHECK_INTERVAL = 30000;
 const SIGNAL_TTL = {
