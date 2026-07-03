@@ -29,7 +29,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
         transport: WebSocket
     },
     db: {
-        timeout: 60000
+        timeout: 60000 // 60 секунд
     }
 });
 log.info('✅ Подключение к Supabase установлено');
