@@ -56,6 +56,7 @@ async function sendTelegram(message, level = 'info') {
     }
 }
 
+// 🔧 ИСПРАВЛЕНО: используем sendTelegram вместо notifyError
 async function notifyError(message, context = '') {
     const text = `🚨 <b>ОШИБКА</b>\n${message}\n${context ? `\n📎 Контекст: ${context}` : ''}`;
     await sendTelegram(text, 'error');
