@@ -6,10 +6,7 @@ const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-// === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
-const WebSocket = require('ws');
-global.WebSocket = WebSocket;
-// =============================================
+
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
