@@ -27,7 +27,12 @@ if (!supabaseUrl || !supabaseKey) {
     process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const WebSocket = require('ws');
+const supabase = createClient(supabaseUrl, supabaseKey, {
+    realtime: {
+        transport: WebSocket
+    }
+});
 log.info('✅ Подключение к Supabase установлено');
 
 app.use(cors());
