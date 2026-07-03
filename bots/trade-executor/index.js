@@ -122,7 +122,7 @@ async function getPendingSignals() {
             .from('signals')
             .select('id, user_id, symbol, side, confidence, entry_price, created_at, status')
             .eq('executed', false)
-            .eq('status', 'pending')
+            .or('status.eq.pending,status.is.null')
             .order('created_at', { ascending: true })
             .limit(MAX_SIGNALS_PER_BATCH);
 
