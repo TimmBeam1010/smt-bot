@@ -23,13 +23,14 @@ if (!supabaseUrl || !supabaseKey) {
     process.exit(1);
 }
 
-// 🔧 Исправлено: добавлен transport: WebSocket и timeout
+// 🔧 Увеличен таймаут до 120 секунд
 const supabase = createClient(supabaseUrl, supabaseKey, {
     realtime: {
         transport: WebSocket
     },
     db: {
-        timeout: 60000 // 60 секунд
+        timeout: 120000, // 120 секунд
+        schema: 'public'
     }
 });
 log.info('✅ Подключение к Supabase установлено');
@@ -53,7 +54,7 @@ let consecutiveErrors = 0;
 const MAX_CONSECUTIVE_ERRORS = 5;
 
 // ============================================
-//  ОЧИСТКА УСТАРЕВШИХ СИГНАЛОВ
+//  ОЧИСТКА УСТАРЕВШИХ СИГНАЛОВ (оптимизирована)
 // ============================================
 
 async function cleanupExpiredSignals() {
@@ -61,9 +62,10 @@ async function cleanupExpiredSignals() {
         const now = new Date();
         const expiredSignals = [];
 
+        // 🔧 Оптимизированный запрос: только ID и confidence
         const { data: signals, error } = await supabase
             .from('signals')
-            .select('*')
+            .select('id, confidence, created_at')
             .eq('executed', false)
             .eq('status', 'pending');
 
@@ -71,6 +73,8 @@ async function cleanupExpiredSignals() {
             log.error('Ошибка получения сигналов для очистки', { error: error.message });
             return;
         }
+
+        if (!signals || signals.length === 0) return;
 
         for (const signal of signals) {
             const createdAt = new Date(signal.created_at);
@@ -83,22 +87,54 @@ async function cleanupExpiredSignals() {
         }
 
         if (expiredSignals.length > 0) {
-            const { error: updateError } = await supabase
-                .from('signals')
-                .update({
-                    status: 'expired',
-                    executed: true
-                })
-                .in('id', expiredSignals);
+            // 🔧 Удаляем пачками по 100
+            const batchSize = 100;
+            for (let i = 0; i < expiredSignals.length; i += batchSize) {
+                const batch = expiredSignals.slice(i, i + batchSize);
+                const { error: updateError } = await supabase
+                    .from('signals')
+                    .update({
+                        status: 'expired',
+                        executed: true
+                    })
+                    .in('id', batch);
 
-            if (updateError) {
-                log.error('Ошибка обновления устаревших сигналов', { error: updateError.message });
-            } else {
-                log.info(`🧹 Очищено ${expiredSignals.length} устаревших сигналов (TTL истёк)`);
+                if (updateError) {
+                    log.error('Ошибка обновления устаревших сигналов', { error: updateError.message });
+                } else {
+                    log.info(`🧹 Очищено ${batch.length} устаревших сигналов (TTL истёк)`);
+                }
             }
         }
     } catch (error) {
         log.error('Ошибка в cleanupExpiredSignals', { error: error.message });
+    }
+}
+
+// ============================================
+//  ПОЛУЧЕНИЕ СИГНАЛОВ (оптимизировано)
+// ============================================
+
+async function getPendingSignals() {
+    try {
+        // 🔧 Оптимизированный запрос: только нужные поля
+        const { data: signals, error } = await supabase
+            .from('signals')
+            .select('id, user_id, symbol, side, confidence, entry_price, created_at, status')
+            .eq('executed', false)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: true })
+            .limit(MAX_SIGNALS_PER_BATCH);
+
+        if (error) {
+            log.error('Ошибка получения сигналов', { error: error.message });
+            return null;
+        }
+
+        return signals;
+    } catch (error) {
+        log.error('Ошибка в getPendingSignals', { error: error.message });
+        return null;
     }
 }
 
@@ -110,32 +146,22 @@ async function checkNewSignals() {
     log.debug('🔄 Проверка новых сигналов');
 
     try {
+        // 1. Очищаем устаревшие
         await cleanupExpiredSignals();
 
-        const { data: signals, error } = await supabase
-            .from('signals')
-            .select('*')
-            .eq('executed', false)
-            .eq('status', 'pending')
-            .order('created_at', { ascending: true })
-            .limit(MAX_SIGNALS_PER_BATCH);
-
-        if (error) {
-            log.error('Ошибка получения сигналов', { error: error.message });
-            await notifier.notifyError(`Ошибка получения сигналов: ${error.message}`, 'Supabase');
-            consecutiveErrors++;
-            return;
-        }
-
-        if (signals.length === 0) {
+        // 2. Получаем сигналы
+        const signals = await getPendingSignals();
+        if (!signals || signals.length === 0) {
             consecutiveErrors = 0;
             return;
         }
 
         log.info(`📡 Найдено ${signals.length} сигналов в очереди`);
 
+        // 3. Обрабатываем сигналы
         for (const signal of signals) {
             try {
+                // Получаем пользователя
                 const { data: user, error: userError } = await supabase
                     .from('users')
                     .select('*')
@@ -148,6 +174,7 @@ async function checkNewSignals() {
                     continue;
                 }
 
+                // Проверяем активные боты
                 const bots = user.bots || [];
                 const activeBots = bots.filter(bot =>
                     bot.active &&
@@ -160,6 +187,7 @@ async function checkNewSignals() {
                     continue;
                 }
 
+                // Исполняем сигнал для каждого бота
                 for (const bot of activeBots) {
                     const signalLevels = bot.risk?.signal_levels || ['low', 'medium', 'high'];
                     if (!signalLevels.includes(signal.confidence)) {
@@ -170,7 +198,7 @@ async function checkNewSignals() {
                     log.info(`📈 Исполнение сигнала ${signal.symbol} для ${user.email}`);
 
                     const result = await executeSignal(signal, bot, user, supabase);
-                    
+
                     if (result.executed) {
                         log.info(`✅ Сделка открыта для ${user.email} (${signal.symbol})`);
                         await notifier.notifyTrade(signal, result.trade);
@@ -184,14 +212,15 @@ async function checkNewSignals() {
                 }
 
             } catch (err) {
-                log.error('Ошибка обработки сигнала', { 
-                    signalId: signal.id, 
-                    error: err.message 
+                log.error('Ошибка обработки сигнала', {
+                    signalId: signal.id,
+                    error: err.message
                 });
                 consecutiveErrors++;
             }
         }
 
+        // Если ошибок слишком много — делаем паузу
         if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
             log.warn(`⚠️ Слишком много ошибок подряд (${consecutiveErrors}). Пауза 60 секунд...`);
             await new Promise(resolve => setTimeout(resolve, 60000));
@@ -203,6 +232,10 @@ async function checkNewSignals() {
         consecutiveErrors++;
     }
 }
+
+// ============================================
+//  ЗАПУСК
+// ============================================
 
 log.info('⏰ Trade Executor: Запущен (мониторинг каждые 30 секунд)');
 
