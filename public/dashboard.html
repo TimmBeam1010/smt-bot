@@ -196,6 +196,40 @@
             font-size: 0.85rem;
         }
 
+        /* === КНОПКИ УПРАВЛЕНИЯ === */
+        .bot-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .bot-actions button {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: background 0.2s, color 0.2s;
+            line-height: 1;
+        }
+        .bot-actions button:hover {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        .bot-actions .btn-delete:hover {
+            color: #ef4444;
+        }
+        .bot-actions .btn-pause:hover {
+            color: #facc15;
+        }
+        .bot-actions .btn-stop:hover {
+            color: #ef4444;
+        }
+        .bot-actions .btn-play:hover {
+            color: #22c55e;
+        }
+
         /* === ЗАГЛУШКИ === */
         .no-bots {
             color: #64748b;
@@ -216,6 +250,10 @@
             }
             .bot-card .positions-list .pos-item {
                 font-size: 0.7rem;
+            }
+            .bot-actions button {
+                font-size: 16px;
+                padding: 2px 4px;
             }
         }
     </style>
@@ -240,6 +278,96 @@
     </div>
 
     <script>
+        // ============================================
+        //  ПОЛУЧЕНИЕ СТАТУСА БОТА
+        // ============================================
+
+        async function getBotStatus(email, botId) {
+            try {
+                const response = await fetch(`/api/bot/list/${email}`);
+                const data = await response.json();
+                const bot = data.bots.find(b => b.id === botId);
+                return bot || { paused: false, active: true };
+            } catch (error) {
+                console.error('Ошибка получения статуса бота:', error);
+                return { paused: false, active: true };
+            }
+        }
+
+        // ============================================
+        //  УПРАВЛЕНИЕ БОТАМИ
+        // ============================================
+
+        async function togglePause(email, botId) {
+            try {
+                const currentStatus = await getBotStatus(email, botId);
+                const newPaused = !currentStatus.paused;
+
+                const response = await fetch('/api/bot/update', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        botId,
+                        updates: { paused: newPaused }
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    loadBotsDashboard();
+                }
+            } catch (error) {
+                console.error('Ошибка переключения паузы:', error);
+            }
+        }
+
+        async function toggleActive(email, botId) {
+            try {
+                const currentStatus = await getBotStatus(email, botId);
+                const newActive = !currentStatus.active;
+
+                const response = await fetch('/api/bot/update', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        botId,
+                        updates: { active: newActive }
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    loadBotsDashboard();
+                }
+            } catch (error) {
+                console.error('Ошибка переключения активности:', error);
+            }
+        }
+
+        async function deleteBot(email, botId) {
+            if (!confirm(`Удалить бота?`)) return;
+
+            try {
+                const response = await fetch('/api/bot/delete', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, botId })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    loadBotsDashboard();
+                } else {
+                    alert('Ошибка удаления бота: ' + (data.error || 'неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка удаления бота:', error);
+                alert('Ошибка удаления бота');
+            }
+        }
+
         // ============================================
         //  ЗАГРУЗКА ДАННЫХ ДЛЯ КАРТОЧЕК БОТОВ
         // ============================================
@@ -302,10 +430,20 @@
                         const totalPnlClass = totalPnl >= 0 ? 'positive' : 'negative';
 
                         html += `
-                            <div class="bot-card ${statusClass}">
+                            <div class="bot-card ${statusClass}" data-bot-id="${bot.id}">
                                 <div class="bot-header">
                                     <h3>🤖 ${data.bot.name || 'Без имени'}</h3>
-                                    <span class="bot-status-label">${statusLabel}</span>
+                                    <div class="bot-actions">
+                                        <button class="btn-pause" onclick="togglePause('${user.email}', '${bot.id}')" title="Пауза/Возобновить">
+                                            ${data.status === 'paused' ? '▶️' : '⏸️'}
+                                        </button>
+                                        <button class="btn-stop" onclick="toggleActive('${user.email}', '${bot.id}')" title="Остановить/Запустить">
+                                            ${data.status === 'stopped' ? '▶️' : '⏹️'}
+                                        </button>
+                                        <button class="btn-delete" onclick="deleteBot('${user.email}', '${bot.id}')" title="Удалить бота">
+                                            🗑️
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="bot-balance-pnl">
                                     <div class="balance-item">💰 Баланс: <span>$${balance.toFixed(2)}</span></div>
