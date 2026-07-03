@@ -13,6 +13,8 @@ const { logger } = require('../../shared/logger');
 const cache = require('../../shared/cache');
 const log = logger('signal-generator');
 
+const notifier = require('../../shared/notifier');
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 
@@ -27,12 +29,10 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
         transport: WebSocket
     },
     db: {
-        timeout: 60000
+        timeout: 60000 // 60 секунд
     }
 });
 log.info('✅ Подключение к Supabase установлено');
-
-const notifier = require('../../shared/notifier');
 
 // ============================================
 //  ГЕНЕРАЦИЯ СИГНАЛОВ
