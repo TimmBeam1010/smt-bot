@@ -160,6 +160,9 @@ async function checkNewSignals() {
 
         // 3. Обрабатываем сигналы
         for (const signal of signals) {
+            // 🔍 Логирование user_id для отладки
+            log.info(`🔍 Обработка сигнала ID: ${signal.id}, user_id: ${signal.user_id}`);
+
             try {
                 // Получаем пользователя
                 const { data: user, error: userError } = await supabase
