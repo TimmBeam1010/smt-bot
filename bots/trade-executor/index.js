@@ -5,10 +5,11 @@
  * 
  * Отвечает за:
  * 1. Получение сигналов из базы данных
- * 2. Проверку наличия открытых позиций
- * 3. Открытие сделок на BingX
- * 4. Управление рисками (SL/TP)
- * 5. Логирование всех действий
+ * 2. WebSocket подписка на новые сигналы (Supabase Realtime)
+ * 3. Проверку наличия открытых позиций
+ * 4. Открытие сделок на BingX
+ * 5. Управление рисками (SL/TP)
+ * 6. Логирование всех действий
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -35,6 +36,76 @@ const supabase = createClient(
 
 let exchangeClient = null;
 let isProcessing = false;
+let supabaseChannel = null;
+
+// ===== WEBSOCKET ПОДПИСКА НА НОВЫЕ СИГНАЛЫ =====
+function setupWebSocket() {
+  try {
+    logger.info('[trade-executor] 🔌 Настройка WebSocket подключения...');
+    
+    // Отписываемся от старого канала если есть
+    if (supabaseChannel) {
+      supabaseChannel.unsubscribe();
+      logger.info('[trade-executor] 📴 Отключен от старого WebSocket');
+    }
+    
+    // Создаём новый канал для подписки на сигналы
+    supabaseChannel = supabase
+      .channel('trade-executor-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'signals',
+          filter: `user_id=eq.${CONFIG.userId}`
+        },
+        async (payload) => {
+          logger.info('[trade-executor] 🔔 Новый сигнал получен через WebSocket!');
+          const signal = payload.new;
+          
+          // Проверяем, что сигнал ожидает исполнения
+          if (signal.status === 'pending') {
+            logger.info(`[trade-executor] 📨 Сигнал: ${signal.symbol} ${signal.side} @ ${signal.entry_price}`);
+            
+            // Проверяем позиции перед открытием
+            const positions = await getActivePositions();
+            const side = signal.side.toUpperCase();
+            
+            // Проверяем, можно ли открыть сделку
+            if (side === 'LONG' && positions.long < CONFIG.maxPositions) {
+              logger.info('[trade-executor] 🚀 Открываем LONG сделку (WebSocket)');
+              await executeTrade(signal);
+            } else if (side === 'SHORT' && positions.short < CONFIG.maxPositions) {
+              logger.info('[trade-executor] 🚀 Открываем SHORT сделку (WebSocket)');
+              await executeTrade(signal);
+            } else {
+              logger.info(`[trade-executor] ⏸️ Пропускаем ${side} (уже есть позиция)`);
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          logger.info('[trade-executor] ✅ WebSocket подключен и активен');
+        } else if (status === 'CHANNEL_ERROR') {
+          logger.error('[trade-executor] ❌ Ошибка WebSocket, пробуем переподключиться...');
+          // Пробуем переподключиться через 5 секунд
+          setTimeout(setupWebSocket, 5000);
+        } else {
+          logger.info(`[trade-executor] 📡 WebSocket статус: ${status}`);
+        }
+      });
+    
+    return supabaseChannel;
+    
+  } catch (error) {
+    logger.error(`[trade-executor] ❌ Ошибка WebSocket: ${error.message}`);
+    // Пробуем переподключиться через 10 секунд
+    setTimeout(setupWebSocket, 10000);
+    return null;
+  }
+}
 
 // ===== ФУНКЦИЯ ПОЛУЧЕНИЯ СИГНАЛОВ (С FALLBACK) =====
 async function getPendingSignals(userId = 11) {
@@ -331,17 +402,26 @@ async function start() {
   // Первый запуск сразу
   await mainLoop();
   
-  // Запускаем интервал
+  // Запускаем WebSocket для мгновенных сигналов
+  setupWebSocket();
+  
+  // Запускаем интервал (как резервный вариант)
   setInterval(mainLoop, CONFIG.checkInterval);
   
   // Обработка сигналов завершения
   process.on('SIGINT', () => {
     logger.info('🛑 Trade Executor остановлен');
+    if (supabaseChannel) {
+      supabaseChannel.unsubscribe();
+    }
     process.exit(0);
   });
   
   process.on('SIGTERM', () => {
     logger.info('🛑 Trade Executor остановлен');
+    if (supabaseChannel) {
+      supabaseChannel.unsubscribe();
+    }
     process.exit(0);
   });
 }
@@ -354,4 +434,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { start, getPendingSignals, executeTrade };
+module.exports = { start, getPendingSignals, executeTrade, setupWebSocket };
