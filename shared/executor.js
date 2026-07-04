@@ -129,13 +129,19 @@ const MIN_ORDER_SIZE = {
 
 async function getCandles(symbol, exchangeClient) {
     try {
+        console.log(`📊 Вызов getCandles для ${symbol}`);
         // 🔧 ПОЛУЧАЕМ РЕАЛЬНЫЕ СВЕЧИ С БИРЖИ
         const candles = await exchangeClient.getCandles(symbol, '5m', 50);
+        console.log(`📊 Результат getCandles для ${symbol}:`, candles ? `${candles.length} свечей` : 'null');
         if (!candles || candles.length === 0) {
             console.warn('⚠️ Не удалось получить свечи для', symbol);
             return [];
         }
         console.log(`📊 Получено ${candles.length} свечей для ${symbol}`);
+        // Логируем первые 3 свечи для проверки
+        if (candles.length > 0) {
+            console.log('📊 Пример свечей:', JSON.stringify(candles.slice(0, 3), null, 2));
+        }
         return candles;
     } catch (error) {
         console.error('❌ Ошибка получения свечей:', error.message);
@@ -145,7 +151,9 @@ async function getCandles(symbol, exchangeClient) {
 
 async function getIndicators(candles) {
     try {
+        console.log(`📊 Вызов getIndicators, свечей: ${candles?.length || 0}`);
         if (!candles || candles.length < 20) {
+            console.warn('⚠️ Недостаточно свечей для расчёта индикаторов');
             return { atr: 0 };
         }
 
