@@ -115,9 +115,11 @@ class BingXExchange {
                 interval: interval,
                 limit: limit
             };
-            // 🔧 ИСПРАВЛЕНО: swap/v2 → swap/v3
             const response = await this._signedGet('/openApi/swap/v3/quote/klines', params);
-            console.log('📥 Ответ свечей:', JSON.stringify(response, null, 2));
+            
+            // 🔧 ЛОГИРУЕМ СЫРОЙ ОТВЕТ
+            console.log('📥 Сырой ответ BingX (первые 2 свечи):', JSON.stringify(response.data?.slice(0, 2) || response, null, 2));
+            
             if (response?.code === 0) {
                 return response.data.map(candle => ({
                     timestamp: candle[0],
