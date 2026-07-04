@@ -115,12 +115,18 @@ class BingXExchange {
                 interval: interval,
                 limit: limit
             };
+            // 🔧 ИСПРАВЛЕНО: swap/v2 → swap/v3
             const response = await this._signedGet('/openApi/swap/v3/quote/klines', params);
             
-            // 🔧 ЛОГИРУЕМ СЫРОЙ ОТВЕТ
-            console.log('📥 Сырой ответ BingX (первые 2 свечи):', JSON.stringify(response.data?.slice(0, 2) || response, null, 2));
+            // 🔧 ЛОГИРУЕМ ВЕСЬ ОТВЕТ
+            console.log('📥 Сырой ответ BingX:', JSON.stringify(response, null, 2));
             
             if (response?.code === 0) {
+                // Проверяем, что data — массив
+                if (!Array.isArray(response.data)) {
+                    console.error('❌ response.data не является массивом:', typeof response.data);
+                    return null;
+                }
                 return response.data.map(candle => ({
                     timestamp: candle[0],
                     open: parseFloat(candle[1]),
