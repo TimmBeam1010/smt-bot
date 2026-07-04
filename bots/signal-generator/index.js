@@ -35,6 +35,50 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 log.info('✅ Подключение к Supabase установлено');
 
 // ============================================
+//  ИМПОРТ МОДУЛЕЙ
+// ============================================
+
+const exchanges = require('../../shared/exchanges');
+
+// ============================================
+//  ПОЛУЧЕНИЕ РЕАЛЬНОЙ ЦЕНЫ
+// ============================================
+
+async function getCurrentPrice(symbol, credentials, exchange = 'bingx') {
+    try {
+        // Сначала проверяем кеш
+        const cacheKey = `price:${exchange}:${symbol}`;
+        const cached = cache.get(cacheKey);
+        if (cached) {
+            log.debug('Цена получена из кеша', { symbol, price: cached });
+            return cached;
+        }
+
+        // Если в кеше нет — запрашиваем у биржи
+        const exchangeClient = exchanges.getExchange(exchange, credentials.api_key, credentials.secret_key);
+        if (!exchangeClient) {
+            log.error('Биржа не поддерживается', { exchange });
+            return null;
+        }
+
+        // 🔧 ПОЛУЧАЕМ РЕАЛЬНУЮ ЦЕНУ С БИРЖИ
+        const price = await exchangeClient.getPrice(symbol);
+        if (!price) {
+            log.error('Не удалось получить цену с биржи', { symbol });
+            return null;
+        }
+
+        // Сохраняем в кеш на 10 секунд
+        cache.set(cacheKey, price, 10000);
+        log.debug('Цена получена с биржи', { symbol, price });
+        return price;
+    } catch (error) {
+        log.error('Ошибка получения цены', { symbol, error: error.message });
+        return null;
+    }
+}
+
+// ============================================
 //  ГЕНЕРАЦИЯ СИГНАЛОВ
 // ============================================
 
@@ -61,15 +105,30 @@ async function generateSignals() {
 
             log.debug(`🤖 ${activeBots.length} активных ботов для пользователя ${user.email}`);
 
+            // Получаем ключи для биржи
+            const exchangeName = 'bingx';
+            const credentials = user.exchange_credentials?.[exchangeName];
+            
+            if (!credentials || !credentials.api_key || !credentials.secret_key) {
+                log.warn('Нет ключей для биржи', { email: user.email });
+                continue;
+            }
+
             for (const bot of activeBots) {
                 const symbols = bot.symbols || ['BTC-USDT'];
 
                 for (const symbol of symbols) {
                     try {
-                        // TODO: реальная логика генерации сигналов
+                        // 🔧 ПОЛУЧАЕМ РЕАЛЬНУЮ ЦЕНУ
+                        const entryPrice = await getCurrentPrice(symbol, credentials, exchangeName);
+                        if (!entryPrice) {
+                            log.warn('Не удалось получить цену для', { symbol });
+                            continue;
+                        }
+
+                        // Генерируем сигнал (для теста используем случайную сторону)
                         const side = Math.random() > 0.5 ? 'LONG' : 'SHORT';
                         const confidence = ['low', 'medium', 'high'][Math.floor(Math.random() * 3)];
-                        const entryPrice = 60000 + Math.random() * 1000;
 
                         const { data: signal, error: signalError } = await supabase
                             .from('signals')
@@ -102,6 +161,9 @@ async function generateSignals() {
                         });
 
                         await notifier.notifySignal(signal);
+
+                        // Небольшая задержка между сигналами
+                        await new Promise(resolve => setTimeout(resolve, 500));
 
                     } catch (error) {
                         log.error('Ошибка генерации сигнала', { 
