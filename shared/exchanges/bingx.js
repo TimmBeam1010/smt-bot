@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ BINGX (с getCandles и исправленным TP/SL)
+//  МОДУЛЬ BINGX (с getCandles, getContracts и исправленным TP/SL)
 // ============================================
 
 const crypto = require('crypto');
@@ -115,14 +115,11 @@ class BingXExchange {
                 interval: interval,
                 limit: limit
             };
-            // 🔧 ИСПРАВЛЕНО: swap/v2 → swap/v3
             const response = await this._signedGet('/openApi/swap/v3/quote/klines', params);
             
-            // 🔧 ЛОГИРУЕМ ВЕСЬ ОТВЕТ
             console.log('📥 Сырой ответ BingX:', JSON.stringify(response, null, 2));
             
             if (response?.code === 0) {
-                // Проверяем, что data — массив
                 if (!Array.isArray(response.data)) {
                     console.error('❌ response.data не является массивом:', typeof response.data);
                     return null;
@@ -141,6 +138,21 @@ class BingXExchange {
         } catch (error) {
             console.error('❌ Ошибка getCandles:', error.message);
             return null;
+        }
+    }
+
+    // 🔧 НОВЫЙ МЕТОД: ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ
+    async getContracts() {
+        try {
+            const response = await this._signedGet('/openApi/swap/v2/quote/contracts');
+            if (response?.code === 0) {
+                return response.data || [];
+            }
+            console.error('❌ Ошибка получения контрактов:', response);
+            return [];
+        } catch (error) {
+            console.error('❌ Ошибка getContracts:', error.message);
+            return [];
         }
     }
 
@@ -191,7 +203,6 @@ class BingXExchange {
                 quantity: quantity.toString()
             };
             
-            // 🔧 ИСПРАВЛЕНО: TP/SL должны быть JSON-строками
             if (stopLoss) {
                 params.stopLoss = JSON.stringify({
                     type: "STOP",
