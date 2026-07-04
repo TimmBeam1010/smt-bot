@@ -2,6 +2,12 @@
 //  МОДУЛЬ ФИБОНАЧЧИ
 // ============================================
 
+/**
+ * Рассчитать уровни Фибоначчи
+ * @param {number} high - Максимум движения
+ * @param {number} low - Минимум движения
+ * @returns {Object} Уровни Фибоначчи
+ */
 function getFibonacciLevels(high, low) {
     const diff = high - low;
     return {
@@ -20,6 +26,9 @@ function getFibonacciLevels(high, low) {
     };
 }
 
+/**
+ * Найти ближайший уровень Фибоначчи
+ */
 function findNearestFibonacciLevel(price, fibLevels) {
     let nearest = null;
     let minDiff = Infinity;
@@ -34,7 +43,21 @@ function findNearestFibonacciLevel(price, fibLevels) {
     return nearest;
 }
 
+/**
+ * Проверить, находится ли цена на уровне Фибоначчи
+ */
+function isPriceAtFibonacci(price, fibLevels, tolerance = 0.001) {
+    const allLevels = { ...fibLevels, ...fibLevels.extensions };
+    for (const [name, level] of Object.entries(allLevels)) {
+        if (Math.abs(price - level) / level < tolerance) {
+            return name;
+        }
+    }
+    return null;
+}
+
 module.exports = {
     getFibonacciLevels,
-    findNearestFibonacciLevel
+    findNearestFibonacciLevel,
+    isPriceAtFibonacci
 };
