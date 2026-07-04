@@ -184,13 +184,32 @@ async function executeSignal(signal, bot, user, supabase) {
         const riskPercent = bot.risk?.risk_percent || 2.0;
         const stopLossPercent = bot.risk?.stop_loss_percent || 1.5;
         
+        // Получаем свечи и индикаторы для расчёта TP/SL
+        const candles = await getCandles(signal.symbol, exchangeClient);
+        const indicators = await getIndicators(candles);
+        
+        // Рассчитываем TP/SL динамически
+        const positionLevels = calculatePositionLevels(
+            signal.symbol,
+            entryPrice,
+            candles,
+            indicators,
+            signal.side,
+            { minRatio: 2.0 }
+        );
+        
+        // Рассчитываем размер позиции
         const position = calculatePositionSize(
             balance,
             riskPercent,
-            stopLossPercent,
+            positionLevels.stopLoss,
             entryPrice,
             signal.symbol
         );
+        
+        // Используем рассчитанные TP/SL
+        const stopLoss = positionLevels.stopLoss;
+        const takeProfit = positionLevels.takeProfit;
 
         // Проверяем, что позиция не нулевая
         if (position.quantity <= 0) {
