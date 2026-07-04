@@ -14,6 +14,7 @@ const { logger } = require('../../shared/logger');
 const log = logger('trade-executor');
 
 const notifier = require('../../shared/notifier');
+const symbolValidator = require('../../shared/symbol-validator');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
@@ -30,7 +31,6 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 log.info('✅ Подключение к Supabase установлено');
 
 const { executeSignal } = require('../../shared/executor');
-const activeSymbols = require('../../shared/active-symbols');
 
 // ============================================
 //  КОНФИГУРАЦИЯ
@@ -39,7 +39,9 @@ const activeSymbols = require('../../shared/active-symbols');
 const MAX_SIGNALS_PER_BATCH = 5;
 const DELAY_BETWEEN_ORDERS = 2000;
 const CHECK_INTERVAL = 30000;
-const SYMBOLS_UPDATE_INTERVAL = 3600000; // 1 час
+let exchangeClient = null;
+let lastCleanup = 0;
+const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 минут
 
 // ============================================
 //  ПОЛУЧЕНИЕ СИГНАЛОВ (только MEDIUM и HIGH)
@@ -76,10 +78,11 @@ async function checkNewSignals() {
     log.debug('🔄 Проверка новых сигналов');
 
     try {
-        // 1. Обновляем список активных символов (раз в час)
-        if (!checkNewSignals.lastUpdate || Date.now() - checkNewSignals.lastUpdate > SYMBOLS_UPDATE_INTERVAL) {
-            await updateActiveSymbolsForAllUsers();
-            checkNewSignals.lastUpdate = Date.now();
+        // 1. Проверяем и удаляем неактивные сигналы
+        const now = Date.now();
+        if (now - lastCleanup > CLEANUP_INTERVAL) {
+            await symbolValidator.cleanupInactiveSignals(supabase, exchangeClient);
+            lastCleanup = now;
         }
 
         // 2. Получаем сигналы
@@ -93,6 +96,17 @@ async function checkNewSignals() {
         // 3. Обрабатываем сигналы
         for (const signal of signals) {
             try {
+                // 4. Проверяем активность символа
+                const isActive = await symbolValidator.isSymbolActive(signal.symbol, exchangeClient);
+                if (!isActive) {
+                    log.warn(`⏭️ Символ ${signal.symbol} неактивен, сигнал удаляется`);
+                    await supabase
+                        .from('signals')
+                        .update({ status: 'expired', executed: true })
+                        .eq('id', signal.id);
+                    continue;
+                }
+
                 const { data: user, error: userError } = await supabase
                     .from('users')
                     .select('*')
@@ -156,61 +170,34 @@ async function checkNewSignals() {
 }
 
 // ============================================
-//  ОБНОВЛЕНИЕ АКТИВНЫХ СИМВОЛОВ ДЛЯ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
-// ============================================
-
-async function updateActiveSymbolsForAllUsers() {
-    try {
-        log.debug('🔄 Обновление списка активных символов для всех пользователей');
-
-        const { data: users, error: usersError } = await supabase
-            .from('users')
-            .select('*');
-
-        if (usersError) {
-            log.error('Ошибка получения пользователей для обновления символов', { error: usersError.message });
-            return;
-        }
-
-        let updatedCount = 0;
-
-        for (const user of users) {
-            const credentials = user.exchange_credentials?.['bingx'];
-            if (!credentials || !credentials.api_key || !credentials.secret_key) {
-                continue;
-            }
-
-            const result = await activeSymbols.updateBotSymbols(
-                user.email,
-                'bingx',
-                credentials.api_key,
-                credentials.secret_key,
-                supabase
-            );
-
-            if (result.success && result.updated > 0) {
-                updatedCount += result.updated;
-                log.info(`Обновлены символы для ${user.email}: удалено ${result.updated} неактивных символов`);
-            }
-        }
-
-        if (updatedCount > 0) {
-            log.info(`✅ Всего обновлено ${updatedCount} ботов`);
-        }
-
-    } catch (error) {
-        log.error('Ошибка обновления активных символов', { error: error.message });
-    }
-}
-
-// ============================================
 //  ЗАПУСК
 // ============================================
 
-log.info('⏰ Trade Executor: Запущен (мониторинг каждые 30 секунд)');
-log.info('🔄 Автоочистка символов: каждые 60 минут');
+async function init() {
+    // Инициализация клиента биржи для проверки символов
+    // Для первого пользователя, у которого есть ключи
+    try {
+        const { data: user } = await supabase
+            .from('users')
+            .select('exchange_credentials')
+            .eq('email', 'trnabiev@gmail.com')
+            .single();
 
-checkNewSignals.lastUpdate = 0;
+        if (user?.exchange_credentials?.bingx) {
+            const { api_key, secret_key } = user.exchange_credentials.bingx;
+            const exchanges = require('../../shared/exchanges');
+            exchangeClient = exchanges.getExchange('bingx', api_key, secret_key);
+            log.info('🔑 Клиент биржи инициализирован для проверки символов');
+        }
+    } catch (error) {
+        log.warn('Не удалось инициализировать клиент биржи', { error: error.message });
+    }
 
-setInterval(checkNewSignals, CHECK_INTERVAL);
-checkNewSignals();
+    log.info('⏰ Trade Executor: Запущен (мониторинг каждые 30 секунд)');
+    log.info('🔄 Автоочистка неактивных символов: каждые 5 минут');
+
+    setInterval(checkNewSignals, CHECK_INTERVAL);
+    checkNewSignals();
+}
+
+init();
