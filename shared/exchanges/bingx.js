@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ BINGX (с getCandles и исправленным getPrice)
+//  МОДУЛЬ BINGX (с getCandles и исправленным TP/SL)
 // ============================================
 
 const crypto = require('crypto');
@@ -12,7 +12,7 @@ class BingXExchange {
         this.name = 'bingx';
         this.baseURL = 'https://open-api.bingx.com';
         this.lastRequestTime = 0;
-        this.MIN_REQUEST_INTERVAL = 5000; // 5 секунд между запросами
+        this.MIN_REQUEST_INTERVAL = 2000; // 2 секунды между запросами
     }
 
     async _waitForRateLimit() {
@@ -87,7 +87,7 @@ class BingXExchange {
         return response.data;
     }
 
-    // 🔧 ИСПРАВЛЕННЫЙ МЕТОД: ПОЛУЧЕНИЕ ЦЕНЫ
+    // 🔧 ПОЛУЧЕНИЕ ЦЕНЫ
     async getPrice(symbol) {
         try {
             const symbolFormatted = symbol.replace('_', '-');
@@ -169,6 +169,7 @@ class BingXExchange {
         }
     }
 
+    // 🔧 ИСПРАВЛЕННЫЙ МЕТОД: РАЗМЕЩЕНИЕ ОРДЕРА С TP/SL
     async placeOrder(symbol, side, quantity, price = null, stopLoss = null, takeProfit = null) {
         try {
             const symbolFormatted = symbol.replace('_', '-');
@@ -180,15 +181,26 @@ class BingXExchange {
                 quantity: quantity.toString()
             };
             
+            // 🔧 ИСПРАВЛЕНО: TP/SL должны быть JSON-строками
             if (stopLoss) {
-                params.stopLoss = stopLoss.toString();
+                params.stopLoss = JSON.stringify({
+                    type: "STOP",
+                    stopPrice: parseFloat(stopLoss),
+                    price: parseFloat(stopLoss)
+                });
             }
             if (takeProfit) {
-                params.takeProfit = takeProfit.toString();
+                params.takeProfit = JSON.stringify({
+                    type: "TAKE_PROFIT",
+                    stopPrice: parseFloat(takeProfit),
+                    price: parseFloat(takeProfit)
+                });
             }
             if (price && price > 0) {
                 params.price = price.toString();
             }
+            
+            console.log('📤 Параметры ордера:', JSON.stringify(params, null, 2));
             
             const response = await this._signedPost('/openApi/swap/v2/trade/order', params);
             if (response?.code === 0) {
