@@ -117,7 +117,7 @@ class BingXExchange {
             };
             const response = await this._signedGet('/openApi/swap/v3/quote/klines', params);
             
-            console.log('📥 Сырой ответ BingX:', JSON.stringify(response, null, 2));
+            console.log('📥 Сырой ответ свечей:', JSON.stringify(response, null, 2));
             
             if (response?.code === 0) {
                 if (!Array.isArray(response.data)) {
@@ -141,10 +141,11 @@ class BingXExchange {
         }
     }
 
-    // 🔧 НОВЫЙ МЕТОД: ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ
+    // 🔧 ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ (С ЛОГИРОВАНИЕМ)
     async getContracts() {
         try {
             const response = await this._signedGet('/openApi/swap/v2/quote/contracts');
+            console.log('📥 ОТВЕТ КОНТРАКТОВ:', JSON.stringify(response, null, 2));
             if (response?.code === 0) {
                 return response.data || [];
             }
