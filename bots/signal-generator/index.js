@@ -23,22 +23,14 @@ if (!supabaseUrl || !supabaseKey) {
     process.exit(1);
 }
 
-// 🔧 Исправлено: добавлен transport: WebSocket и timeout
 const supabase = createClient(supabaseUrl, supabaseKey, {
-    realtime: {
-        transport: WebSocket
-    },
-    db: {
-        timeout: 60000 // 60 секунд
-    }
+    realtime: { transport: WebSocket },
+    db: { timeout: 60000 }
 });
 log.info('✅ Подключение к Supabase установлено');
 
-// ============================================
-//  ИМПОРТ МОДУЛЕЙ
-// ============================================
-
 const exchanges = require('../../shared/exchanges');
+const confluence = require('../../shared/confluence');
 
 // ============================================
 //  ПОЛУЧЕНИЕ РЕАЛЬНОЙ ЦЕНЫ
@@ -46,7 +38,6 @@ const exchanges = require('../../shared/exchanges');
 
 async function getCurrentPrice(symbol, credentials, exchange = 'bingx') {
     try {
-        // Сначала проверяем кеш
         const cacheKey = `price:${exchange}:${symbol}`;
         const cached = cache.get(cacheKey);
         if (cached) {
@@ -54,26 +45,47 @@ async function getCurrentPrice(symbol, credentials, exchange = 'bingx') {
             return cached;
         }
 
-        // Если в кеше нет — запрашиваем у биржи
         const exchangeClient = exchanges.getExchange(exchange, credentials.api_key, credentials.secret_key);
         if (!exchangeClient) {
             log.error('Биржа не поддерживается', { exchange });
             return null;
         }
 
-        // 🔧 ПОЛУЧАЕМ РЕАЛЬНУЮ ЦЕНУ С БИРЖИ
         const price = await exchangeClient.getPrice(symbol);
         if (!price) {
             log.error('Не удалось получить цену с биржи', { symbol });
             return null;
         }
 
-        // Сохраняем в кеш на 10 секунд
         cache.set(cacheKey, price, 10000);
         log.debug('Цена получена с биржи', { symbol, price });
         return price;
     } catch (error) {
         log.error('Ошибка получения цены', { symbol, error: error.message });
+        return null;
+    }
+}
+
+// ============================================
+//  ПОЛУЧЕНИЕ РЕАЛЬНЫХ СВЕЧЕЙ С БИРЖИ
+// ============================================
+
+async function getMarketData(symbol, exchangeClient) {
+    try {
+        // 🔧 ПОЛУЧАЕМ РЕАЛЬНЫЕ СВЕЧИ С БИРЖИ
+        const candles = await exchangeClient.getCandles(symbol, '5m', 50);
+        if (!candles || candles.length === 0) {
+            log.warn('Не удалось получить свечи для', { symbol });
+            return null;
+        }
+        
+        const high = Math.max(...candles.map(c => c.high));
+        const low = Math.min(...candles.map(c => c.low));
+        const close = candles[candles.length - 1].close;
+        
+        return { candles, high, low, close };
+    } catch (error) {
+        log.error('Ошибка получения рыночных данных', { symbol, error: error.message });
         return null;
     }
 }
@@ -105,7 +117,6 @@ async function generateSignals() {
 
             log.debug(`🤖 ${activeBots.length} активных ботов для пользователя ${user.email}`);
 
-            // Получаем ключи для биржи
             const exchangeName = 'bingx';
             const credentials = user.exchange_credentials?.[exchangeName];
             
@@ -114,30 +125,61 @@ async function generateSignals() {
                 continue;
             }
 
+            const exchangeClient = exchanges.getExchange(exchangeName, credentials.api_key, credentials.secret_key);
+            if (!exchangeClient) {
+                log.error('Биржа не поддерживается', { exchangeName });
+                continue;
+            }
+
             for (const bot of activeBots) {
                 const symbols = bot.symbols || ['BTC-USDT'];
 
                 for (const symbol of symbols) {
                     try {
-                        // 🔧 ПОЛУЧАЕМ РЕАЛЬНУЮ ЦЕНУ
+                        // 1. Получаем реальную цену
                         const entryPrice = await getCurrentPrice(symbol, credentials, exchangeName);
                         if (!entryPrice) {
                             log.warn('Не удалось получить цену для', { symbol });
                             continue;
                         }
 
-                        // Генерируем сигнал (для теста используем случайную сторону)
-                        const side = Math.random() > 0.5 ? 'LONG' : 'SHORT';
-                        const confidence = ['low', 'medium', 'high'][Math.floor(Math.random() * 3)];
+                        // 2. Получаем реальные рыночные данные
+                        const marketData = await getMarketData(symbol, exchangeClient);
+                        if (!marketData) {
+                            log.warn('Не удалось получить рыночные данные для', { symbol });
+                            continue;
+                        }
 
+                        // 3. Получаем Confluence
+                        const signalWeight = 50;
+                        const confluenceResult = await confluence.getConfluence(
+                            { 
+                                symbol, 
+                                entry_price: entryPrice, 
+                                side: 'LONG',
+                                weight: signalWeight 
+                            },
+                            marketData,
+                            { 
+                                high: marketData.high, 
+                                low: marketData.low, 
+                                candles: marketData.candles 
+                            }
+                        );
+
+                        // 4. Определяем сторону
+                        const side = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+
+                        // 5. Создаём сигнал
                         const { data: signal, error: signalError } = await supabase
                             .from('signals')
                             .insert({
                                 user_id: user.id,
                                 symbol: symbol,
                                 side: side,
-                                confidence: confidence,
+                                confidence: confluenceResult.confidence,
                                 entry_price: entryPrice,
+                                reasons: confluenceResult.reasons,
                                 created_at: new Date(),
                                 executed: false,
                                 status: 'pending'
@@ -154,15 +196,15 @@ async function generateSignals() {
                             continue;
                         }
 
-                        log.info(`📊 Новый сигнал: ${symbol} ${side} (${confidence})`, {
+                        log.info(`📊 Новый сигнал: ${symbol} ${side} (${confluenceResult.confidence})`, {
                             price: entryPrice,
                             userId: user.id,
-                            signalId: signal.id
+                            signalId: signal.id,
+                            reasons: confluenceResult.reasons,
+                            weight: confluenceResult.weight
                         });
 
                         await notifier.notifySignal(signal);
-
-                        // Небольшая задержка между сигналами
                         await new Promise(resolve => setTimeout(resolve, 500));
 
                     } catch (error) {
