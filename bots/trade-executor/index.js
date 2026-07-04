@@ -11,7 +11,7 @@
  * 5. Управление рисками (SL/TP)
  * 6. Логирование всех действий
  */
-
+const WebSocket = require('ws');
 const { createClient } = require('@supabase/supabase-js');
 const { createExchangeClient } = require('../../shared/exchanges');
 const { calculatePositionSize, calculateTPSL } = require('../../shared/position-calculator');
