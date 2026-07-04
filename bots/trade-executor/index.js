@@ -30,7 +30,6 @@ const CONFIG = {
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 // ===== ИНИЦИАЛИЗАЦИЯ С WEBSOCKET ПОДДЕРЖКОЙ =====
-const WebSocket = require('ws');
 
 const supabase = createClient(
   process.env.SUPABASE_URL || 'https://zqyalsprnbbjifjctdga.supabase.co',
