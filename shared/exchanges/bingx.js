@@ -126,7 +126,7 @@ class BingXExchange {
             const response = await this._signedPost('/openApi/swap/v2/trade/order', params);
             if (response?.code === 0) {
                 return {
-                    orderId: response.data.orderID || response.data.orderId,
+                    orderId: response.data.orderID || response.data.order.orderId,
                     symbol: symbol,
                     side: side,
                     quantity: quantity,
