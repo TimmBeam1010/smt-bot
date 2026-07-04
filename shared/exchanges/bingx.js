@@ -12,7 +12,7 @@ class BingXExchange {
         this.name = 'bingx';
         this.baseURL = 'https://open-api.bingx.com';
         this.lastRequestTime = 0;
-        this.MIN_REQUEST_INTERVAL = 2000; // 2 секунды между запросами
+        this.MIN_REQUEST_INTERVAL = 5000; // 5 секунд между запросами
     }
 
     async _waitForRateLimit() {
@@ -55,7 +55,6 @@ class BingXExchange {
         await this._waitForRateLimit();
         const { signature, timestamp } = this._generateGetSignature();
         
-        // Добавляем параметры в URL
         let url = `${this.baseURL}${endpoint}`;
         const queryParams = { ...params, timestamp, signature };
         const queryString = Object.keys(queryParams)
