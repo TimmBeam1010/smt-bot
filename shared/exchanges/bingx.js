@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ BINGX (с getCandles, getContracts и исправленным TP/SL)
+//  МОДУЛЬ BINGX (С ПРАВИЛЬНЫМИ РЫНОЧНЫМИ ОРДЕРАМИ)
 // ============================================
 
 const crypto = require('crypto');
@@ -140,17 +140,15 @@ class BingXExchange {
         }
     }
 
-    // 🔧 ИСПРАВЛЕННЫЙ МЕТОД: ПРИНИМАЕТ ОБЪЕКТ ПАРАМЕТРОВ
+    // ===== РЫНОЧНЫЙ ОРДЕР (БЕЗ ЦЕНЫ) =====
     async placeOrder(params) {
         try {
             const {
                 symbol,
                 side,
-                type = 'MARKET',
+                type = 'MARKET', // ← ВСЕГДА MARKET
                 quantity,
                 price = null,
-                stopLoss = null,
-                takeProfit = null,
                 leverage = 10,
                 positionSide = side === 'BUY' ? 'LONG' : 'SHORT'
             } = params;
@@ -158,48 +156,89 @@ class BingXExchange {
             const symbolFormatted = symbol.replace('_', '-');
             const orderParams = {
                 symbol: symbolFormatted,
-                side,
-                positionSide,
-                type,
+                side: side,
+                positionSide: positionSide,
+                type: 'MARKET', // ← ПРИНУДИТЕЛЬНО MARKET
                 quantity: quantity.toString()
             };
 
             if (leverage) orderParams.leverage = leverage.toString();
-            if (price && price > 0) orderParams.price = price.toString();
-            if (stopLoss) {
-                orderParams.stopLoss = JSON.stringify({
-                    type: "STOP",
-                    stopPrice: parseFloat(stopLoss),
-                    price: parseFloat(stopLoss)
-                });
-            }
-            if (takeProfit) {
-                orderParams.takeProfit = JSON.stringify({
-                    type: "TAKE_PROFIT",
-                    stopPrice: parseFloat(takeProfit),
-                    price: parseFloat(takeProfit)
-                });
-            }
+            // НЕ ДОБАВЛЯЕМ price для MARKET ордеров!
 
-            console.log('📤 Параметры ордера:', JSON.stringify(orderParams, null, 2));
+            console.log('📤 РЫНОЧНЫЙ ОРДЕР:', JSON.stringify(orderParams, null, 2));
 
             const response = await this._signedPost('/openApi/swap/v2/trade/order', orderParams);
             if (response?.code === 0) {
-                return {
+                const orderData = {
                     orderId: response.data.order.orderID || response.data.order.orderId,
                     symbol,
                     side,
                     quantity,
                     price,
-                    stopLoss,
-                    takeProfit,
                     status: 'filled'
                 };
+                console.log('✅ Ордер создан:', orderData.orderId);
+                return orderData;
             }
             console.error('❌ Ошибка ордера:', response);
             return null;
         } catch (error) {
             console.error('❌ Ошибка placeOrder:', error.message);
+            return null;
+        }
+    }
+
+    // ===== УСТАНОВКА TP/SL =====
+    async setTPSL(orderId, symbol, side, quantity, stopLoss, takeProfit) {
+        try {
+            const symbolFormatted = symbol.replace('_', '-');
+            const results = [];
+
+            if (stopLoss && stopLoss > 0) {
+                const slParams = {
+                    symbol: symbolFormatted,
+                    side: side,
+                    type: 'STOP_MARKET',
+                    positionSide: side === 'BUY' ? 'LONG' : 'SHORT',
+                    quantity: quantity.toString(),
+                    stopPrice: stopLoss.toString(),
+                    price: stopLoss.toString()
+                };
+                console.log('📤 Установка SL:', JSON.stringify(slParams, null, 2));
+                const slResponse = await this._signedPost('/openApi/swap/v2/trade/order', slParams);
+                if (slResponse?.code === 0) {
+                    console.log('✅ SL установлен:', stopLoss);
+                    results.push({ type: 'SL', status: 'success' });
+                } else {
+                    console.error('❌ Ошибка установки SL:', slResponse);
+                    results.push({ type: 'SL', status: 'failed', error: slResponse });
+                }
+            }
+
+            if (takeProfit && takeProfit > 0) {
+                const tpParams = {
+                    symbol: symbolFormatted,
+                    side: side,
+                    type: 'TAKE_PROFIT_MARKET',
+                    positionSide: side === 'BUY' ? 'LONG' : 'SHORT',
+                    quantity: quantity.toString(),
+                    stopPrice: takeProfit.toString(),
+                    price: takeProfit.toString()
+                };
+                console.log('📤 Установка TP:', JSON.stringify(tpParams, null, 2));
+                const tpResponse = await this._signedPost('/openApi/swap/v2/trade/order', tpParams);
+                if (tpResponse?.code === 0) {
+                    console.log('✅ TP установлен:', takeProfit);
+                    results.push({ type: 'TP', status: 'success' });
+                } else {
+                    console.error('❌ Ошибка установки TP:', tpResponse);
+                    results.push({ type: 'TP', status: 'failed', error: tpResponse });
+                }
+            }
+
+            return results;
+        } catch (error) {
+            console.error('❌ Ошибка setTPSL:', error.message);
             return null;
         }
     }

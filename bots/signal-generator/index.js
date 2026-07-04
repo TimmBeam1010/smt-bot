@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Signal Generator Bot (РЕШЕНИЕ ПРОБЛЕМЫ FETCH FAILED)
- * Использует прямой REST API к Supabase с правильными заголовками
+ * Signal Generator Bot (СТАБИЛЬНАЯ ВЕРСИЯ)
  */
 
 const { getExchange } = require('../../shared/exchanges');
+const trading = require('../../shared/trading');
 
 const log = {
   info: (msg) => console.log(`[${new Date().toISOString()}] [INFO] ${msg}`),
@@ -16,99 +16,124 @@ const log = {
 
 const CONFIG = {
   symbols: ['BTC-USDT', 'ETH-USDT', 'SOL-USDT', 'BNB-USDT', 'XRP-USDT'],
+  interval: '5m',
+  limit: 100,
   checkInterval: 30000,
 };
 
-let exchangeClient = null;
-let counter = 0;
+const supabaseUrl = 'https://sbpyuigmrqycqlrjlqqv.supabase.co';
+const supabaseKey = 'sb_publishable_TRnw7p3BXwp9_AbHiJR55A_yJBtEyGd';
 
-// ===== СОХРАНЕНИЕ В SUPABASE =====
-async function saveSignalDirectly(symbol, side, price) {
+let exchangeClient = null;
+
+async function supabaseRequest(method, endpoint, data = null) {
+  const url = `${supabaseUrl}/rest/v1/${endpoint}`;
+  const headers = {
+    'apikey': supabaseKey,
+    'Authorization': `Bearer ${supabaseKey}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+  const options = { method, headers };
+  if (data) options.body = JSON.stringify(data);
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`HTTP ${response.status}: ${text}`);
+  }
+  return response.json();
+}
+
+async function saveSignalDirectly(signal) {
   try {
-    const url = 'https://zqyalsprnbbjifjctdga.supabase.co/rest/v1/signals';
-    const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxeWFsc3BybmJiamlmamN0ZGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3OTk1MTgsImV4cCI6MjA1NzM3NTUxOH0.0Nt8hM5eZk7yjmjG2OV-5iDQBW0Z0aJQqg5CdIHEZUI';
+    if (!signal) return null;
     
+    if (signal.confidence === 'low') {
+      log.warn(`⛔ БЛОКИРОВКА LOW: ${signal.symbol} ${signal.side}`);
+      return null;
+    }
+    
+    if (signal.confidence !== 'medium' && signal.confidence !== 'high') {
+      log.warn(`⛔ БЛОКИРОВКА НЕИЗВЕСТНЫЙ: ${signal.symbol} ${signal.side} (${signal.confidence})`);
+      return null;
+    }
+
     const signalData = {
       user_id: 11,
-      symbol: symbol,
-      side: side,
-      entry_price: Math.round(price * 100) / 100,
-      confidence: 'high',
+      symbol: signal.symbol,
+      side: signal.side,
+      entry_price: Math.round(signal.entry * 100) / 100,
+      confidence: signal.confidence,
       status: 'pending',
-      reasons: [`Сигнал #${++counter}`],
+      reasons: signal.reasons || [],
+      rsi: signal.rsi || null,
+      macd: signal.macd || null,
       created_at: new Date().toISOString()
     };
 
-    log.info(`💾 Сохранение: ${symbol} ${side} @ ${signalData.entry_price}`);
+    log.info(`💾 СОХРАНЕНИЕ: ${signal.symbol} ${signal.side} (${signal.confidence})`);
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'apikey': apiKey,
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(signalData)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-
-    const result = await response.json();
-    log.info(`✅ Сигнал сохранен! ID: ${result?.[0]?.id || 'OK'}`);
+    const result = await supabaseRequest('POST', 'signals', signalData);
+    log.info(`✅ СОХРАНЕН! ID: ${result?.[0]?.id || 'OK'}`);
     return result;
 
   } catch (error) {
-    log.error(`❌ Ошибка: ${error.message}`);
+    log.error(`❌ Ошибка сохранения: ${error.message}`);
     return null;
   }
 }
 
-// ===== ГЕНЕРАЦИЯ =====
-async function generateSignals() {
+async function analyzeAndGenerateSignal(symbol) {
   try {
-    log.info(`📊 Генерация...`);
+    if (!exchangeClient) return;
     
-    for (const symbol of CONFIG.symbols) {
-      const price = 40000 + Math.random() * 50000;
-      const side = Math.random() > 0.5 ? 'LONG' : 'SHORT';
-      await saveSignalDirectly(symbol, side, price);
+    const candles = await exchangeClient.getCandles(symbol, CONFIG.interval, CONFIG.limit);
+    if (!candles || candles.length < 30) {
+      log.warn(`Недостаточно свечей для ${symbol}`);
+      return;
     }
     
-    log.info(`✅ Сгенерировано ${CONFIG.symbols.length} сигналов`);
+    const prices = candles.map(c => c.close);
+    const highs = candles.map(c => c.high);
+    const lows = candles.map(c => c.low);
+    const volumes = candles.map(c => c.volume);
+    
+    const signal = trading.generateSignal(symbol, prices, { highs, lows, volumes });
+    if (!signal) return;
+    
+    await saveSignalDirectly(signal);
     
   } catch (error) {
-    log.error(`❌ Ошибка: ${error.message}`);
+    log.error(`Ошибка анализа ${symbol}: ${error.message}`);
   }
 }
 
-// ===== ОСНОВНОЙ ЦИКЛ =====
 async function mainLoop() {
   try {
     if (!exchangeClient) {
       log.info('🔧 Инициализация клиента...');
-      exchangeClient = getExchange('bingx', 
+      exchangeClient = getExchange('bingx',
         process.env.BINGX_API_KEY || 'BOe6nx3Hlo8puQvg2wPIjNCWW4ISUY7SdYNlvi2jDApQr50hDvbv6At4vBoSDVN9o9LcEgEI4dcOkgY52A',
         process.env.BINGX_SECRET_KEY || 'jxHUWSOdzIT0K82tq5EUCjU6U36TRUocXAzjHEl9Jro2Z550amZqsTbNHJqj3gs8m7cXL3ANMRYDhivqZvWMA'
       );
       log.info('✅ Клиент инициализирован');
     }
-
-    await generateSignals();
-
+    
+    log.info(`📊 Анализ ${CONFIG.symbols.length} символов...`);
+    for (const symbol of CONFIG.symbols) {
+      await analyzeAndGenerateSignal(symbol);
+    }
+    
   } catch (error) {
-    log.error(`❌ Ошибка цикла: ${error.message}`);
+    log.error(`❌ Ошибка: ${error.message}`);
   }
 }
 
-// ===== ЗАПУСК =====
 async function start() {
-  log.info('🚀 Signal Generator Bot запущен');
-  log.info(`⏱️  Интервал: ${CONFIG.checkInterval / 1000}с`);
-  
+  log.info('🚀 Signal Generator Bot запущен (СТАБИЛЬНАЯ ВЕРСИЯ)');
+  log.info(`📋 Таймфрейм: ${CONFIG.interval}`);
+  log.info(`📋 Символы: ${CONFIG.symbols.length}`);
+  log.info(`⏱️ Интервал: ${CONFIG.checkInterval / 1000}с`);
   await mainLoop();
   setInterval(mainLoop, CONFIG.checkInterval);
 }
@@ -120,4 +145,20 @@ if (require.main === module) {
   });
 }
 
-module.exports = { start, saveSignalDirectly };
+module.exports = { start, analyzeAndGenerateSignal };
+
+async function start() {
+    log.info('🚀 Signal Generator Bot запущен');
+    log.info(`📋 Таймфрейм: ${CONFIG.interval}`);
+    log.info(`📋 Символы: ${CONFIG.symbols.length}`);
+    log.info(`⏱️ Интервал: ${CONFIG.checkInterval / 1000}с`);
+    await mainLoop();
+    setInterval(mainLoop, CONFIG.checkInterval);
+}
+
+if (require.main === module) {
+    start().catch(error => {
+        console.error(`❌ Критическая ошибка: ${error.message}`);
+        process.exit(1);
+    });
+}

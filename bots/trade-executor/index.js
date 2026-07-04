@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * Trade Executor Bot (С ГЕНЕРАЦИЕЙ ТЕСТОВЫХ СИГНАЛОВ)
- * Если сигналов нет - создает тестовые напрямую в Supabase
+ * Trade Executor Bot (СТАБИЛЬНАЯ ВЕРСИЯ)
  */
 
-const { createClient } = require('@supabase/supabase-js');
 const { getExchange } = require('../../shared/exchanges');
 const { calculatePositionSize, calculatePositionLevels } = require('../../shared/position-calculator');
+const { calculateDynamicRisk, calculateDynamicLeverage, calculateVolatility } = require('../../shared/risk-manager');
+const { TrailingStopManager } = require('../../shared/trailing-manager');
+const { notifyTrade, notifyError } = require('../../shared/notifier');
 
 const log = {
   info: (msg) => console.log(`[${new Date().toISOString()}] [INFO] ${msg}`),
@@ -16,213 +17,267 @@ const log = {
   debug: (msg) => console.log(`[${new Date().toISOString()}] [DEBUG] ${msg}`)
 };
 
-// ===== КОНФИГ =====
 const CONFIG = {
   userId: 11,
-  maxPositions: 1,
-  riskPercent: 0.3,
-  leverage: 10,
+  maxPositions: 10,
   checkInterval: 30000,
-  maxSignalsPerRun: 5,
-  testSymbols: ['BTC-USDT', 'ETH-USDT', 'SOL-USDT']
+  maxSignalsPerRun: 10,
+  minBalanceThreshold: 0.55,
+  highOnlyThreshold: 0.50,
+  trailingStopPercent: 0.02,
 };
 
-// ===== SUPABASE (БЕЗ WEBSOCKET) =====
-const supabase = createClient(
-  process.env.SUPABASE_URL || 'https://zqyalsprnbbjifjctdga.supabase.co',
-  process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxeWFsc3BybmJiamlmamN0ZGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3OTk1MTgsImV4cCI6MjA1NzM3NTUxOH0.0Nt8hM5eZk7yjmjG2OV-5iDQBW0Z0aJQqg5CdIHEZUI',
-  { realtime: { enabled: false } }
-);
+const supabaseUrl = 'https://sbpyuigmrqycqlrjlqqv.supabase.co';
+const supabaseKey = 'sb_publishable_TRnw7p3BXwp9_AbHiJR55A_yJBtEyGd';
 
 let exchangeClient = null;
 let isProcessing = false;
+let minOrderSizes = {};
+let initialBalance = 0;
+let trailingManager = new TrailingStopManager();
 
-// ===== ГЕНЕРАЦИЯ ТЕСТОВЫХ СИГНАЛОВ =====
-async function generateTestSignals() {
+async function loadMinOrderSizes() {
   try {
-    log.info('📊 Генерация тестовых сигналов...');
-    let count = 0;
-
-    for (const symbol of CONFIG.testSymbols) {
-      const price = 50000 + Math.random() * 30000;
-      const side = Math.random() > 0.5 ? 'LONG' : 'SHORT';
-      
-      const signalData = {
-        user_id: CONFIG.userId,
-        symbol: symbol,
-        side: side,
-        entry_price: Math.round(price * 100) / 100,
-        confidence: 'high',
-        status: 'pending',
-        reasons: ['Тестовый сигнал для автоторговли'],
-        created_at: new Date().toISOString()
-      };
-
-      const { data, error } = await supabase
-        .from('signals')
-        .insert([signalData])
-        .select();
-
-      if (error) {
-        log.error(`❌ Ошибка создания ${symbol}: ${error.message}`);
-      } else {
-        log.info(`✅ Создан сигнал: ${symbol} ${side} @ ${signalData.entry_price}`);
-        count++;
+    const contracts = await exchangeClient.getContracts();
+    if (!contracts || !Array.isArray(contracts)) return;
+    contracts.forEach(c => {
+      if (c.symbol && c.tradeMinQuantity) {
+        minOrderSizes[c.symbol] = parseFloat(c.tradeMinQuantity);
       }
-    }
-
-    log.info(`✅ Создано ${count} тестовых сигналов`);
-    return count;
-
+    });
+    log.info(`✅ Загружены минимальные размеры для ${Object.keys(minOrderSizes).length} символов`);
   } catch (error) {
-    log.error(`❌ Ошибка генерации: ${error.message}`);
-    return 0;
+    log.error(`Ошибка загрузки минимальных размеров: ${error.message}`);
   }
 }
 
-// ===== ПОЛУЧЕНИЕ СИГНАЛОВ =====
+async function supabaseRequest(method, endpoint, data = null) {
+  const url = `${supabaseUrl}/rest/v1/${endpoint}`;
+  const headers = {
+    'apikey': supabaseKey,
+    'Authorization': `Bearer ${supabaseKey}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+  const options = { method, headers };
+  if (data) options.body = JSON.stringify(data);
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`HTTP ${response.status}: ${text}`);
+  }
+  return response.json();
+}
+
 async function getPendingSignals() {
   try {
-    log.info(`📡 Запрос сигналов...`);
-    
-    const response = await fetch('https://smtbot.com/api/signals/user/11', {
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (!response.ok) throw new Error(`API статус ${response.status}`);
-
-    const data = await response.json();
-    let signalsArray = data?.signals || [];
-
-    if (!Array.isArray(signalsArray)) {
-      log.warn('⚠️ Не массив, пробуем другой формат');
-      signalsArray = Array.isArray(data) ? data : [];
+    log.info('📡 Запрос сигналов из Supabase...');
+    const data = await supabaseRequest('GET', `signals?user_id=eq.${CONFIG.userId}&status=eq.pending&order=created_at.desc&limit=${CONFIG.maxSignalsPerRun}`);
+    if (!Array.isArray(data)) {
+      log.warn('Ответ не массив');
+      return [];
     }
-
-    const pending = signalsArray.filter(s => s && s.status === 'pending');
-    log.info(`✅ Найдено ${pending.length} ожидающих сигналов (всего: ${signalsArray.length})`);
-
-    if (pending.length === 0) {
-      log.info('📭 Сигналов нет, генерируем тестовые...');
-      await generateTestSignals();
-      // Повторный запрос после генерации
-      const response2 = await fetch('https://smtbot.com/api/signals/user/11', {
-        headers: { 'Accept': 'application/json' }
-      });
-      const data2 = await response2.json();
-      const pending2 = (data2?.signals || []).filter(s => s && s.status === 'pending');
-      log.info(`✅ После генерации: ${pending2.length} сигналов`);
-      return pending2.slice(0, CONFIG.maxSignalsPerRun);
-    }
-
-    pending.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    return pending.slice(0, CONFIG.maxSignalsPerRun);
-
+    log.info(`📊 Найдено ${data.length} ожидающих сигналов`);
+    return data;
   } catch (error) {
-    log.error(`❌ Ошибка получения сигналов: ${error.message}`);
+    log.error(`Ошибка получения сигналов: ${error.message}`);
     return [];
   }
 }
 
-// ===== ОБНОВЛЕНИЕ СТАТУСА =====
 async function updateSignalStatus(signalId, status, data = {}) {
   try {
-    const response = await fetch(`https://smtbot.com/api/signals/${signalId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, executed_at: new Date().toISOString(), ...data })
-    });
-    if (!response.ok) throw new Error(`Статус ${response.status}`);
-    log.info(`✅ Сигнал ${signalId} обновлен: ${status}`);
+    const updateData = { status, executed_at: new Date().toISOString() };
+    await supabaseRequest('PATCH', `signals?id=eq.${signalId}`, updateData);
+    log.info(`Сигнал ${signalId} обновлен: ${status}`);
     return true;
   } catch (error) {
-    log.error(`❌ Ошибка обновления: ${error.message}`);
+    log.error(`Ошибка обновления: ${error.message}`);
     return false;
   }
 }
 
-// ===== ПОЛУЧЕНИЕ СВЕЧЕЙ =====
-async function getCandles(symbol) {
+async function getCandles(symbol, timeframe = '5m', limit = 50) {
   try {
-    if (!exchangeClient || typeof exchangeClient.getCandles !== 'function') return [];
-    const candles = await exchangeClient.getCandles({ symbol, interval: '5m', limit: 50 });
-    log.info(`✅ Получено ${candles?.length || 0} свечей для ${symbol}`);
+    if (!exchangeClient || typeof exchangeClient.getCandles !== 'function') {
+      log.warn('Метод getCandles не найден');
+      return [];
+    }
+    const cleanSymbol = String(symbol).trim();
+    const candles = await exchangeClient.getCandles(cleanSymbol, timeframe, limit);
+    log.info(`Получено ${candles?.length || 0} свечей для ${cleanSymbol}`);
     return candles || [];
   } catch (error) {
-    log.error(`❌ Ошибка свечей: ${error.message}`);
+    log.error(`Ошибка свечей: ${error.message}`);
     return [];
   }
 }
 
-// ===== ПРОВЕРКА ПОЗИЦИЙ =====
 async function getActivePositions() {
   try {
-    if (!exchangeClient) return { long: 0, short: 0 };
+    if (!exchangeClient) return { long: 0, short: 0, total: 0 };
     const positions = await exchangeClient.getPositions();
     let longCount = 0, shortCount = 0;
     if (positions && Array.isArray(positions)) {
       positions.forEach(pos => {
-        const size = parseFloat(pos.size || pos.quantity || 0);
-        if (size > 0.0001) {
-          if (pos.side === 'LONG' || pos.positionSide === 'LONG') longCount++;
-          else if (pos.side === 'SHORT' || pos.positionSide === 'SHORT') shortCount++;
+        const size = parseFloat(pos.size || pos.quantity || pos.amount || 0);
+        const positionAmt = parseFloat(pos.positionAmt || 0);
+        const actualSize = size > 0 ? size : positionAmt;
+        if (actualSize > 0.0001) {
+          const side = pos.side || pos.positionSide || (pos.positionAmt > 0 ? 'LONG' : 'SHORT');
+          if (side === 'LONG' || side === 'BUY') {
+            longCount++;
+          } else if (side === 'SHORT' || side === 'SELL') {
+            shortCount++;
+          }
         }
       });
     }
-    return { long: longCount, short: shortCount };
+    const total = longCount + shortCount;
+    log.info(`📊 АКТУАЛЬНЫЕ ПОЗИЦИИ: LONG=${longCount}, SHORT=${shortCount}, ВСЕГО=${total}`);
+    return { long: longCount, short: shortCount, total };
   } catch (error) {
-    log.error(`❌ Ошибка позиций: ${error.message}`);
-    return { long: 0, short: 0 };
+    log.error(`Ошибка позиций: ${error.message}`);
+    return { long: 0, short: 0, total: 0 };
   }
 }
 
-// ===== ВЫПОЛНЕНИЕ СДЕЛКИ =====
+async function isValidSymbol(symbol) {
+  try {
+    const contracts = await exchangeClient.getContracts();
+    if (!contracts || !Array.isArray(contracts)) return false;
+    return contracts.some(c => c.symbol === symbol || c.displayName === symbol);
+  } catch (error) {
+    log.error(`Ошибка проверки символа: ${error.message}`);
+    return false;
+  }
+}
+
+async function filterSignalsByRisk(signals, currentBalance) {
+  try {
+    if (initialBalance === 0) {
+      initialBalance = currentBalance;
+      log.info(`💰 Начальный баланс: ${initialBalance} USDT`);
+    }
+    const balancePercent = currentBalance / initialBalance;
+    log.info(`📊 Остаток: ${currentBalance} USDT (${(balancePercent * 100).toFixed(1)}%)`);
+
+    if (balancePercent >= CONFIG.minBalanceThreshold) {
+      log.info(`✅ Баланс > 55% — все сигналы разрешены`);
+      return signals;
+    }
+    if (balancePercent >= CONFIG.highOnlyThreshold && balancePercent < CONFIG.minBalanceThreshold) {
+      const highSignals = signals.filter(s => s.confidence === 'high');
+      log.info(`⚠️ Баланс ${(balancePercent * 100).toFixed(1)}% — только HIGH`);
+      return highSignals;
+    }
+    log.warn(`🚨 Баланс < 50% — СДЕЛКИ ОСТАНОВЛЕНЫ!`);
+    return [];
+  } catch (error) {
+    log.error(`Ошибка фильтрации: ${error.message}`);
+    return signals;
+  }
+}
+
 async function executeTrade(signal) {
   try {
-    log.info(`🚀 Открытие: ${signal.symbol} ${signal.side} @ ${signal.entry_price}`);
+    const currentPositions = await getActivePositions();
+    if (currentPositions.total >= CONFIG.maxPositions) {
+      log.warn(`🚨 ЛИМИТ ДОСТИГНУТ! СДЕЛКА НЕ ОТКРЫТА!`);
+      await updateSignalStatus(signal.id, 'failed');
+      return null;
+    }
+
+    const symbol = String(signal.symbol).trim();
+    if (!await isValidSymbol(symbol)) {
+      log.warn(`Символ ${symbol} не поддерживается`);
+      await updateSignalStatus(signal.id, 'failed');
+      return null;
+    }
+
+    log.info(`🚀 Открытие: ${symbol} ${signal.side} @ ${signal.entry_price}`);
     if (!exchangeClient) throw new Error('Клиент не инициализирован');
-    
+
     const balance = await exchangeClient.getBalance();
     log.info(`💰 Баланс: ${balance} USDT`);
     if (!balance || balance < 5) throw new Error(`Недостаточно средств: ${balance || 0} USDT`);
 
-    const entry = parseFloat(signal.entry_price);
-    const sl = signal.side === 'LONG' ? entry * 0.985 : entry * 1.015;
-    const tp = signal.side === 'LONG' ? entry * 1.03 : entry * 0.97;
+    const candles = await getCandles(symbol, '5m', 50);
+    const volatility = calculateVolatility(candles);
+    log.info(`📊 Волатильность: ${(volatility * 100).toFixed(2)}%`);
 
-    const positionSize = calculatePositionSize({
-      balance, riskPercent: CONFIG.riskPercent, entryPrice: entry,
-      stopLoss: sl, leverage: CONFIG.leverage
+    const riskPercent = calculateDynamicRisk(symbol, volatility, balance);
+    const leverage = calculateDynamicLeverage(symbol, volatility, balance);
+    log.info(`📊 Риск: ${riskPercent}%, Плечо: ${leverage}x`);
+
+    const entry = parseFloat(signal.entry_price);
+    const indicators = { atr: signal.atr || 0.02, rsi: signal.rsi || 50, macd: signal.macd || 0 };
+
+    const levels = calculatePositionLevels(symbol, entry, candles, indicators, signal.side, { minRatio: 2.0 });
+
+    log.info('🎯 Рассчитанные уровни:');
+    log.info(`   SL: ${levels.stopLoss} (риск: ${levels.risk})`);
+    log.info(`   TP: ${levels.takeProfit} (прибыль: ${levels.reward})`);
+    log.info(`   Risk/Reward: 1:${levels.ratio} ${levels.valid ? '✅' : '❌'}`);
+
+    let positionSize = calculatePositionSize({
+      balance, riskPercent, entryPrice: entry,
+      stopLoss: levels.stopLoss, leverage
     });
+
+    const minSize = minOrderSizes[symbol] || 0.001;
+    if (positionSize < minSize) {
+      log.warn(`⚠️ Размер ${positionSize} меньше ${minSize}, увеличиваем...`);
+      positionSize = minSize;
+    }
 
     if (!positionSize || positionSize <= 0) throw new Error(`Некорректный размер: ${positionSize}`);
 
     const sideMap = { 'LONG': 'BUY', 'SHORT': 'SELL' };
+    const orderSide = sideMap[signal.side.toUpperCase()];
+
     const order = await exchangeClient.placeOrder({
-      symbol: String(signal.symbol).toUpperCase().trim(),
-      side: sideMap[signal.side.toUpperCase()],
+      symbol: symbol,
+      side: orderSide,
       type: 'MARKET',
       quantity: positionSize,
-      leverage: CONFIG.leverage,
+      leverage: leverage,
       positionSide: signal.side.toUpperCase()
     });
 
-    log.info(`✅ Сделка открыта: ${order.orderId || 'OK'}`);
-    await updateSignalStatus(signal.id, 'executed', {
-      order_id: order.orderId || null,
-      stop_loss: sl,
-      take_profit: tp
-    });
+    if (!order) throw new Error('Ордер не был создан');
+
+    log.info(`✅ Позиция открыта: ${order.orderId || 'OK'}`);
+
+    const tpslResults = await exchangeClient.setTPSL(
+      order.orderId,
+      symbol,
+      orderSide,
+      positionSize,
+      levels.stopLoss,
+      levels.takeProfit
+    );
+
+    if (tpslResults) {
+      tpslResults.forEach(result => {
+        if (result.status === 'success') {
+          log.info(`✅ ${result.type} установлен`);
+        } else {
+          log.warn(`⚠️ ${result.type} не установлен: ${result.error?.msg || 'unknown error'}`);
+        }
+      });
+    }
+
+    await updateSignalStatus(signal.id, 'executed');
     return order;
 
   } catch (error) {
     log.error(`❌ Ошибка сделки: ${error.message}`);
-    await updateSignalStatus(signal.id, 'failed', { error: error.message });
+    await updateSignalStatus(signal.id, 'failed');
     throw error;
   }
 }
 
-// ===== ОСНОВНОЙ ЦИКЛ =====
 async function mainLoop() {
   if (isProcessing) return;
   isProcessing = true;
@@ -230,35 +285,48 @@ async function mainLoop() {
   try {
     if (!exchangeClient) {
       log.info('🔧 Инициализация клиента...');
-      exchangeClient = getExchange('bingx', 
+      exchangeClient = getExchange('bingx',
         process.env.BINGX_API_KEY || 'BOe6nx3Hlo8puQvg2wPIjNCWW4ISUY7SdYNlvi2jDApQr50hDvbv6At4vBoSDVN9o9LcEgEI4dcOkgY52A',
         process.env.BINGX_SECRET_KEY || 'jxHUWSOdzIT0K82tq5EUCjU6U36TRUocXAzjHEl9Jro2Z550amZqsTbNHJqj3gs8m7cXL3ANMRYDhivqZvWMA'
       );
       log.info('✅ Клиент инициализирован');
+      await loadMinOrderSizes();
     }
 
-    const signals = await getPendingSignals();
-    if (signals.length === 0) {
-      log.debug('📭 Нет сигналов для исполнения');
+    const currentBalance = await exchangeClient.getBalance();
+    if (!currentBalance) {
+      log.warn('⚠️ Не удалось получить баланс');
       return;
     }
 
-    log.info(`📨 Найдено ${signals.length} сигналов для обработки`);
     const positions = await getActivePositions();
-    log.info(`📊 Позиции: LONG=${positions.long}, SHORT=${positions.short}`);
+    log.info(`📊 АКТУАЛЬНЫХ ПОЗИЦИЙ: ${positions.total} из ${CONFIG.maxPositions}`);
 
-    for (const signal of signals) {
-      const side = signal.side.toUpperCase();
-      if (side === 'LONG' && positions.long >= CONFIG.maxPositions) {
-        log.info(`⏸️ Пропускаем LONG (уже ${positions.long})`);
-        continue;
-      }
-      if (side === 'SHORT' && positions.short >= CONFIG.maxPositions) {
-        log.info(`⏸️ Пропускаем SHORT (уже ${positions.short})`);
-        continue;
-      }
-      await executeTrade(signal);
+    if (positions.total >= CONFIG.maxPositions) {
+      log.warn(`🚨 ДОСТИГНУТ ЛИМИТ! НОВЫЕ СДЕЛКИ НЕ ОТКРЫВАЮТСЯ!`);
+      return;
     }
+
+    let signals = await getPendingSignals();
+    if (signals.length === 0) {
+      log.debug('📭 Нет сигналов');
+      return;
+    }
+
+    signals = await filterSignalsByRisk(signals, currentBalance);
+    if (signals.length === 0) {
+      log.debug('📭 Нет сигналов по риск-параметрам');
+      return;
+    }
+
+    let opened = 0;
+    for (const signal of signals) {
+      if (opened >= CONFIG.maxPositions - positions.total) break;
+      const result = await executeTrade(signal);
+      if (result) opened++;
+    }
+
+    log.info(`✅ Открыто ${opened} новых позиций в этом цикле`);
 
   } catch (error) {
     log.error(`❌ Ошибка: ${error.message}`);
@@ -267,9 +335,9 @@ async function mainLoop() {
   }
 }
 
-// ===== ЗАПУСК =====
 async function start() {
-  log.info('🚀 Trade Executor Bot запущен (с генерацией сигналов)');
+  log.info('🚀 Trade Executor Bot запущен (СТАБИЛЬНАЯ ВЕРСИЯ)');
+  log.info(`📋 Максимум позиций: ${CONFIG.maxPositions}`);
   log.info(`📋 Интервал: ${CONFIG.checkInterval / 1000}с`);
   await mainLoop();
   setInterval(mainLoop, CONFIG.checkInterval);

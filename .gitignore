@@ -1,2 +1,7 @@
 logs/
 .env
+.env
+*.log
+node_modules/
+backups/
+reports/

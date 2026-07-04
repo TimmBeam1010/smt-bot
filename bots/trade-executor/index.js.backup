@@ -1,0 +1,324 @@
+#!/usr/bin/env node
+
+/**
+ * Trade Executor Bot (ЧИСТАЯ ВЕРСИЯ БЕЗ WEBSOCKET)
+ * Получает сигналы, анализирует свечи, рассчитывает TP/SL
+ */
+
+const { createClient } = require('@supabase/supabase-js');
+const { getExchange } = require('../../shared/exchanges');
+const { calculatePositionSize, calculatePositionLevels } = require('../../shared/position-calculator');
+
+// ===== ПРОСТОЙ ЛОГГЕР =====
+const log = {
+  info: (msg) => console.log(`[${new Date().toISOString()}] [INFO] ${msg}`),
+  warn: (msg) => console.warn(`[${new Date().toISOString()}] [WARN] ${msg}`),
+  error: (msg) => console.error(`[${new Date().toISOString()}] [ERROR] ${msg}`),
+  debug: (msg) => console.log(`[${new Date().toISOString()}] [DEBUG] ${msg}`)
+};
+
+// ===== КОНФИГУРАЦИЯ =====
+const CONFIG = {
+  userId: 11,
+  maxPositions: 1,
+  riskPercent: 0.3,
+  leverage: 10,
+  checkInterval: 30000,
+  maxSignalsPerRun: 5,
+};
+
+// ===== ИНИЦИАЛИЗАЦИЯ SUPABASE (БЕЗ WEBSOCKET) =====
+const supabase = createClient(
+  process.env.SUPABASE_URL || 'https://zqyalsprnbbjifjctdga.supabase.co',
+  process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxeWFsc3BybmJiamlmamN0ZGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3OTk1MTgsImV4cCI6MjA1NzM3NTUxOH0.0Nt8hM5eZk7yjmjG2OV-5iDQBW0Z0aJQqg5CdIHEZUI'
+);
+
+let exchangeClient = null;
+let isProcessing = false;
+
+// ===== ПОЛУЧЕНИЕ СИГНАЛОВ =====
+async function getPendingSignals(userId = 11) {
+  try {
+    log.info(`📡 Запрос сигналов...`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch('https://smtbot.com/api/signals/user/trnabiev@gmail.com', {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`API статус ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!Array.isArray(data)) {
+      throw new Error('Не массив');
+    }
+    
+    const pending = data.filter(s => s.status === 'pending');
+    log.info(`✅ Найдено ${pending.length} ожидающих сигналов`);
+    
+    pending.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return pending.slice(0, CONFIG.maxSignalsPerRun);
+    
+  } catch (error) {
+    log.error(`❌ Ошибка получения сигналов: ${error.message}`);
+    return [];
+  }
+}
+
+// ===== ПОЛУЧЕНИЕ СВЕЧЕЙ =====
+async function getCandles(symbol) {
+  try {
+    if (!exchangeClient) {
+      log.warn('⚠️ Клиент не инициализирован');
+      return [];
+    }
+    
+    log.info(`📊 Запрос свечей для ${symbol}...`);
+    
+    // Проверяем, есть ли метод getCandles
+    if (typeof exchangeClient.getCandles !== 'function') {
+      log.warn(`⚠️ Метод getCandles не найден, используем дефолтные значения`);
+      return [];
+    }
+    
+    const candles = await exchangeClient.getCandles({
+      symbol: symbol,
+      interval: '5m',
+      limit: 100
+    });
+    
+    log.info(`✅ Получено ${candles?.length || 0} свечей`);
+    return candles || [];
+    
+  } catch (error) {
+    log.error(`❌ Ошибка получения свечей: ${error.message}`);
+    return [];
+  }
+}
+
+// ===== ПРОВЕРКА ПОЗИЦИЙ =====
+async function getActivePositions() {
+  try {
+    if (!exchangeClient) {
+      return { long: 0, short: 0 };
+    }
+    
+    const positions = await exchangeClient.getPositions();
+    let longCount = 0;
+    let shortCount = 0;
+    
+    if (positions && Array.isArray(positions)) {
+      positions.forEach(pos => {
+        const size = parseFloat(pos.size || pos.quantity || 0);
+        if (size > 0) {
+          if (pos.side === 'LONG' || pos.positionSide === 'LONG') longCount++;
+          else if (pos.side === 'SHORT' || pos.positionSide === 'SHORT') shortCount++;
+        }
+      });
+    }
+    
+    return { long: longCount, short: shortCount };
+    
+  } catch (error) {
+    log.error(`❌ Ошибка получения позиций: ${error.message}`);
+    return { long: 0, short: 0 };
+  }
+}
+
+// ===== ВЫПОЛНЕНИЕ СДЕЛКИ =====
+async function executeTrade(signal) {
+  try {
+    log.info(`🚀 Открытие: ${signal.symbol} ${signal.side} @ ${signal.entry_price}`);
+    
+    if (!exchangeClient) {
+      throw new Error('Клиент не инициализирован');
+    }
+    
+    // Получаем баланс
+    const balance = await exchangeClient.getBalance();
+    log.info(`💰 Баланс: ${balance} USDT`);
+    
+    if (!balance || balance < 10) {
+      throw new Error(`Недостаточно средств: ${balance || 0} USDT`);
+    }
+    
+    // Получаем свечи для анализа TP/SL
+    const candles = await getCandles(signal.symbol);
+    
+    if (candles.length === 0) {
+      log.warn(`⚠️ Нет свечей для ${signal.symbol}, используем дефолтные значения`);
+    }
+    
+    // Индикаторы (из сигнала или дефолтные)
+    const indicators = {
+      atr: signal.atr || 0.02,
+      rsi: signal.rsi || 50,
+      macd: signal.macd || 0
+    };
+    
+    // Рассчитываем TP/SL на основе анализа свечей
+    const levels = calculatePositionLevels(
+      signal.symbol,
+      signal.entry_price,
+      candles,
+      indicators,
+      signal.side,
+      { minRatio: 2.0 }
+    );
+    
+    log.info(`🎯 Рассчитанные уровни:`);
+    log.info(`   SL: ${levels.stopLoss} (риск: ${levels.risk} USDT)`);
+    log.info(`   TP: ${levels.takeProfit} (прибыль: ${levels.reward} USDT)`);
+    log.info(`   Risk/Reward: 1:${levels.ratio}`);
+    log.info(`   Валидный: ${levels.valid ? '✅ ДА' : '❌ НЕТ'}`);
+    
+    if (!levels.valid) {
+      log.warn(`⚠️ Соотношение риск/прибыль < 2.0, но продолжаем...`);
+    }
+    
+    // Рассчитываем размер позиции
+    const positionSize = calculatePositionSize({
+      balance: balance,
+      riskPercent: CONFIG.riskPercent,
+      entryPrice: signal.entry_price,
+      stopLoss: levels.stopLoss,
+      leverage: CONFIG.leverage
+    });
+    
+    // Открываем позицию с рассчитанными уровнями
+    const order = await exchangeClient.placeOrder({
+      symbol: signal.symbol,
+      side: signal.side,
+      type: 'MARKET',
+      quantity: positionSize,
+      leverage: CONFIG.leverage,
+      stopLoss: levels.stopLoss,
+      takeProfit: levels.takeProfit,
+      positionSide: signal.side.toUpperCase()
+    });
+    
+    log.info(`✅ Сделка открыта: ${order.orderId || 'OK'}`);
+    
+    // Обновляем статус сигнала
+    await supabase
+      .from('signals')
+      .update({
+        status: 'executed',
+        executed_at: new Date().toISOString(),
+        order_id: order.orderId || null,
+        stop_loss: levels.stopLoss,
+        take_profit: levels.takeProfit
+      })
+      .eq('id', signal.id);
+    
+    return order;
+    
+  } catch (error) {
+    log.error(`❌ Ошибка сделки: ${error.message}`);
+    
+    await supabase
+      .from('signals')
+      .update({
+        status: 'failed',
+        failed_attempts: supabase.raw('failed_attempts + 1')
+      })
+      .eq('id', signal.id);
+    
+    throw error;
+  }
+}
+
+// ===== ОСНОВНОЙ ЦИКЛ =====
+async function mainLoop() {
+  if (isProcessing) {
+    log.debug('⏳ Предыдущий цикл выполняется');
+    return;
+  }
+  
+  isProcessing = true;
+  
+  try {
+    // Инициализация клиента
+    if (!exchangeClient) {
+      log.info('🔧 Инициализация Exchange клиента...');
+      
+      exchangeClient = getExchange('bingx', 
+        process.env.BINGX_API_KEY || 'BOe6nx3Hlo8puQvg2wPIjNCWW4ISUY7SdYNlvi2jDApQr50hDvbv6At4vBoSDVN9o9LcEgEI4dcOkgY52A',
+        process.env.BINGX_SECRET_KEY || 'jxHUWSOdzIT0K82tq5EUCjU6U36TRUocXAzjHEl9Jro2Z550amZqsTbNHJqj3gs8m7cXL3ANMRYDhivqZvWMA'
+      );
+      
+      log.info('✅ Клиент инициализирован');
+    }
+    
+    // Получаем сигналы
+    const signals = await getPendingSignals(CONFIG.userId);
+    
+    if (signals.length === 0) {
+      log.debug('📭 Нет сигналов');
+      return;
+    }
+    
+    log.info(`📨 Найдено ${signals.length} сигналов`);
+    
+    // Проверяем позиции
+    const positions = await getActivePositions();
+    log.info(`📊 Позиции: LONG=${positions.long}, SHORT=${positions.short}`);
+    
+    // Обрабатываем сигналы
+    for (const signal of signals) {
+      const side = signal.side.toUpperCase();
+      
+      if (side === 'LONG' && positions.long >= CONFIG.maxPositions) {
+        log.info(`⏸️ Пропускаем LONG (уже ${positions.long})`);
+        continue;
+      }
+      
+      if (side === 'SHORT' && positions.short >= CONFIG.maxPositions) {
+        log.info(`⏸️ Пропускаем SHORT (уже ${positions.short})`);
+        continue;
+      }
+      
+      await executeTrade(signal);
+    }
+    
+  } catch (error) {
+    log.error(`❌ Ошибка: ${error.message}`);
+  } finally {
+    isProcessing = false;
+  }
+}
+
+// ===== ЗАПУСК =====
+async function start() {
+  log.info('🚀 Trade Executor Bot запущен (ЧИСТАЯ ВЕРСИЯ)');
+  log.info(`📋 Интервал: ${CONFIG.checkInterval / 1000}с`);
+  
+  await mainLoop();
+  setInterval(mainLoop, CONFIG.checkInterval);
+  
+  process.on('SIGINT', () => {
+    log.info('🛑 Остановлен');
+    process.exit(0);
+  });
+  
+  process.on('SIGTERM', () => {
+    log.info('🛑 Остановлен');
+    process.exit(0);
+  });
+}
+
+if (require.main === module) {
+  start().catch(error => {
+    console.error(`❌ Критическая ошибка: ${error.message}`);
+    process.exit(1);
+  });
+}
+
+module.exports = { start, getPendingSignals, executeTrade };
