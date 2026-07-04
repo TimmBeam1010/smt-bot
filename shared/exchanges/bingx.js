@@ -106,7 +106,7 @@ class BingXExchange {
         }
     }
 
-    // 🔧 ПОЛУЧЕНИЕ СВЕЧЕЙ
+    // 🔧 ПОЛУЧЕНИЕ СВЕЧЕЙ (ИСПРАВЛЕНО: swap/v3)
     async getCandles(symbol, interval = '5m', limit = 50) {
         try {
             const symbolFormatted = symbol.replace('_', '-');
@@ -115,7 +115,9 @@ class BingXExchange {
                 interval: interval,
                 limit: limit
             };
-            const response = await this._signedGet('/openApi/swap/v2/quote/klines', params);
+            // 🔧 ИСПРАВЛЕНО: swap/v2 → swap/v3
+            const response = await this._signedGet('/openApi/swap/v3/quote/klines', params);
+            console.log('📥 Ответ свечей:', JSON.stringify(response, null, 2));
             if (response?.code === 0) {
                 return response.data.map(candle => ({
                     timestamp: candle[0],
