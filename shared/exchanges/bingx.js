@@ -12,7 +12,7 @@ class BingXExchange {
         this.name = 'bingx';
         this.baseURL = 'https://open-api.bingx.com';
         this.lastRequestTime = 0;
-        this.MIN_REQUEST_INTERVAL = 500;
+        this.MIN_REQUEST_INTERVAL = 2000; // 🔧 Увеличен до 2 секунд
     }
 
     async _waitForRateLimit() {
@@ -96,7 +96,7 @@ class BingXExchange {
         }
     }
 
-    // 🔧 НОВЫЙ МЕТОД: ПОЛУЧЕНИЕ СВЕЧЕЙ
+    // 🔧 ПОЛУЧЕНИЕ СВЕЧЕЙ
     async getCandles(symbol, interval = '5m', limit = 50) {
         try {
             const symbolFormatted = symbol.replace('_', '-');
