@@ -1,12 +1,12 @@
 // ============================================
-//  ИСПОЛНИТЕЛЬ СДЕЛОК (EXECUTOR)
+//  ИСПОЛНИТЕЛЬ СДЕЛОК (EXECUTOR) — ОБНОВЛЁН
 // ============================================
 
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-// === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET (Node.js 20) ===
+// === ИСПРАВЛЕНИЕ ДЛЯ WEBSOCKET ===
 const WebSocket = require('ws');
 global.WebSocket = WebSocket;
 // =============================================
@@ -22,14 +22,11 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("✅ Подключение к Supabase установлено");
 
-// ============================================
-//  ИМПОРТ МОДУЛЕЙ БИРЖ
-// ============================================
-
 const exchanges = require('../shared/exchanges');
+const { calculatePositionLevels } = require('./position-calculator');
 
 // ============================================
-//  МИНИМАЛЬНЫЕ РАЗМЕРЫ ОРДЕРОВ ДЛЯ BINGX
+//  МИНИМАЛЬНЫЕ РАЗМЕРЫ ОРДЕРОВ
 // ============================================
 
 const MIN_ORDER_SIZE = {
@@ -121,9 +118,9 @@ const MIN_ORDER_SIZE = {
     'PEPE2-USDT': 1000,
     'WOJAK-USDT': 1000,
     'TOSHI-USDT': 1000,
-    'FDUSD-USDT': null, // Не поддерживается
-    'USDC-USDT': null, // Не поддерживается
-    'DAI-USDT': null, // Не поддерживается
+    'FDUSD-USDT': null,
+    'USDC-USDT': null,
+    'DAI-USDT': null,
 };
 
 // ============================================
@@ -132,7 +129,7 @@ const MIN_ORDER_SIZE = {
 
 async function executeSignal(signal, bot, user, supabase) {
     try {
-        // 1. Проверяем, есть ли уже открытая позиция
+        // 1. Проверяем открытые позиции
         const { data: openTrades, error: tradeError } = await supabase
             .from('trades')
             .select('*')
@@ -150,7 +147,7 @@ async function executeSignal(signal, bot, user, supabase) {
             return { executed: false, reason: 'Уже есть открытая позиция' };
         }
 
-        // 2. Получаем ключи пользователя для биржи
+        // 2. Получаем ключи пользователя
         const exchangeName = bot.exchange || 'bingx';
         const credentials = user.exchange_credentials?.[exchangeName];
         
@@ -180,15 +177,15 @@ async function executeSignal(signal, bot, user, supabase) {
             return { executed: false, reason: 'Некорректная цена' };
         }
 
-        // 6. Рассчитываем позицию
-        const riskPercent = bot.risk?.risk_percent || 2.0;
-        const stopLossPercent = bot.risk?.stop_loss_percent || 1.5;
-        
-        // Получаем свечи и индикаторы для расчёта TP/SL
+        // ============================================
+        //  🔧 НОВАЯ ЛОГИКА: РАСЧЁТ TP/SL ДИНАМИЧЕСКИ
+        // ============================================
+
+        // 6. Получаем свечи и индикаторы
         const candles = await getCandles(signal.symbol, exchangeClient);
         const indicators = await getIndicators(candles);
-        
-        // Рассчитываем TP/SL динамически
+
+        // 7. Рассчитываем TP/SL на основе рыночной структуры
         const positionLevels = calculatePositionLevels(
             signal.symbol,
             entryPrice,
@@ -197,40 +194,51 @@ async function executeSignal(signal, bot, user, supabase) {
             signal.side,
             { minRatio: 2.0 }
         );
-        
-        // Рассчитываем размер позиции
+
+        if (!positionLevels.valid) {
+            console.warn(`⚠️ Соотношение риск/прибыль ${positionLevels.ratio}:1 ниже минимального (2:1)`);
+            return { executed: false, reason: 'Низкое соотношение риск/прибыль' };
+        }
+
+        console.log(`📊 Динамический расчёт TP/SL для ${signal.symbol}:`);
+        console.log(`   Стоп-лосс: ${positionLevels.stopLoss} (риск: $${positionLevels.risk.toFixed(2)})`);
+        console.log(`   Тейк-профит: ${positionLevels.takeProfit} (прибыль: $${positionLevels.reward.toFixed(2)})`);
+        console.log(`   Соотношение: ${positionLevels.ratio}:1`);
+
+        // ============================================
+        //  РАСЧЁТ РАЗМЕРА ПОЗИЦИИ
+        // ============================================
+
+        const riskPercent = bot.risk?.risk_percent || 2.0;
         const position = calculatePositionSize(
             balance,
             riskPercent,
-            positionLevels.stopLoss,
             entryPrice,
+            positionLevels.stopLoss,
             signal.symbol
         );
-        
-        // Используем рассчитанные TP/SL
-        const stopLoss = positionLevels.stopLoss;
-        const takeProfit = positionLevels.takeProfit;
 
-        // Проверяем, что позиция не нулевая
         if (position.quantity <= 0) {
             console.error(`❌ Рассчитанный размер позиции = 0`);
             return { executed: false, reason: 'Некорректный размер позиции' };
         }
 
-        // 7. Определяем сторону ордера
+        // ============================================
+        //  ОТПРАВКА ОРДЕРА
+        // ============================================
+
         const orderSide = signal.side === 'LONG' ? 'BUY' : 'SELL';
 
-        // 8. Отправляем MARKET ордер (без цены)
         console.log(`📊 Исполнение ${signal.side} для ${signal.symbol} на ${exchangeName}: ${position.quantity} по ${entryPrice}`);
-        console.log(`   Стоп-лосс: ${position.stopLoss}, Тейк-профит: ${position.takeProfit}`);
+        console.log(`   Стоп-лосс: ${positionLevels.stopLoss}, Тейк-профит: ${positionLevels.takeProfit}`);
 
         const orderResult = await exchangeClient.placeOrder(
             signal.symbol,
             orderSide,
             position.quantity,
-            null,  // MARKET ордер без цены
-            position.stopLoss.toString(),
-            position.takeProfit.toString()
+            null,
+            positionLevels.stopLoss.toString(),
+            positionLevels.takeProfit.toString()
         );
 
         if (!orderResult || !orderResult.orderId) {
@@ -238,7 +246,10 @@ async function executeSignal(signal, bot, user, supabase) {
             return { executed: false, reason: 'Ошибка создания ордера' };
         }
 
-        // 9. Сохраняем сделку в БД
+        // ============================================
+        //  СОХРАНЕНИЕ СДЕЛКИ
+        // ============================================
+
         const { data: trade, error: saveError } = await supabase
             .from('trades')
             .insert({
@@ -249,8 +260,9 @@ async function executeSignal(signal, bot, user, supabase) {
                 side: signal.side,
                 entry_price: entryPrice,
                 quantity: position.quantity,
-                stop_loss: position.stopLoss,
-                take_profit: position.takeProfit,
+                stop_loss: positionLevels.stopLoss,
+                take_profit: positionLevels.takeProfit,
+                risk_reward_ratio: positionLevels.ratio,
                 status: 'open',
                 open_time: new Date(),
                 order_id: orderResult.orderId
@@ -263,7 +275,6 @@ async function executeSignal(signal, bot, user, supabase) {
             return { executed: false, reason: 'Ошибка сохранения сделки' };
         }
 
-        // 10. Обновляем сигнал
         await supabase
             .from('signals')
             .update({ executed: true, executed_at: new Date() })
@@ -284,51 +295,40 @@ async function executeSignal(signal, bot, user, supabase) {
 }
 
 // ============================================
-//  РАСЧЁТ РАЗМЕРА ПОЗИЦИИ (в монетах)
+//  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================
 
-function calculatePositionSize(balance, riskPercent, stopLossPercent, entryPrice, symbol) {
+async function getCandles(symbol, exchangeClient) {
+    // TODO: Реализовать получение свечей
+    // Пока возвращаем заглушку
+    return [];
+}
+
+async function getIndicators(candles) {
+    // TODO: Реализовать расчёт индикаторов
+    return { atr: 0 };
+}
+
+function calculatePositionSize(balance, riskPercent, entryPrice, stopLoss, symbol) {
     const riskAmount = balance * (riskPercent / 100);
-    const stopLossPrice = entryPrice * (1 - stopLossPercent / 100);
-    const priceDiff = entryPrice - stopLossPrice;
+    const priceDiff = entryPrice - stopLoss;
     let quantity = riskAmount / priceDiff;
 
-    // Проверяем минимальный размер для конкретной монеты
     const minSize = MIN_ORDER_SIZE[symbol];
-    
-    // Если монета не поддерживается — пропускаем
     if (minSize === null) {
-        console.error(`❌ Монета ${symbol} не поддерживается на BingX (пропуск)`);
-        return { quantity: 0, stopLoss: 0, takeProfit: 0 };
+        console.error(`❌ Монета ${symbol} не поддерживается`);
+        return { quantity: 0 };
     }
 
-    // Устанавливаем минимальный размер по умолчанию
     const minOrderSize = minSize || 0.0001;
-
     if (quantity < minOrderSize) {
         quantity = minOrderSize;
         console.log(`⚠️ Корректировка: минимальный размер для ${symbol} = ${minOrderSize}`);
     }
 
-    // Округляем до 8 знаков
     const roundedQuantity = Math.round(quantity * 100000000) / 100000000;
-
-    // Проверяем, что после округления не стало 0
-    if (roundedQuantity <= 0) {
-        console.error(`❌ Ошибка: рассчитанный размер позиции = 0 после округления`);
-        return { quantity: 0, stopLoss: 0, takeProfit: 0 };
-    }
-
-    return {
-        quantity: roundedQuantity,
-        stopLoss: Math.round(stopLossPrice * 100) / 100,
-        takeProfit: Math.round(entryPrice * (1 + stopLossPercent * 2 / 100) * 100) / 100
-    };
+    return { quantity: roundedQuantity };
 }
-
-// ============================================
-//  ЭКСПОРТ
-// ============================================
 
 module.exports = {
     executeSignal,
