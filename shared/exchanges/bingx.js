@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ BINGX (с getCandles)
+//  МОДУЛЬ BINGX (с getCandles и исправленным getPrice)
 // ============================================
 
 const crypto = require('crypto');
@@ -12,7 +12,7 @@ class BingXExchange {
         this.name = 'bingx';
         this.baseURL = 'https://open-api.bingx.com';
         this.lastRequestTime = 0;
-        this.MIN_REQUEST_INTERVAL = 2000; // 🔧 Увеличен до 2 секунд
+        this.MIN_REQUEST_INTERVAL = 2000; // 2 секунды между запросами
     }
 
     async _waitForRateLimit() {
@@ -51,10 +51,20 @@ class BingXExchange {
         return { signature, timestamp };
     }
 
-    async _signedGet(endpoint) {
+    async _signedGet(endpoint, params = {}) {
         await this._waitForRateLimit();
         const { signature, timestamp } = this._generateGetSignature();
-        const url = `${this.baseURL}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
+        
+        // Добавляем параметры в URL
+        let url = `${this.baseURL}${endpoint}`;
+        const queryParams = { ...params, timestamp, signature };
+        const queryString = Object.keys(queryParams)
+            .map(key => `${key}=${encodeURIComponent(queryParams[key])}`)
+            .join('&');
+        if (queryString) {
+            url += `?${queryString}`;
+        }
+        
         console.log('📤 GET URL:', url);
         const response = await axios.get(url, {
             headers: { 'X-BX-APIKEY': this.apiKey }
@@ -78,11 +88,12 @@ class BingXExchange {
         return response.data;
     }
 
-    // 🔧 ПОЛУЧЕНИЕ ЦЕНЫ
+    // 🔧 ИСПРАВЛЕННЫЙ МЕТОД: ПОЛУЧЕНИЕ ЦЕНЫ
     async getPrice(symbol) {
         try {
             const symbolFormatted = symbol.replace('_', '-');
-            const response = await this._signedGet(`/openApi/swap/v2/quote/price?symbol=${symbolFormatted}`);
+            const params = { symbol: symbolFormatted };
+            const response = await this._signedGet('/openApi/swap/v2/quote/price', params);
             if (response?.code === 0) {
                 const price = parseFloat(response.data.price);
                 console.log(`📊 Цена ${symbol}: $${price}`);
@@ -100,9 +111,12 @@ class BingXExchange {
     async getCandles(symbol, interval = '5m', limit = 50) {
         try {
             const symbolFormatted = symbol.replace('_', '-');
-            const response = await this._signedGet(
-                `/openApi/swap/v2/quote/klines?symbol=${symbolFormatted}&interval=${interval}&limit=${limit}`
-            );
+            const params = {
+                symbol: symbolFormatted,
+                interval: interval,
+                limit: limit
+            };
+            const response = await this._signedGet('/openApi/swap/v2/quote/klines', params);
             if (response?.code === 0) {
                 return response.data.map(candle => ({
                     timestamp: candle[0],
