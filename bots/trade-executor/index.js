@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ АВТОТОРГОВЛИ (TRADE EXECUTOR)
+//  МОДУЛЬ АВТОТОРГОВЛИ (TRADE EXECUTOR) — БЕЗ ОЧИСТКИ
 // ============================================
 
 const WebSocket = require('ws');
@@ -10,7 +10,6 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 const { logger } = require('../../shared/logger');
-const cache = require('../../shared/cache');
 const log = logger('trade-executor');
 
 const notifier = require('../../shared/notifier');
@@ -38,75 +37,6 @@ const { executeSignal } = require('../../shared/executor');
 const MAX_SIGNALS_PER_BATCH = 5;
 const DELAY_BETWEEN_ORDERS = 2000;
 const CHECK_INTERVAL = 30000;
-
-const SIGNAL_TTL = {
-    medium: 12 * 60 * 60 * 1000,
-    high: 24 * 60 * 60 * 1000
-};
-
-// ============================================
-//  ОЧИСТКА УСТАРЕВШИХ И LOW СИГНАЛОВ
-// ============================================
-
-async function cleanupExpiredSignals() {
-    try {
-        const now = new Date();
-        const expiredSignals = [];
-
-        // 1. Удаляем все LOW сигналы
-        const { error: lowError } = await supabase
-            .from('signals')
-            .update({ status: 'expired', executed: true })
-            .eq('confidence', 'low')
-            .eq('executed', false);
-
-        if (lowError) {
-            log.error('Ошибка удаления LOW сигналов', { error: lowError.message });
-        } else {
-            log.info('🧹 Удалены все LOW сигналы');
-        }
-
-        // 2. Удаляем устаревшие MEDIUM и HIGH
-        const { data: signals, error } = await supabase
-            .from('signals')
-            .select('id, confidence, created_at')
-            .eq('executed', false)
-            .eq('status', 'pending')
-            .in('confidence', ['medium', 'high']);
-
-        if (error) {
-            log.error('Ошибка получения сигналов для очистки', { error: error.message });
-            return;
-        }
-
-        if (!signals || signals.length === 0) return;
-
-        for (const signal of signals) {
-            const createdAt = new Date(signal.created_at);
-            const age = now - createdAt;
-            const ttl = SIGNAL_TTL[signal.confidence] || SIGNAL_TTL.medium;
-
-            if (age > ttl) {
-                expiredSignals.push(signal.id);
-            }
-        }
-
-        if (expiredSignals.length > 0) {
-            const { error: updateError } = await supabase
-                .from('signals')
-                .update({ status: 'expired', executed: true })
-                .in('id', expiredSignals);
-
-            if (updateError) {
-                log.error('Ошибка обновления устаревших сигналов', { error: updateError.message });
-            } else {
-                log.info(`🧹 Очищено ${expiredSignals.length} устаревших сигналов`);
-            }
-        }
-    } catch (error) {
-        log.error('Ошибка в cleanupExpiredSignals', { error: error.message });
-    }
-}
 
 // ============================================
 //  ПОЛУЧЕНИЕ СИГНАЛОВ (только MEDIUM и HIGH)
@@ -136,15 +66,13 @@ async function getPendingSignals() {
 }
 
 // ============================================
-//  МОНИТОРИНГ
+//  МОНИТОРИНГ НОВЫХ СИГНАЛОВ
 // ============================================
 
 async function checkNewSignals() {
     log.debug('🔄 Проверка новых сигналов');
 
     try {
-        await cleanupExpiredSignals();
-
         const signals = await getPendingSignals();
         if (!signals || signals.length === 0) {
             return;
