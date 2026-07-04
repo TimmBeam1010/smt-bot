@@ -1,3 +1,7 @@
+// ============================================
+//  МОДУЛЬ BINGX
+// ============================================
+
 const crypto = require('crypto');
 const axios = require('axios');
 
@@ -8,10 +12,9 @@ class BingXExchange {
         this.name = 'bingx';
         this.baseURL = 'https://open-api.bingx.com';
         this.lastRequestTime = 0;
-        this.MIN_REQUEST_INTERVAL = 500; // 500 мс между запросами
+        this.MIN_REQUEST_INTERVAL = 500;
     }
 
-    // ⚠️ НОВЫЙ МЕТОД: ограничение частоты запросов
     async _waitForRateLimit() {
         const now = Date.now();
         const waitTime = Math.max(0, this.MIN_REQUEST_INTERVAL - (now - this.lastRequestTime));
@@ -49,7 +52,7 @@ class BingXExchange {
     }
 
     async _signedGet(endpoint) {
-        await this._waitForRateLimit(); // ⚠️ Ждём перед запросом
+        await this._waitForRateLimit();
         const { signature, timestamp } = this._generateGetSignature();
         const url = `${this.baseURL}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
         console.log('📤 GET URL:', url);
@@ -60,7 +63,7 @@ class BingXExchange {
     }
 
     async _signedPost(endpoint, params = {}) {
-        await this._waitForRateLimit(); // ⚠️ Ждём перед запросом
+        await this._waitForRateLimit();
         const { signature, timestamp } = this._generatePostSignature(params);
         const queryParams = { ...params, timestamp, signature };
         const queryString = Object.keys(queryParams)
@@ -110,7 +113,7 @@ class BingXExchange {
         }
     }
 
-    async placeOrder(symbol, side, quantity, price = null) {
+    async placeOrder(symbol, side, quantity, price = null, stopLoss = null, takeProfit = null) {
         try {
             const symbolFormatted = symbol.replace('_', '-');
             const params = {
@@ -120,17 +123,28 @@ class BingXExchange {
                 type: price ? 'LIMIT' : 'MARKET',
                 quantity: quantity.toString()
             };
+            
+            // ✅ ДОБАВЛЯЕМ STOP LOSS И TAKE PROFIT
+            if (stopLoss) {
+                params.stopLoss = stopLoss.toString();
+            }
+            if (takeProfit) {
+                params.takeProfit = takeProfit.toString();
+            }
             if (price && price > 0) {
                 params.price = price.toString();
             }
+            
             const response = await this._signedPost('/openApi/swap/v2/trade/order', params);
             if (response?.code === 0) {
                 return {
-                    orderId: response.data.orderID || response.data.order.orderId,
+                    orderId: response.data.order.orderID || response.data.order.orderId,
                     symbol: symbol,
                     side: side,
                     quantity: quantity,
                     price: price,
+                    stopLoss: stopLoss,
+                    takeProfit: takeProfit,
                     status: 'filled'
                 };
             }
@@ -138,6 +152,26 @@ class BingXExchange {
             return null;
         } catch (error) {
             console.error('❌ Ошибка placeOrder:', error.message);
+            return null;
+        }
+    }
+
+    async closePosition(symbol, positionSide) {
+        try {
+            const params = {
+                symbol: symbol,
+                positionSide: positionSide,
+                type: 'MARKET',
+                quantity: '0'
+            };
+            const response = await this._signedPost('/openApi/swap/v2/trade/close', params);
+            if (response?.code === 0) {
+                return response.data;
+            }
+            console.error('❌ Ошибка закрытия позиции:', response);
+            return null;
+        } catch (error) {
+            console.error('❌ Ошибка closePosition:', error.message);
             return null;
         }
     }
