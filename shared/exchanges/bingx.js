@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ BINGX
+//  МОДУЛЬ BINGX (с getPrice)
 // ============================================
 
 const crypto = require('crypto');
@@ -78,6 +78,24 @@ class BingXExchange {
         return response.data;
     }
 
+    // 🔧 НОВЫЙ МЕТОД: ПОЛУЧЕНИЕ ЦЕНЫ
+    async getPrice(symbol) {
+        try {
+            const symbolFormatted = symbol.replace('_', '-');
+            const response = await this._signedGet(`/openApi/swap/v2/quote/price?symbol=${symbolFormatted}`);
+            if (response?.code === 0) {
+                const price = parseFloat(response.data.price);
+                console.log(`📊 Цена ${symbol}: $${price}`);
+                return price;
+            }
+            console.error('❌ Ошибка получения цены:', response);
+            return null;
+        } catch (error) {
+            console.error('❌ Ошибка getPrice:', error.message);
+            return null;
+        }
+    }
+
     async getBalance() {
         try {
             const response = await this._signedGet('/openApi/swap/v3/user/balance');
@@ -124,7 +142,6 @@ class BingXExchange {
                 quantity: quantity.toString()
             };
             
-            // ✅ ДОБАВЛЯЕМ STOP LOSS И TAKE PROFIT
             if (stopLoss) {
                 params.stopLoss = stopLoss.toString();
             }
