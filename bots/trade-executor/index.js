@@ -11,6 +11,7 @@
  * 5. Управление рисками (SL/TP)
  * 6. Логирование всех действий
  */
+
 const WebSocket = require('ws');
 const { createClient } = require('@supabase/supabase-js');
 const { createExchangeClient } = require('../../shared/exchanges');
@@ -20,17 +21,15 @@ const notifier = require('../../shared/notifier');
 
 // ===== КОНФИГУРАЦИЯ =====
 const CONFIG = {
-  userId: 11, // Пользователь trnabiev@gmail.com
-  maxPositions: 1, // Максимум 1 LONG и 1 SHORT одновременно
-  riskPercent: 0.3, // 0.3% риска на сделку
-  leverage: 10, // Плечо 10x
-  checkInterval: 30000, // Проверка каждые 30 секунд
-  maxSignalsPerRun: 5, // Максимум сигналов за один раз
+  userId: 11,
+  maxPositions: 1,
+  riskPercent: 0.3,
+  leverage: 10,
+  checkInterval: 30000,
+  maxSignalsPerRun: 5,
 };
 
-// ===== ИНИЦИАЛИЗАЦИЯ =====
 // ===== ИНИЦИАЛИЗАЦИЯ С WEBSOCKET ПОДДЕРЖКОЙ =====
-
 const supabase = createClient(
   process.env.SUPABASE_URL || 'https://zqyalsprnbbjifjctdga.supabase.co',
   process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxeWFsc3BybmJiamlmamN0ZGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3OTk1MTgsImV4cCI6MjA1NzM3NTUxOH0.0Nt8hM5eZk7yjmjG2OV-5iDQBW0Z0aJQqg5CdIHEZUI',
@@ -45,18 +44,29 @@ let exchangeClient = null;
 let isProcessing = false;
 let supabaseChannel = null;
 
+// ===== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ЛОГГИРОВАНИЯ =====
+function log(message, level = 'info') {
+  const timestamp = new Date().toISOString();
+  const prefix = `[${timestamp}] [trade-executor]`;
+  if (level === 'error') {
+    console.error(`${prefix} ❌ ${message}`);
+  } else if (level === 'warn') {
+    console.warn(`${prefix} ⚠️ ${message}`);
+  } else {
+    console.log(`${prefix} ${message}`);
+  }
+}
+
 // ===== WEBSOCKET ПОДПИСКА НА НОВЫЕ СИГНАЛЫ =====
 function setupWebSocket() {
   try {
-    logger.info('[trade-executor] 🔌 Настройка WebSocket подключения...');
+    log('🔌 Настройка WebSocket подключения...');
     
-    // Отписываемся от старого канала если есть
     if (supabaseChannel) {
       supabaseChannel.unsubscribe();
-      logger.info('[trade-executor] 📴 Отключен от старого WebSocket');
+      log('📴 Отключен от старого WebSocket');
     }
     
-    // Создаём новый канал для подписки на сигналы
     supabaseChannel = supabase
       .channel('trade-executor-realtime')
       .on(
@@ -68,58 +78,52 @@ function setupWebSocket() {
           filter: `user_id=eq.${CONFIG.userId}`
         },
         async (payload) => {
-          logger.info('[trade-executor] 🔔 Новый сигнал получен через WebSocket!');
+          log('🔔 Новый сигнал получен через WebSocket!');
           const signal = payload.new;
           
-          // Проверяем, что сигнал ожидает исполнения
           if (signal.status === 'pending') {
-            logger.info(`[trade-executor] 📨 Сигнал: ${signal.symbol} ${signal.side} @ ${signal.entry_price}`);
+            log(`📨 Сигнал: ${signal.symbol} ${signal.side} @ ${signal.entry_price}`);
             
-            // Проверяем позиции перед открытием
             const positions = await getActivePositions();
             const side = signal.side.toUpperCase();
             
-            // Проверяем, можно ли открыть сделку
             if (side === 'LONG' && positions.long < CONFIG.maxPositions) {
-              logger.info('[trade-executor] 🚀 Открываем LONG сделку (WebSocket)');
+              log('🚀 Открываем LONG сделку (WebSocket)');
               await executeTrade(signal);
             } else if (side === 'SHORT' && positions.short < CONFIG.maxPositions) {
-              logger.info('[trade-executor] 🚀 Открываем SHORT сделку (WebSocket)');
+              log('🚀 Открываем SHORT сделку (WebSocket)');
               await executeTrade(signal);
             } else {
-              logger.info(`[trade-executor] ⏸️ Пропускаем ${side} (уже есть позиция)`);
+              log(`⏸️ Пропускаем ${side} (уже есть позиция)`);
             }
           }
         }
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          logger.info('[trade-executor] ✅ WebSocket подключен и активен');
+          log('✅ WebSocket подключен и активен');
         } else if (status === 'CHANNEL_ERROR') {
-          logger.error('[trade-executor] ❌ Ошибка WebSocket, пробуем переподключиться...');
-          // Пробуем переподключиться через 5 секунд
+          log('❌ Ошибка WebSocket, пробуем переподключиться...', 'error');
           setTimeout(setupWebSocket, 5000);
         } else {
-          logger.info(`[trade-executor] 📡 WebSocket статус: ${status}`);
+          log(`📡 WebSocket статус: ${status}`);
         }
       });
     
     return supabaseChannel;
     
   } catch (error) {
-    logger.error(`[trade-executor] ❌ Ошибка WebSocket: ${error.message}`);
-    // Пробуем переподключиться через 10 секунд
+    log(`❌ Ошибка WebSocket: ${error.message}`, 'error');
     setTimeout(setupWebSocket, 10000);
     return null;
   }
 }
 
-// ===== ФУНКЦИЯ ПОЛУЧЕНИЯ СИГНАЛОВ (С FALLBACK) =====
+// ===== ФУНКЦИЯ ПОЛУЧЕНИЯ СИГНАЛОВ =====
 async function getPendingSignals(userId = 11) {
   try {
-    logger.info(`[trade-executor] 📡 Запрос сигналов для user_id=${userId}...`);
+    log(`📡 Запрос сигналов для user_id=${userId}...`);
     
-    // ===== СПОСОБ 1: ЧЕРЕЗ REST API (ОБХОД TIMEOUT) =====
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -140,25 +144,20 @@ async function getPendingSignals(userId = 11) {
         throw new Error('API вернул не массив');
       }
       
-      // Фильтруем только pending сигналы
       const pending = data.filter(s => s.status === 'pending');
       
-      logger.info(`[trade-executor] ✅ Через API получено ${pending.length} ожидающих сигналов`);
+      log(`✅ Через API получено ${pending.length} ожидающих сигналов`);
       
-      // Сортируем по дате (сначала новые)
       pending.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       
-      // Берём только первые N сигналов
       return pending.slice(0, CONFIG.maxSignalsPerRun);
       
     } catch (apiError) {
-      logger.warn(`[trade-executor] ⚠️ API метод не сработал: ${apiError.message}`);
+      log(`⚠️ API метод не сработал: ${apiError.message}`, 'warn');
       
-      // ===== СПОСОБ 2: ПРЯМОЙ ЗАПРОС К SUPABASE С ТАЙМАУТОМ =====
       try {
-        logger.info('[trade-executor] 🔄 Пробуем прямой запрос к Supabase...');
+        log('🔄 Пробуем прямой запрос к Supabase...');
         
-        // Создаём Promise с таймаутом
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Supabase timeout (8s)')), 8000)
         );
@@ -171,20 +170,18 @@ async function getPendingSignals(userId = 11) {
           .order('created_at', { ascending: false })
           .limit(CONFIG.maxSignalsPerRun);
         
-        // Гонка между запросом и таймаутом
         const result = await Promise.race([queryPromise, timeoutPromise]);
         const { data, error } = result;
         
         if (error) throw error;
         
-        logger.info(`[trade-executor] ✅ Supabase вернул ${data?.length || 0} сигналов`);
+        log(`✅ Supabase вернул ${data?.length || 0} сигналов`);
         return data || [];
         
       } catch (supabaseError) {
-        logger.error(`[trade-executor] ❌ Ошибка Supabase: ${supabaseError.message}`);
+        log(`❌ Ошибка Supabase: ${supabaseError.message}`, 'error');
         
-        // ===== СПОСОБ 3: ТЕСТОВЫЕ СИГНАЛЫ (ЕСЛИ ВСЁ СЛОМАЛОСЬ) =====
-        logger.warn('[trade-executor] 🧪 Используем тестовые сигналы для отладки');
+        log('🧪 Используем тестовые сигналы для отладки', 'warn');
         
         return [
           {
@@ -203,7 +200,7 @@ async function getPendingSignals(userId = 11) {
     }
     
   } catch (error) {
-    logger.error(`[trade-executor] ❌ Критическая ошибка получения сигналов: ${error.message}`);
+    log(`❌ Критическая ошибка получения сигналов: ${error.message}`, 'error');
     return [];
   }
 }
@@ -212,7 +209,7 @@ async function getPendingSignals(userId = 11) {
 async function getActivePositions() {
   try {
     if (!exchangeClient) {
-      logger.warn('[trade-executor] ⚠️ Клиент не инициализирован');
+      log('⚠️ Клиент не инициализирован', 'warn');
       return { long: 0, short: 0 };
     }
     
@@ -234,11 +231,11 @@ async function getActivePositions() {
       });
     }
     
-    logger.debug(`[trade-executor] 📊 Активных позиций: LONG=${longCount}, SHORT=${shortCount}`);
+    log(`📊 Активных позиций: LONG=${longCount}, SHORT=${shortCount}`);
     return { long: longCount, short: shortCount };
     
   } catch (error) {
-    logger.error(`[trade-executor] ❌ Ошибка получения позиций: ${error.message}`);
+    log(`❌ Ошибка получения позиций: ${error.message}`, 'error');
     return { long: 0, short: 0 };
   }
 }
@@ -246,20 +243,17 @@ async function getActivePositions() {
 // ===== ФУНКЦИЯ ОТКРЫТИЯ СДЕЛКИ =====
 async function executeTrade(signal) {
   try {
-    logger.info(`[trade-executor] 🚀 Открытие сделки: ${signal.symbol} ${signal.side} @ ${signal.entry_price}`);
+    log(`🚀 Открытие сделки: ${signal.symbol} ${signal.side} @ ${signal.entry_price}`);
     
-    // Проверяем клиент
     if (!exchangeClient) {
       throw new Error('Exchange клиент не инициализирован');
     }
     
-    // Проверяем баланс
     const balance = await exchangeClient.getBalance();
     if (!balance || balance < 10) {
       throw new Error(`Недостаточно средств: ${balance || 0} USDT`);
     }
     
-    // Рассчитываем размер позиции
     const positionSize = calculatePositionSize({
       balance: balance,
       riskPercent: CONFIG.riskPercent,
@@ -268,15 +262,13 @@ async function executeTrade(signal) {
       leverage: CONFIG.leverage
     });
     
-    // Рассчитываем TP/SL
     const tpSl = calculateTPSL({
       entryPrice: signal.entry_price,
       side: signal.side,
       atr: signal.atr || 0.02,
-      riskReward: 2 // 1:2 риск/прибыль
+      riskReward: 2
     });
     
-    // Открываем позицию
     const order = await exchangeClient.placeOrder({
       symbol: signal.symbol,
       side: signal.side,
@@ -288,9 +280,8 @@ async function executeTrade(signal) {
       positionSide: signal.side.toUpperCase()
     });
     
-    logger.info(`[trade-executor] ✅ Сделка открыта: ${order.orderId || 'OK'}`);
+    log(`✅ Сделка открыта: ${order.orderId || 'OK'}`);
     
-    // Обновляем статус сигнала в базе
     await supabase
       .from('signals')
       .update({
@@ -300,7 +291,6 @@ async function executeTrade(signal) {
       })
       .eq('id', signal.id);
     
-    // Отправляем уведомление в Telegram
     await notifier.sendTradeNotification({
       symbol: signal.symbol,
       side: signal.side,
@@ -315,9 +305,8 @@ async function executeTrade(signal) {
     return order;
     
   } catch (error) {
-    logger.error(`[trade-executor] ❌ Ошибка открытия сделки: ${error.message}`);
+    log(`❌ Ошибка открытия сделки: ${error.message}`, 'error');
     
-    // Обновляем статус на failed
     await supabase
       .from('signals')
       .update({
@@ -333,68 +322,62 @@ async function executeTrade(signal) {
 // ===== ОСНОВНОЙ ЦИКЛ =====
 async function mainLoop() {
   if (isProcessing) {
-    logger.debug('[trade-executor] ⏳ Предыдущий цикл ещё выполняется');
+    log('⏳ Предыдущий цикл ещё выполняется');
     return;
   }
   
   isProcessing = true;
   
   try {
-    // Инициализируем клиент если его нет
     if (!exchangeClient) {
-      logger.info('[trade-executor] 🔧 Инициализация Exchange клиента...');
+      log('🔧 Инициализация Exchange клиента...');
       
       exchangeClient = createExchangeClient('bingx', {
         apiKey: process.env.BINGX_API_KEY || 'BOe6nx3Hlo8puQvg2wPIjNCWW4ISUY7SdYNlvi2jDApQr50hDvbv6At4vBoSDVN9o9LcEgEI4dcOkgY52A',
         secretKey: process.env.BINGX_SECRET_KEY || 'jxHUWSOdzIT0K82tq5EUCjU6U36TRUocXAzjHEl9Jro2Z550amZqsTbNHJqj3gs8m7cXL3ANMRYDhivqZvWMA'
       });
       
-      logger.info('[trade-executor] ✅ Клиент инициализирован');
+      log('✅ Клиент инициализирован');
     }
     
-    // Получаем сигналы
     const signals = await getPendingSignals(CONFIG.userId);
     
     if (signals.length === 0) {
-      logger.debug('[trade-executor] 📭 Нет ожидающих сигналов');
+      log('📭 Нет ожидающих сигналов');
       return;
     }
     
-    logger.info(`[trade-executor] 📨 Найдено ${signals.length} сигналов для обработки`);
+    log(`📨 Найдено ${signals.length} сигналов для обработки`);
     
-    // Проверяем активные позиции
     const positions = await getActivePositions();
     
-    // Фильтруем сигналы по типу (LONG/SHORT)
     const longSignals = signals.filter(s => s.side.toUpperCase() === 'LONG');
     const shortSignals = signals.filter(s => s.side.toUpperCase() === 'SHORT');
     
-    // Обрабатываем LONG сигналы
     if (longSignals.length > 0 && positions.long < CONFIG.maxPositions) {
-      const signal = longSignals[0]; // Берём первый
+      const signal = longSignals[0];
       try {
         await executeTrade(signal);
       } catch (error) {
-        logger.error(`[trade-executor] ❌ Ошибка LONG сделки: ${error.message}`);
+        log(`❌ Ошибка LONG сделки: ${error.message}`, 'error');
       }
     } else if (longSignals.length > 0 && positions.long >= CONFIG.maxPositions) {
-      logger.info(`[trade-executor] ⏸️ Пропускаем LONG (уже ${positions.long} позиция)`);
+      log(`⏸️ Пропускаем LONG (уже ${positions.long} позиция)`);
     }
     
-    // Обрабатываем SHORT сигналы
     if (shortSignals.length > 0 && positions.short < CONFIG.maxPositions) {
-      const signal = shortSignals[0]; // Берём первый
+      const signal = shortSignals[0];
       try {
         await executeTrade(signal);
       } catch (error) {
-        logger.error(`[trade-executor] ❌ Ошибка SHORT сделки: ${error.message}`);
+        log(`❌ Ошибка SHORT сделки: ${error.message}`, 'error');
       }
     } else if (shortSignals.length > 0 && positions.short >= CONFIG.maxPositions) {
-      logger.info(`[trade-executor] ⏸️ Пропускаем SHORT (уже ${positions.short} позиция)`);
+      log(`⏸️ Пропускаем SHORT (уже ${positions.short} позиция)`);
     }
     
   } catch (error) {
-    logger.error(`[trade-executor] ❌ Ошибка основного цикла: ${error.message}`);
+    log(`❌ Ошибка основного цикла: ${error.message}`, 'error');
   } finally {
     isProcessing = false;
   }
@@ -402,22 +385,18 @@ async function mainLoop() {
 
 // ===== ЗАПУСК =====
 async function start() {
-  logger.info('🚀 Trade Executor Bot запущен');
-  logger.info(`📋 Конфигурация:`, CONFIG);
-  logger.info(`⏱️  Интервал проверки: ${CONFIG.checkInterval / 1000} секунд`);
+  log('🚀 Trade Executor Bot запущен');
+  log(`📋 Конфигурация: ${JSON.stringify(CONFIG)}`);
+  log(`⏱️ Интервал проверки: ${CONFIG.checkInterval / 1000} секунд`);
   
-  // Первый запуск сразу
   await mainLoop();
   
-  // Запускаем WebSocket для мгновенных сигналов
   setupWebSocket();
   
-  // Запускаем интервал (как резервный вариант)
   setInterval(mainLoop, CONFIG.checkInterval);
   
-  // Обработка сигналов завершения
   process.on('SIGINT', () => {
-    logger.info('🛑 Trade Executor остановлен');
+    log('🛑 Trade Executor остановлен');
     if (supabaseChannel) {
       supabaseChannel.unsubscribe();
     }
@@ -425,7 +404,7 @@ async function start() {
   });
   
   process.on('SIGTERM', () => {
-    logger.info('🛑 Trade Executor остановлен');
+    log('🛑 Trade Executor остановлен');
     if (supabaseChannel) {
       supabaseChannel.unsubscribe();
     }
@@ -433,10 +412,9 @@ async function start() {
   });
 }
 
-// Запускаем, если файл выполняется напрямую
 if (require.main === module) {
   start().catch(error => {
-    logger.error(`❌ Критическая ошибка: ${error.message}`);
+    console.error(`❌ Критическая ошибка: ${error.message}`);
     process.exit(1);
   });
 }
