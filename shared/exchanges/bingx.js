@@ -1,5 +1,5 @@
 // ============================================
-//  МОДУЛЬ BINGX (с getPrice)
+//  МОДУЛЬ BINGX (с getCandles)
 // ============================================
 
 const crypto = require('crypto');
@@ -78,7 +78,7 @@ class BingXExchange {
         return response.data;
     }
 
-    // 🔧 НОВЫЙ МЕТОД: ПОЛУЧЕНИЕ ЦЕНЫ
+    // 🔧 ПОЛУЧЕНИЕ ЦЕНЫ
     async getPrice(symbol) {
         try {
             const symbolFormatted = symbol.replace('_', '-');
@@ -92,6 +92,31 @@ class BingXExchange {
             return null;
         } catch (error) {
             console.error('❌ Ошибка getPrice:', error.message);
+            return null;
+        }
+    }
+
+    // 🔧 НОВЫЙ МЕТОД: ПОЛУЧЕНИЕ СВЕЧЕЙ
+    async getCandles(symbol, interval = '5m', limit = 50) {
+        try {
+            const symbolFormatted = symbol.replace('_', '-');
+            const response = await this._signedGet(
+                `/openApi/swap/v2/quote/klines?symbol=${symbolFormatted}&interval=${interval}&limit=${limit}`
+            );
+            if (response?.code === 0) {
+                return response.data.map(candle => ({
+                    timestamp: candle[0],
+                    open: parseFloat(candle[1]),
+                    high: parseFloat(candle[2]),
+                    low: parseFloat(candle[3]),
+                    close: parseFloat(candle[4]),
+                    volume: parseFloat(candle[5])
+                }));
+            }
+            console.error('❌ Ошибка получения свечей:', response);
+            return null;
+        } catch (error) {
+            console.error('❌ Ошибка getCandles:', error.message);
             return null;
         }
     }
