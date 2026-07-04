@@ -6,6 +6,9 @@ const fibonacci = require('./fibonacci');
 const dominance = require('./dominance');
 const marketMaker = require('./market-maker');
 
+/**
+ * Собрать все подтверждения для сигнала
+ */
 async function getConfluence(signal, marketData, context) {
     const reasons = [];
     let weight = signal.weight || 0;
