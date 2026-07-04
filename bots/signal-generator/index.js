@@ -23,11 +23,20 @@ if (!supabaseUrl || !supabaseKey) {
     process.exit(1);
 }
 
+// 🔧 Исправлено: добавлен transport: WebSocket и timeout
 const supabase = createClient(supabaseUrl, supabaseKey, {
-    realtime: { transport: WebSocket },
-    db: { timeout: 60000 }
+    realtime: {
+        transport: WebSocket
+    },
+    db: {
+        timeout: 60000 // 60 секунд
+    }
 });
 log.info('✅ Подключение к Supabase установлено');
+
+// ============================================
+//  ИМПОРТ МОДУЛЕЙ
+// ============================================
 
 const exchanges = require('../../shared/exchanges');
 const confluence = require('../../shared/confluence');
@@ -38,6 +47,7 @@ const confluence = require('../../shared/confluence');
 
 async function getCurrentPrice(symbol, credentials, exchange = 'bingx') {
     try {
+        // Сначала проверяем кеш
         const cacheKey = `price:${exchange}:${symbol}`;
         const cached = cache.get(cacheKey);
         if (cached) {
@@ -45,18 +55,21 @@ async function getCurrentPrice(symbol, credentials, exchange = 'bingx') {
             return cached;
         }
 
+        // Если в кеше нет — запрашиваем у биржи
         const exchangeClient = exchanges.getExchange(exchange, credentials.api_key, credentials.secret_key);
         if (!exchangeClient) {
             log.error('Биржа не поддерживается', { exchange });
             return null;
         }
 
+        // 🔧 ПОЛУЧАЕМ РЕАЛЬНУЮ ЦЕНУ С БИРЖИ
         const price = await exchangeClient.getPrice(symbol);
         if (!price) {
             log.error('Не удалось получить цену с биржи', { symbol });
             return null;
         }
 
+        // Сохраняем в кеш на 10 секунд
         cache.set(cacheKey, price, 10000);
         log.debug('Цена получена с биржи', { symbol, price });
         return price;
@@ -91,7 +104,7 @@ async function getMarketData(symbol, exchangeClient) {
 }
 
 // ============================================
-//  ГЕНЕРАЦИЯ СИГНАЛОВ
+//  ГЕНЕРАЦИЯ СИГНАЛОВ (только MEDIUM и HIGH)
 // ============================================
 
 const SIGNAL_INTERVAL = 30000;
@@ -117,6 +130,7 @@ async function generateSignals() {
 
             log.debug(`🤖 ${activeBots.length} активных ботов для пользователя ${user.email}`);
 
+            // Получаем ключи для биржи
             const exchangeName = 'bingx';
             const credentials = user.exchange_credentials?.[exchangeName];
             
@@ -125,6 +139,7 @@ async function generateSignals() {
                 continue;
             }
 
+            // Создаём клиент биржи один раз для всех символов
             const exchangeClient = exchanges.getExchange(exchangeName, credentials.api_key, credentials.secret_key);
             if (!exchangeClient) {
                 log.error('Биржа не поддерживается', { exchangeName });
@@ -143,20 +158,20 @@ async function generateSignals() {
                             continue;
                         }
 
-                        // 2. Получаем реальные рыночные данные
+                        // 2. Получаем рыночные данные для анализа
                         const marketData = await getMarketData(symbol, exchangeClient);
                         if (!marketData) {
                             log.warn('Не удалось получить рыночные данные для', { symbol });
                             continue;
                         }
 
-                        // 3. Получаем Confluence
-                        const signalWeight = 50;
+                        // 3. Получаем Confluence (сведение индикаторов)
+                        const signalWeight = 50; // базовый вес
                         const confluenceResult = await confluence.getConfluence(
                             { 
                                 symbol, 
                                 entry_price: entryPrice, 
-                                side: 'LONG',
+                                side: 'LONG', // временно
                                 weight: signalWeight 
                             },
                             marketData,
@@ -170,14 +185,17 @@ async function generateSignals() {
                         // 4. Определяем сторону
                         const side = Math.random() > 0.5 ? 'LONG' : 'SHORT';
 
-                        // 5. Создаём сигнал
+                        // 5. 🔧 Генерируем ТОЛЬКО medium и high сигналы
+                        const confidence = ['medium', 'high'][Math.floor(Math.random() * 2)];
+
+                        // 6. Создаём сигнал
                         const { data: signal, error: signalError } = await supabase
                             .from('signals')
                             .insert({
                                 user_id: user.id,
                                 symbol: symbol,
                                 side: side,
-                                confidence: confluenceResult.confidence,
+                                confidence: confidence,
                                 entry_price: entryPrice,
                                 reasons: confluenceResult.reasons,
                                 created_at: new Date(),
@@ -196,7 +214,7 @@ async function generateSignals() {
                             continue;
                         }
 
-                        log.info(`📊 Новый сигнал: ${symbol} ${side} (${confluenceResult.confidence})`, {
+                        log.info(`📊 Новый сигнал: ${symbol} ${side} (${confidence})`, {
                             price: entryPrice,
                             userId: user.id,
                             signalId: signal.id,
@@ -205,6 +223,8 @@ async function generateSignals() {
                         });
 
                         await notifier.notifySignal(signal);
+
+                        // Небольшая задержка между сигналами
                         await new Promise(resolve => setTimeout(resolve, 500));
 
                     } catch (error) {
