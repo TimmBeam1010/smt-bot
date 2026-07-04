@@ -1,5 +1,5 @@
 // ============================================
-//  ИСПОЛНИТЕЛЬ СДЕЛОК (EXECUTOR) — ОБНОВЛЁН
+//  ИСПОЛНИТЕЛЬ СДЕЛОК (EXECUTOR)
 // ============================================
 
 const { createClient } = require('@supabase/supabase-js');
@@ -122,6 +122,58 @@ const MIN_ORDER_SIZE = {
     'USDC-USDT': null,
     'DAI-USDT': null,
 };
+
+// ============================================
+//  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================
+
+async function getCandles(symbol, exchangeClient) {
+    try {
+        // 🔧 ПОЛУЧАЕМ РЕАЛЬНЫЕ СВЕЧИ С БИРЖИ
+        const candles = await exchangeClient.getCandles(symbol, '5m', 50);
+        if (!candles || candles.length === 0) {
+            console.warn('⚠️ Не удалось получить свечи для', symbol);
+            return [];
+        }
+        console.log(`📊 Получено ${candles.length} свечей для ${symbol}`);
+        return candles;
+    } catch (error) {
+        console.error('❌ Ошибка получения свечей:', error.message);
+        return [];
+    }
+}
+
+async function getIndicators(candles) {
+    try {
+        if (!candles || candles.length < 20) {
+            return { atr: 0 };
+        }
+
+        // Рассчитываем ATR (Average True Range)
+        let atr = 0;
+        const period = 14;
+        const trueRanges = [];
+
+        for (let i = 1; i < candles.length; i++) {
+            const high = candles[i].high;
+            const low = candles[i].low;
+            const prevClose = candles[i - 1].close;
+            const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+            trueRanges.push(tr);
+        }
+
+        if (trueRanges.length >= period) {
+            const sum = trueRanges.slice(-period).reduce((a, b) => a + b, 0);
+            atr = sum / period;
+        }
+
+        console.log('📊 Рассчитаны индикаторы:', { atr });
+        return { atr };
+    } catch (error) {
+        console.error('❌ Ошибка расчёта индикаторов:', error.message);
+        return { atr: 0 };
+    }
+}
 
 // ============================================
 //  ИСПОЛНЕНИЕ СИГНАЛА
@@ -295,19 +347,8 @@ async function executeSignal(signal, bot, user, supabase) {
 }
 
 // ============================================
-//  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+//  РАСЧЁТ РАЗМЕРА ПОЗИЦИИ
 // ============================================
-
-async function getCandles(symbol, exchangeClient) {
-    // TODO: Реализовать получение свечей
-    // Пока возвращаем заглушку
-    return [];
-}
-
-async function getIndicators(candles) {
-    // TODO: Реализовать расчёт индикаторов
-    return { atr: 0 };
-}
 
 function calculatePositionSize(balance, riskPercent, entryPrice, stopLoss, symbol) {
     const riskAmount = balance * (riskPercent / 100);
