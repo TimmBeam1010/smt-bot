@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Bot Terminal</title>
+    <style>
+        /* Терминальный стиль */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', 'Fira Code', monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        /* Шапка терминала */
+        .terminal-header {
+            border-bottom: 2px solid #00ff88;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .terminal-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        .terminal-status {
+            font-size: 14px;
+            color: #888;
+        }
+        .terminal-status .online {
+            color: #00ff88;
+        }
+        .terminal-status .offline {
+            color: #ff2244;
+        }
+        
+        /* Статистика */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat {
+            background: #0a0a0a;
+            padding: 20px;
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            text-align: center;
+            position: relative;
+        }
+        .stat::before {
+            content: '>';
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            color: #00ff88;
+            font-weight: bold;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Лог-терминал */
+        .log-terminal {
+            background: #0a0a0a;
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .log-terminal::-webkit-scrollbar {
+            width: 6px;
+        }
+        .log-terminal::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        .log-terminal::-webkit-scrollbar-thumb {
+            background: #00ff88;
+            border-radius: 3px;
+        }
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid #111;
+            display: flex;
+            gap: 10px;
+        }
+        .log-time {
+            color: #666;
+            min-width: 100px;
+        }
+        .log-msg {
+            color: #00ff88;
+        }
+        .log-msg.error {
+            color: #ff2244;
+        }
+        .log-msg.warning {
+            color: #ffaa00;
+        }
+        
+        /* Промпт */
+        .prompt {
+            color: #00ff88;
+            margin-top: 15px;
+            padding: 10px;
+            border-top: 1px solid #222;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .prompt-symbol {
+            color: #00ff88;
+            font-weight: bold;
+        }
+        .prompt-text {
+            color: #888;
+            font-size: 13px;
+        }
+        .prompt-blink {
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        .footer {
+            margin-top: 30px;
+            color: #444;
+            font-size: 11px;
+            text-align: center;
+            border-top: 1px solid #111;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Шапка терминала -->
+    <div class="terminal-header">
+        <div class="terminal-title">╔══ SMT TERMINAL v3.0 ══╗</div>
+        <div class="terminal-status">
+            <span class="online">● ONLINE</span>
+            <span style="color:#444;margin-left:10px;">${new Date().toISOString().replace('T', ' ').slice(0, 19)}</span>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div id="status">ЗАГРУЗКА...</div>
+
+    <!-- Терминал логов -->
+    <div class="log-terminal" id="logTerminal">
+        <div class="log-entry">
+            <span class="log-time">[INIT]</span>
+            <span class="log-msg">SMT Terminal v3.0 запущен</span>
+        </div>
+        <div class="log-entry">
+            <span class="log-time">[INIT]</span>
+            <span class="log-msg">Подключение к API...</span>
+        </div>
+    </div>
+
+    <!-- Промпт -->
+    <div class="prompt">
+        <span class="prompt-symbol">$</span>
+        <span class="prompt-text">SMT_TERMINAL</span>
+        <span class="prompt-blink">▌</span>
+    </div>
+
+    <div class="footer">SMT Bot Terminal v3.0 | 🚀 Профессиональная торговая система</div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const logTerminal = document.getElementById('logTerminal');
+        
+        function addLog(time, msg, type = '') {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-msg ${type}">${msg}</span>
+            `;
+            logTerminal.appendChild(entry);
+            logTerminal.scrollTop = logTerminal.scrollHeight;
+        }
+
+        socket.on('data', (data) => {
+            const time = new Date(data.timestamp).toISOString().replace('T', ' ').slice(0, 19);
+            
+            document.getElementById('status').innerHTML = `
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value">$${data.balance?.toFixed(2) || '0.00'}</div>
+                        <div class="stat-label">BALANCE</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${data.positions?.total || 0}</div>
+                        <div class="stat-label">POSITIONS</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${data.positions?.long || 0} / ${data.positions?.short || 0}</div>
+                        <div class="stat-label">LONG / SHORT</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" style="color: #00ff88;">●</div>
+                        <div class="stat-label">STATUS: ONLINE</div>
+                    </div>
+                </div>
+            `;
+            
+            // Добавляем в лог
+            addLog(time, `Баланс: $${data.balance?.toFixed(2)} | Позиций: ${data.positions?.total} (${data.positions?.long}L / ${data.positions?.short}S)`);
+        });
+
+        socket.on('error', (data) => {
+            const time = new Date().toISOString().replace('T', ' ').slice(0, 19);
+            addLog(time, `⚠️ ${data.message}`, 'error');
+        });
+
+        // Добавляем тестовые логи
+        setTimeout(() => {
+            const time = new Date().toISOString().replace('T', ' ').slice(0, 19);
+            addLog(time, '✅ Соединение с API установлено');
+        }, 1000);
+    </script>
+</body>
+</html>
