@@ -101,7 +101,7 @@ app.get('/api/positions', async (req, res) => {
     const formatted = activePositions.map(p => ({
       symbol: p.symbol,
       side: p.positionSide || (parseFloat(p.positionAmt) > 0 ? 'LONG' : 'SHORT'),
-      entryPrice: parseFloat(p.entryPrice),
+      entryPrice: parseFloat(p.entryPrice) || parseFloat(p.avgPrice) || 0,
       quantity: Math.abs(parseFloat(p.positionAmt)),
       unrealizedPnl: parseFloat(p.unrealizedProfit) || 0,
       markPrice: parseFloat(p.markPrice),
