@@ -420,7 +420,7 @@
                 container.innerHTML = '<div class="empty">📭 Нет открытых позиций</div>';
                 return;
             }
-
+        
             let html = `
                 <table class="signals-table">
                     <thead>
@@ -435,13 +435,23 @@
                     </thead>
                     <tbody>
             `;
-
+        
             for (const p of positions) {
-                const pnl = p.unrealizedPnl || 0;
-                const pnlClass = pnl > 0 ? 'high' : (pnl === 0 ? 'high' : 'danger');
+                const pnl = parseFloat(p.unrealizedPnl) || 0;
+                const pnlClass = pnl < 0 ? 'danger' : 'high';
                 const sideClass = p.side === 'LONG' ? 'side-long' : 'side-short';
                 const entryPrice = p.entryPrice ? p.entryPrice.toFixed(4) : '—';
-
+                
+                // 🔥 ПРАВИЛЬНОЕ ФОРМАТИРОВАНИЕ
+                let pnlDisplay = '';
+                if (pnl > 0) {
+                    pnlDisplay = `+$${pnl.toFixed(2)}`;
+                } else if (pnl < 0) {
+                    pnlDisplay = `-$${Math.abs(pnl).toFixed(2)}`;
+                } else {
+                    pnlDisplay = `$${pnl.toFixed(2)}`;
+                }
+        
                 html += `
                     <tr>
                         <td><strong>${p.symbol}</strong></td>
@@ -449,18 +459,18 @@
                         <td>$${entryPrice}</td>
                         <td>${p.quantity || '—'}</td>
                         <td>${p.leverage || '1'}x</td>
-                        <td class="${pnlClass}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</td>
+                        <td class="${pnlClass}">${pnlDisplay}</td>
                     </tr>
                 `;
             }
 
-            html += `
-                    </tbody>
-                </table>
-            `;
-            
-            container.innerHTML = html;
-        }
+    html += `
+            </tbody>
+        </table>
+    `;
+    
+    container.innerHTML = html;
+}
 
         // ===== ОТРИСОВКА СИГНАЛОВ =====
         function renderSignals(signals) {
