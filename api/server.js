@@ -1,341 +1,115 @@
-// ============================================
-//  API СЕРВЕР (SMT BOT)
-// ============================================
-
-const WebSocket = require('ws');
-global.WebSocket = WebSocket;
-
 const express = require('express');
 const cors = require('cors');
-const { createClient } = require('@supabase/supabase-js');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
-
+const { getExchange } = require('../shared/exchanges');
 const app = express();
-const PORT = process.env.PORT || 5000;
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-    console.error("❌ Ошибка: SUPABASE_URL и SUPABASE_KEY не заданы");
-    process.exit(1);
-}
-
-// 🔧 Исправлено: добавлен transport: WebSocket и timeout
-const supabase = createClient(supabaseUrl, supabaseKey, {
-    realtime: {
-        transport: WebSocket
-    },
-    db: {
-        timeout: 60000
-    }
-});
-console.log("✅ Подключение к Supabase установлено");
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
 
-const exchanges = require('../shared/exchanges');
+let exchangeClient = null;
 
-// ============================================
-//  ЭНДПОИНТЫ
-// ============================================
+function initExchange() {
+    if (!exchangeClient) {
+        exchangeClient = getExchange('bingx',
+            process.env.BINGX_API_KEY || 'BOe6nx3Hlo8puQvg2wPIjNCWW4ISUY7SdYNlvi2jDApQr50hDvbv6At4vBoSDVN9o9LcEgEI4dcOkgY52A',
+            process.env.BINGX_SECRET_KEY || 'jxHUWSOdzIT0K82tq5EUCjU6U36TRUocXAzjHEl9Jro2Z550amZqsTbNHJqj3gs8m7cXL3ANMRYDhivqZvWMA'
+        );
+    }
+    return exchangeClient;
+}
 
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'SMT Bot API работает!' });
+// Статус
+app.get('/api/status', (req, res) => {
+    res.json({
+        status: 'online',
+        version: '3.0',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
 });
 
-app.post('/api/login', async (req, res) => {
+// Реальный баланс с BingX
+app.get('/api/balance', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (error || !user) {
-            return res.status(401).json({ error: 'Неверный email или пароль' });
-        }
-
-        if (user.password.trim() !== password.trim()) {
-            return res.status(401).json({ error: 'Неверный email или пароль' });
-        }
-
-        res.json({
-            success: true,
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                bots: user.bots || [],
-                exchange_credentials: user.exchange_credentials || {}
-            }
+        const client = initExchange();
+        const balance = await client.getBalance();
+        res.json({ 
+            balance: balance || 0, 
+            currency: 'USDT',
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
-        console.error('Ошибка логина:', error.message);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.post('/api/register', async (req, res) => {
-    try {
-        const { email, password, name } = req.body;
-
-        const { data: existing, error: checkError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (existing) {
-            return res.status(400).json({ error: 'Пользователь уже существует' });
-        }
-
-        const { data: user, error } = await supabase
-            .from('users')
-            .insert({
-                email,
-                password: password.trim(),
-                name,
-                bots: [],
-                exchange_credentials: {}
-            })
-            .select()
-            .single();
-
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-
-        res.json({
-            success: true,
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                bots: user.bots || [],
-                exchange_credentials: user.exchange_credentials || {}
-            }
+        res.status(500).json({ 
+            error: error.message,
+            timestamp: new Date().toISOString()
         });
-    } catch (error) {
-        console.error('Ошибка регистрации:', error.message);
-        res.status(500).json({ error: error.message });
     }
 });
 
-app.get('/api/bot/list/:email', async (req, res) => {
+// Реальные позиции с BingX
+app.get('/api/positions', async (req, res) => {
     try {
-        const { email } = req.params;
-
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('bots')
-            .eq('email', email)
-            .single();
-
-        if (error || !user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        res.json({ bots: user.bots || [] });
-    } catch (error) {
-        console.error('Ошибка получения списка ботов:', error.message);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.post('/api/bot/create', async (req, res) => {
-    try {
-        const { email, bot } = req.body;
-
-        const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (userError || !user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        const bots = user.bots || [];
-        bots.push(bot);
-
-        const { error: updateError } = await supabase
-            .from('users')
-            .update({ bots })
-            .eq('id', user.id);
-
-        if (updateError) {
-            return res.status(500).json({ error: updateError.message });
-        }
-
-        res.json({ success: true, bot });
-    } catch (error) {
-        console.error('Ошибка создания бота:', error.message);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.patch('/api/bot/update', async (req, res) => {
-    try {
-        const { email, botId, updates } = req.body;
-
-        const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (userError || !user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        const bots = user.bots || [];
-        const botIndex = bots.findIndex(b => b.id === botId);
-        if (botIndex === -1) {
-            return res.status(404).json({ error: 'Бот не найден' });
-        }
-
-        bots[botIndex] = { ...bots[botIndex], ...updates };
-
-        const { error: updateError } = await supabase
-            .from('users')
-            .update({ bots })
-            .eq('id', user.id);
-
-        if (updateError) {
-            return res.status(500).json({ error: updateError.message });
-        }
-
-        res.json({ success: true, bot: bots[botIndex] });
-    } catch (error) {
-        console.error('Ошибка обновления бота:', error.message);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.delete('/api/bot/delete', async (req, res) => {
-    try {
-        const { email, botId } = req.body;
-
-        const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (userError || !user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        const bots = (user.bots || []).filter(b => b.id !== botId);
-
-        const { error: updateError } = await supabase
-            .from('users')
-            .update({ bots })
-            .eq('id', user.id);
-
-        if (updateError) {
-            return res.status(500).json({ error: updateError.message });
-        }
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Ошибка удаления бота:', error.message);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/bot/dashboard/:email/:botId', async (req, res) => {
-    try {
-        const { email, botId } = req.params;
-
-        const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (userError || !user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        const bot = (user.bots || []).find(b => b.id === botId);
-        if (!bot) {
-            return res.status(404).json({ error: 'Бот не найден' });
-        }
-
-        const exchange = bot.exchange || 'bingx';
-        const credentials = user.exchange_credentials?.[exchange];
-        let balance = 0;
-        let positions = [];
-        let totalPnl = 0;
-
-        if (credentials && credentials.api_key && credentials.secret_key) {
-            try {
-                const exchangeClient = exchanges.getExchange(
-                    exchange,
-                    credentials.api_key,
-                    credentials.secret_key
-                );
-
-                if (exchangeClient) {
-                    balance = await exchangeClient.getBalance() || 0;
-                    const rawPositions = await exchangeClient.getPositions() || [];
-
-                    positions = rawPositions.map(pos => {
-                        const pnl = pos.unrealizedProfit || 0;
-                        totalPnl += pnl;
-                        return {
-                            symbol: pos.symbol || '—',
-                            side: pos.positionSide || '—',
-                            leverage: pos.leverage || bot.risk?.leverage || 10,
-                            margin: pos.initialMargin || pos.margin || 0,
-                            pnl: pnl,
-                            entryPrice: pos.entryPrice || 0,
-                            markPrice: pos.markPrice || 0,
-                            stopLoss: pos.stopLoss || null,
-                            takeProfit: pos.takeProfit || null
-                        };
-                    });
+        const client = initExchange();
+        const positions = await client.getPositions();
+        let long = 0, short = 0;
+        if (positions && Array.isArray(positions)) {
+            positions.forEach(pos => {
+                const size = parseFloat(pos.size || pos.quantity || pos.amount || 0);
+                if (size > 0.0001) {
+                    const side = pos.side || pos.positionSide || (pos.positionAmt > 0 ? 'LONG' : 'SHORT');
+                    if (side === 'LONG' || side === 'BUY') long++;
+                    else if (side === 'SHORT' || side === 'SELL') short++;
                 }
-            } catch (error) {
-                console.error(`Ошибка получения данных для ${exchange}:`, error.message);
-            }
+            });
         }
-
-        let status = 'active';
-        if (bot.paused) status = 'paused';
-        else if (!bot.active) status = 'stopped';
-
         res.json({
-            success: true,
-            data: {
-                bot: {
-                    id: bot.id,
-                    name: bot.name,
-                    mode: bot.mode || 'auto_trade'
-                },
-                status: status,
-                balance: balance,
-                totalPnl: totalPnl,
-                positions: positions
-            }
+            total: long + short,
+            long: long,
+            short: short,
+            timestamp: new Date().toISOString()
         });
-
     } catch (error) {
-        console.error('Ошибка в /api/bot/dashboard:', error.message);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ 
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 API Server запущен на порту ${PORT}`);
-    console.log(`🌐 Открой: http://localhost:${PORT}/`);
+// История (заглушка)
+app.get('/api/history', (req, res) => {
+    res.json([]);
+});
+
+app.post('/api/params', (req, res) => {
+    console.log('📊 Получены параметры:', req.body);
+    res.json({ status: 'ok', received: true });
+});
+
+const PORT = 5001;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🔌 API сервер запущен на порту ${PORT}`);
+    console.log(`📡 Доступен: http://89.108.71.175:${PORT}/api/status`);
 });
 
 module.exports = app;
+
+// Получение сигналов из Supabase
+app.get('/api/signals', async (req, res) => {
+    try {
+        const supabaseUrl = 'https://sbpyuigmrqycqlrjlqqv.supabase.co';
+        const supabaseKey = 'sb_publishable_TRnw7p3BXwp9_AbHiJR55A_yJBtEyGd';
+        
+        const response = await fetch(`${supabaseUrl}/rest/v1/signals?select=*&order=created_at.desc&limit=10`, {
+            headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`
+            }
+        });
+        
+        const data = await response.json();
+        res.json(data || []);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
