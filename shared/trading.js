@@ -99,14 +99,14 @@ function generateSignal(symbol, prices, extras = {}) {
 
     // ===== СИГНАЛЫ =====
 
-// RSI (тестовые пороги)
-    if (rsi < 50) {
+// RSI (тестовые пороги — очень чувствительные)
+    if (rsi < 60) {
         side = 'LONG';
-        reasons.push(`RSI (${rsi.toFixed(1)}) ниже 50`);
+        reasons.push(`RSI (${rsi.toFixed(1)}) ниже 60`);
         confidence = 'medium';
-    } else if (rsi > 50) {
+    } else if (rsi > 40) {
         side = 'SHORT';
-        reasons.push(`RSI (${rsi.toFixed(1)}) выше 50`);
+        reasons.push(`RSI (${rsi.toFixed(1)}) выше 40`);
         confidence = 'medium';
     } else {
         reasons.push(`RSI (${rsi.toFixed(1)}) нейтральный`);
