@@ -7,6 +7,8 @@ const sentimentAnalyzer = require("../../shared/sentiment-analyzer");
 const marketMaker = require("../../shared/market-maker");
 const aiPredictor = require("../../shared/ai-predictor");
 const newsMonitor = require("../../shared/news-monitor");
+const notifier = require('../../shared/notifier');
+
 
 const log = {
   info: (msg) => console.log(`[${new Date().toISOString()}] [INFO] ${msg}`),
