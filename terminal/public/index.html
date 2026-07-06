@@ -438,7 +438,7 @@
 
             for (const p of positions) {
                 const pnl = p.unrealizedPnl || 0;
-                const pnlClass = pnl >= 0 ? 'high' : 'danger';
+                const pnlClass = pnl > 0 ? 'high' : (pnl === 0 ? 'high' : 'danger');
                 const sideClass = p.side === 'LONG' ? 'side-long' : 'side-short';
                 const entryPrice = p.entryPrice ? p.entryPrice.toFixed(4) : '—';
 
