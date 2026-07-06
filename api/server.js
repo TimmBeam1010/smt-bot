@@ -46,34 +46,45 @@ app.get('/api/balance', async (req, res) => {
     }
 });
 
-// Реальные позиции с BingX
+// ========================================
+//  ПОЛУЧЕНИЕ ПОЗИЦИЙ
+// ========================================
 app.get('/api/positions', async (req, res) => {
-    try {
-        const client = initExchange();
-        const positions = await client.getPositions();
-        let long = 0, short = 0;
-        if (positions && Array.isArray(positions)) {
-            positions.forEach(pos => {
-                const size = parseFloat(pos.size || pos.quantity || pos.amount || 0);
-                if (size > 0.0001) {
-                    const side = pos.side || pos.positionSide || (pos.positionAmt > 0 ? 'LONG' : 'SHORT');
-                    if (side === 'LONG' || side === 'BUY') long++;
-                    else if (side === 'SHORT' || side === 'SELL') short++;
-                }
-            });
-        }
-        res.json({
-            total: long + short,
-            long: long,
-            short: short,
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        res.status(500).json({ 
-            error: error.message,
-            timestamp: new Date().toISOString()
-        });
+  try {
+    if (!exchangeClient) {
+      return res.status(503).json({ error: 'Exchange client not initialized' });
     }
+    
+    // Получаем позиции с биржи
+    const positions = await exchangeClient.getPositions();
+    
+    // Фильтруем активные позиции (где количество > 0)
+    const activePositions = positions.filter(p => 
+      parseFloat(p.positionAmt) !== 0
+    );
+    
+    // Преобразуем в удобный формат
+    const formatted = activePositions.map(p => ({
+      symbol: p.symbol,
+      side: p.positionSide || (parseFloat(p.positionAmt) > 0 ? 'LONG' : 'SHORT'),
+      entryPrice: parseFloat(p.entryPrice),
+      quantity: Math.abs(parseFloat(p.positionAmt)),
+      unrealizedPnl: parseFloat(p.unrealizedProfit) || 0,
+      markPrice: parseFloat(p.markPrice),
+      leverage: parseFloat(p.leverage) || 1,
+    }));
+    
+    res.json({
+      total: formatted.length,
+      long: formatted.filter(p => p.side === 'LONG').length,
+      short: formatted.filter(p => p.side === 'SHORT').length,
+      positions: formatted,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching positions:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // История (заглушка)
