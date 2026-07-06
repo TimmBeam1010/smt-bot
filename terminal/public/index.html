@@ -388,8 +388,17 @@
                 
                 document.getElementById('balance').textContent = `$${totalBalance.toFixed(2)}`;
                 
+                // 🔥 ИСПРАВЛЕННОЕ ФОРМАТИРОВАНИЕ ОБЩЕГО PNL
                 const pnlElement = document.getElementById('totalPnl');
-                pnlElement.textContent = `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}`;
+                let pnlDisplay = '';
+                if (totalPnl > 0) {
+                    pnlDisplay = `+$${totalPnl.toFixed(2)}`;
+                } else if (totalPnl < 0) {
+                    pnlDisplay = `-$${Math.abs(totalPnl).toFixed(2)}`;
+                } else {
+                    pnlDisplay = `$${totalPnl.toFixed(2)}`;
+                }
+                pnlElement.textContent = pnlDisplay;
                 pnlElement.className = `value ${totalPnl >= 0 ? 'high' : 'danger'}`;
 
                 // --- Позиции ---
@@ -464,13 +473,13 @@
                 `;
             }
 
-    html += `
-            </tbody>
-        </table>
-    `;
-    
-    container.innerHTML = html;
-}
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
 
         // ===== ОТРИСОВКА СИГНАЛОВ =====
         function renderSignals(signals) {
