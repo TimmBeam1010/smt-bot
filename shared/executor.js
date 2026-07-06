@@ -59,7 +59,6 @@ const MIN_ORDER_SIZE = {
     'THETA-USDT': 1,
     'HNT-USDT': 0.1,
     'ARB-USDT': 1,
-    'MKR-USDT': 0.001,
     'AAVE-USDT': 0.01,
     'APE-USDT': 1,
     'QNT-USDT': 0.01,
