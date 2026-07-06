@@ -122,7 +122,7 @@
             border-color: #00ff88;
         }
 
-        /* SIGNALS TABLE */
+        /* TABLES */
         .signals-table {
             width: 100%;
             font-size: 13px;
@@ -183,12 +183,24 @@
             font-size: 14px;
         }
 
-        /* REFRESH */
         .refresh {
             text-align: right;
             font-size: 12px;
             color: #555;
             margin-top: 8px;
+        }
+        .refresh button {
+            background: none;
+            border: 1px solid #333;
+            color: #888;
+            padding: 4px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .refresh button:hover {
+            border-color: #00ff88;
+            color: #00ff88;
         }
 
         /* RESPONSIVE */
@@ -234,7 +246,11 @@
                     <span id="balance" class="value">$0.00</span>
                 </div>
                 <div class="row">
-                    <span class="label">📈 Позиции</span>
+                    <span class="label">📈 Общий PnL</span>
+                    <span id="totalPnl" class="value">$0.00</span>
+                </div>
+                <div class="row">
+                    <span class="label">📊 Позиции</span>
                     <span id="positions" class="value">0</span>
                 </div>
                 <div class="row">
@@ -276,6 +292,10 @@
                     <span class="value">10</span>
                 </div>
                 <div class="row">
+                    <span class="label">Размер сделки</span>
+                    <span class="value">5%</span>
+                </div>
+                <div class="row">
                     <span class="label">Риск на сделку</span>
                     <span class="value">0.2–0.4%</span>
                 </div>
@@ -298,17 +318,28 @@
             </div>
         </div>
 
-        <!-- ТАБЛИЦА СИГНАЛОВ -->
+        <!-- АКТИВНЫЕ ПОЗИЦИИ -->
+        <div style="margin-top: 30px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; border-bottom:1px solid #222; padding-bottom:8px;">
+                <h3 style="color:#00ff88; font-size:16px;">📊 АКТИВНЫЕ ПОЗИЦИИ</h3>
+                <span style="font-size:12px; color:#555;">Обновлено: <span id="lastUpdatePositions">--</span></span>
+            </div>
+            <div id="positionsContainer">
+                <div class="empty">⏳ Загрузка позиций...</div>
+            </div>
+        </div>
+
+        <!-- СИГНАЛЫ -->
         <div style="margin-top: 30px;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; border-bottom:1px solid #222; padding-bottom:8px;">
                 <h3 style="color:#00ff88; font-size:16px;">📡 ПОСЛЕДНИЕ СИГНАЛЫ</h3>
-                <span style="font-size:12px; color:#555;">Обновлено: <span id="lastUpdate">--</span></span>
+                <span style="font-size:12px; color:#555;">Обновлено: <span id="lastUpdateSignals">--</span></span>
             </div>
             <div id="signalsContainer">
                 <div class="empty">⏳ Загрузка сигналов...</div>
             </div>
             <div class="refresh">
-                <button onclick="fetchData()" style="background:none;border:1px solid #333;color:#888;padding:4px 16px;border-radius:20px;cursor:pointer;font-family:inherit;">🔄 Обновить</button>
+                <button onclick="fetchData()">🔄 Обновить</button>
             </div>
         </div>
     </div>
@@ -327,15 +358,19 @@
         // ===== ЗАГРУЗКА ДАННЫХ =====
         async function fetchData() {
             try {
-                const [statusRes, signalsRes] = await Promise.all([
+                const [statusRes, signalsRes, balanceRes, positionsRes] = await Promise.all([
                     fetch(`${API_BASE}/status`),
                     fetch(`${API_BASE}/signals`),
+                    fetch(`${API_BASE}/balance`),
+                    fetch(`${API_BASE}/positions`),
                 ]);
 
                 const status = await statusRes.json();
                 const signals = await signalsRes.json();
+                const balance = await balanceRes.json();
+                const positionsData = await positionsRes.json();
 
-                // Статус
+                // --- Статус ---
                 const statusBadge = document.getElementById('statusBadge');
                 if (status.status === 'online') {
                     statusBadge.className = 'online';
@@ -346,23 +381,85 @@
                 }
                 document.getElementById('uptime').textContent = formatUptime(status.uptime || 0);
 
-                // Баланс, позиции (заглушка — можно расширить через API)
-                // Если есть реальные эндпоинты — замените
-                document.getElementById('balance').textContent = '$160.20';
-                document.getElementById('positions').textContent = '0';
-                document.getElementById('longShort').textContent = '0 / 0';
+                // --- Баланс и PnL ---
+                const totalBalance = balance?.balance || 0;
+                const positions = positionsData?.positions || [];
+                const totalPnl = positions.reduce((sum, p) => sum + (p.unrealizedPnl || 0), 0);
+                
+                document.getElementById('balance').textContent = `$${totalBalance.toFixed(2)}`;
+                
+                const pnlElement = document.getElementById('totalPnl');
+                pnlElement.textContent = `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}`;
+                pnlElement.className = `value ${totalPnl >= 0 ? 'high' : 'danger'}`;
 
-                // Сигналы
+                // --- Позиции ---
+                renderPositions(positions);
+                document.getElementById('positions').textContent = positions.length;
+                
+                const longs = positions.filter(p => p.side === 'LONG').length;
+                const shorts = positions.filter(p => p.side === 'SHORT').length;
+                document.getElementById('longShort').textContent = `${longs} / ${shorts}`;
+                document.getElementById('lastUpdatePositions').textContent = new Date().toLocaleTimeString();
+
+                // --- Сигналы ---
                 renderSignals(signals || []);
                 document.getElementById('activeSignalsCount').textContent = (signals || []).length;
-
-                // Обновление
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+                document.getElementById('lastUpdateSignals').textContent = new Date().toLocaleTimeString();
 
             } catch (e) {
                 console.error('Ошибка загрузки:', e);
                 document.getElementById('signalsContainer').innerHTML = '<div class="empty">❌ Ошибка загрузки данных</div>';
             }
+        }
+
+        // ===== ОТРИСОВКА ПОЗИЦИЙ =====
+        function renderPositions(positions) {
+            const container = document.getElementById('positionsContainer');
+            
+            if (!positions || positions.length === 0) {
+                container.innerHTML = '<div class="empty">📭 Нет открытых позиций</div>';
+                return;
+            }
+
+            let html = `
+                <table class="signals-table">
+                    <thead>
+                        <tr>
+                            <th>Символ</th>
+                            <th>Направление</th>
+                            <th>Цена входа</th>
+                            <th>Размер</th>
+                            <th>Плечо</th>
+                            <th>PnL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            for (const p of positions) {
+                const pnl = p.unrealizedPnl || 0;
+                const pnlClass = pnl >= 0 ? 'high' : 'danger';
+                const sideClass = p.side === 'LONG' ? 'side-long' : 'side-short';
+                const entryPrice = p.entryPrice ? p.entryPrice.toFixed(4) : '—';
+
+                html += `
+                    <tr>
+                        <td><strong>${p.symbol}</strong></td>
+                        <td class="${sideClass}">${p.side}</td>
+                        <td>$${entryPrice}</td>
+                        <td>${p.quantity || '—'}</td>
+                        <td>${p.leverage || '1'}x</td>
+                        <td class="${pnlClass}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
         }
 
         // ===== ОТРИСОВКА СИГНАЛОВ =====
@@ -374,9 +471,7 @@
                 return;
             }
 
-            // Берём последние 10
             const recent = signals.slice(0, 10);
-
             let html = `
                 <table class="signals-table">
                     <thead>
@@ -412,7 +507,6 @@
                     </tbody>
                 </table>
             `;
-
             container.innerHTML = html;
         }
 
@@ -432,7 +526,6 @@
                 botStates[key] = !botStates[key];
                 btn.textContent = botStates[key] ? '🟢 On' : '🔴 Off';
                 btn.classList.toggle('active', botStates[key]);
-                // Здесь можно отправить команду на бекенд
                 console.log(`[${key}] => ${botStates[key]}`);
             });
         }
@@ -444,7 +537,7 @@
 
         // ===== АВТООБНОВЛЕНИЕ =====
         fetchData();
-        setInterval(fetchData, 10000); // каждые 10 сек
+        setInterval(fetchData, 10000);
     </script>
 </body>
 </html>
