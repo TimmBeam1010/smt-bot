@@ -99,17 +99,17 @@ function generateSignal(symbol, prices, extras = {}) {
 
     // ===== СИГНАЛЫ =====
 
-    // RSI
-    if (rsi < 30) {
+// RSI (тестовые пороги)
+    if (rsi < 50) {
         side = 'LONG';
-        reasons.push(`RSI (${rsi.toFixed(1)}) ниже 30 — перепроданность`);
+        reasons.push(`RSI (${rsi.toFixed(1)}) ниже 50`);
         confidence = 'medium';
-    } else if (rsi > 70) {
+    } else if (rsi > 50) {
         side = 'SHORT';
-        reasons.push(`RSI (${rsi.toFixed(1)}) выше 70 — перекупленность`);
+        reasons.push(`RSI (${rsi.toFixed(1)}) выше 50`);
         confidence = 'medium';
-    } else if (rsi > 40 && rsi < 60) {
-        reasons.push(`RSI (${rsi.toFixed(1)}) в нейтральной зоне`);
+    } else {
+        reasons.push(`RSI (${rsi.toFixed(1)}) нейтральный`);
     }
 
     // MACD
