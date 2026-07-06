@@ -206,6 +206,16 @@ async function saveSignalDirectly(signal, modules) {
 
     const result = await supabaseRequest("POST", "signals", signalData);
     log.info(`✅ СОХРАНЕН! ID: ${result?.[0]?.id || "OK"}`);
+    
+    // ← ДОБАВИТЬ ЭТОТ БЛОК
+    try {
+      await notifier.notifySignal(signalData);
+      log.info(`📨 Telegram: сигнал отправлен для ${signal.symbol}`);
+    } catch (e) {
+      log.debug(`Telegram ошибка: ${e.message}`);
+    }
+    // ← КОНЕЦ БЛОКА
+    
     return result;
   } catch (error) {
     log.error(`❌ Ошибка сохранения: ${error.message}`);
