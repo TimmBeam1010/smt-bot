@@ -3,6 +3,9 @@
 const { getExchange } = require("../../shared/exchanges");
 const { TrailingStopManager } = require("../../shared/trailing-manager");
 
+// ============================================
+//  ЛОГГЕР
+// ============================================
 const log = {
   info: (msg) => console.log(`[${new Date().toISOString()}] [INFO] ${msg}`),
   warn: (msg) => console.warn(`[${new Date().toISOString()}] [WARN] ${msg}`),
@@ -10,9 +13,9 @@ const log = {
   debug: (msg) => console.log(`[${new Date().toISOString()}] [DEBUG] ${msg}`)
 };
 
-// ========================================
+// ============================================
 //  КОНФИГУРАЦИЯ
-// ========================================
+// ============================================
 const CONFIG = {
   userId: 11,                        // ID пользователя для сигналов
   maxPositions: 10,                  // Максимум открытых позиций
@@ -21,8 +24,11 @@ const CONFIG = {
   minBalanceThreshold: 0.55,         // 55% — только HIGH сигналы
   highOnlyThreshold: 0.50,           // 50% — ниже этого останавливаем
   trailingStopPercent: 0.02,         // Трейлинг-стоп 2%
-  positionSizePercent: 0.05,         // 🔥 5% от депозита на сделку
+  positionSizePercent: 0.05,         // 🔥 5% от фиксированного депозита
   confidenceLevel: 'high',           // 🔥 ТОЛЬКО HIGH сигналы
+  riskPercent: 0.02,                 // 🔥 Риск 2% от цены входа
+  rewardRatio: 2,                    // 🔥 Соотношение риск/прибыль 1:2
+  defaultLeverage: 30,               // 🔥 Плечо по умолчанию
 };
 
 const supabaseUrl = 'https://sbpyuigmrqycqlrjlqqv.supabase.co';
@@ -31,12 +37,12 @@ const supabaseKey = 'sb_publishable_TRnw7p3BXwp9_AbHiJR55A_yJBtEyGd';
 let exchangeClient = null;
 let isProcessing = false;
 let minOrderSizes = {};
-let initialBalance = 0;
+let initialBalance = 0;              // 🔥 ФИКСИРОВАННЫЙ ДЕПОЗИТ
 let trailingManager = new TrailingStopManager();
 
-// ========================================
+// ============================================
 //  SUPABASE
-// ========================================
+// ============================================
 async function supabaseRequest(method, endpoint, data = null) {
   const url = `${supabaseUrl}/rest/v1/${endpoint}`;
   const headers = {
@@ -55,9 +61,9 @@ async function supabaseRequest(method, endpoint, data = null) {
   return response.json();
 }
 
-// ========================================
+// ============================================
 //  ЗАГРУЗКА МИНИМАЛЬНЫХ РАЗМЕРОВ
-// ========================================
+// ============================================
 async function loadMinOrderSizes() {
   try {
     if (!exchangeClient) return;
@@ -74,9 +80,9 @@ async function loadMinOrderSizes() {
   }
 }
 
-// ========================================
+// ============================================
 //  ПОЛУЧЕНИЕ БАЛАНСА
-// ========================================
+// ============================================
 async function getBalance() {
   try {
     if (!exchangeClient) return 0;
@@ -88,9 +94,9 @@ async function getBalance() {
   }
 }
 
-// ========================================
+// ============================================
 //  ПОЛУЧЕНИЕ СВЕЧЕЙ
-// ========================================
+// ============================================
 async function getCandles(symbol, interval = '5m', limit = 50) {
   try {
     if (!exchangeClient) return [];
@@ -101,9 +107,9 @@ async function getCandles(symbol, interval = '5m', limit = 50) {
   }
 }
 
-// ========================================
+// ============================================
 //  ПОЛУЧЕНИЕ АКТИВНЫХ ПОЗИЦИЙ
-// ========================================
+// ============================================
 async function getActivePositions() {
   try {
     if (!exchangeClient) return { total: 0, positions: [] };
@@ -123,18 +129,18 @@ async function getActivePositions() {
   }
 }
 
-// ========================================
+// ============================================
 //  ПРОВЕРКА СИМВОЛА
-// ========================================
+// ============================================
 async function isValidSymbol(symbol) {
   if (!symbol) return false;
   const s = String(symbol).trim().toUpperCase();
   return Object.keys(minOrderSizes).some(key => key.toUpperCase() === s);
 }
 
-// ========================================
+// ============================================
 //  ПОЛУЧЕНИЕ ОЖИДАЮЩИХ СИГНАЛОВ
-// ========================================
+// ============================================
 async function getPendingSignals() {
   try {
     const data = await supabaseRequest('GET', 
@@ -152,9 +158,9 @@ async function getPendingSignals() {
   }
 }
 
-// ========================================
+// ============================================
 //  ОБНОВЛЕНИЕ СТАТУСА СИГНАЛА
-// ========================================
+// ============================================
 async function updateSignalStatus(signalId, status, data = {}) {
   try {
     const updateData = { status, executed_at: new Date().toISOString() };
@@ -167,14 +173,12 @@ async function updateSignalStatus(signalId, status, data = {}) {
   }
 }
 
-// ========================================
-//  🔥 РАСЧЁТ РАЗМЕРА ПОЗИЦИИ (5% ОТ ДЕПОЗИТА)
-// ========================================
-function calculatePositionSize(balance, entryPrice, symbol) {
-  // 5% от баланса
-  const riskAmount = balance * CONFIG.positionSizePercent;
-  
-  // Количество токенов
+// ============================================
+//  🔥 РАСЧЁТ РАЗМЕРА ПОЗИЦИИ (5% ОТ ФИКСИРОВАННОГО ДЕПОЗИТА)
+// ============================================
+function calculatePositionSize(entryPrice, symbol) {
+  // Используем фиксированный депозит, а не текущий баланс
+  const riskAmount = initialBalance * CONFIG.positionSizePercent;
   let quantity = riskAmount / entryPrice;
   
   // Проверка минимального размера
@@ -184,43 +188,82 @@ function calculatePositionSize(balance, entryPrice, symbol) {
     quantity = minQty;
   }
   
-  // Округление до 8 знаков
   quantity = Math.floor(quantity * 1e8) / 1e8;
-  
-  log.info(`💰 Расчёт: баланс $${balance.toFixed(2)} × 5% = $${riskAmount.toFixed(2)} → ${quantity} ${symbol}`);
+  log.info(`💰 Расчёт: $${riskAmount.toFixed(2)} (5% от $${initialBalance.toFixed(2)}) → ${quantity} ${symbol}`);
   return quantity;
 }
 
-// ========================================
+// ============================================
+//  🔥 РАСЧЁТ TP/SL С УЧЁТОМ ПЛЕЧА
+// ============================================
+function calculateTPSL(entryPrice, side, leverage) {
+  const riskPercent = CONFIG.riskPercent; // 2%
+  const rewardRatio = CONFIG.rewardRatio; // 2:1
+  
+  const slDistance = entryPrice * riskPercent;
+  const tpDistance = slDistance * rewardRatio;
+  
+  let stopLoss, takeProfit;
+  if (side === 'LONG') {
+    stopLoss = entryPrice - slDistance;
+    takeProfit = entryPrice + tpDistance;
+  } else {
+    stopLoss = entryPrice + slDistance;
+    takeProfit = entryPrice - tpDistance;
+  }
+  
+  // Проверка, что SL не за точкой ликвидации
+  const liqPrice = side === 'LONG' 
+    ? entryPrice * (1 - 1/leverage) 
+    : entryPrice * (1 + 1/leverage);
+  
+  if (side === 'LONG' && stopLoss <= liqPrice) {
+    log.warn(`⚠️ SL ${stopLoss.toFixed(4)} за точкой ликвидации ${liqPrice.toFixed(4)}, корректируем`);
+    stopLoss = liqPrice * 1.02; // 2% выше ликвидации
+  }
+  if (side === 'SHORT' && stopLoss >= liqPrice) {
+    log.warn(`⚠️ SL ${stopLoss.toFixed(4)} за точкой ликвидации ${liqPrice.toFixed(4)}, корректируем`);
+    stopLoss = liqPrice * 0.98; // 2% ниже ликвидации
+  }
+  
+  return { stopLoss, takeProfit, liqPrice, riskPercent };
+}
+
+// ============================================
 //  🔥 ФИЛЬТР СИГНАЛОВ (ТОЛЬКО HIGH)
-// ========================================
+// ============================================
 function filterHighConfidenceSignals(signals) {
   const filtered = signals.filter(s => s.confidence === CONFIG.confidenceLevel);
   log.info(`🔍 Фильтр HIGH: ${filtered.length} из ${signals.length} сигналов`);
   return filtered;
 }
 
-// ========================================
+// ============================================
 //  ФИЛЬТР ПО РИСКУ
-// ========================================
+// ============================================
 function filterSignalsByRisk(signals, balance) {
+  if (initialBalance === 0) {
+    log.warn('⚠️ Начальный баланс не определён');
+    return [];
+  }
+  
   const balancePercent = balance / initialBalance;
   if (balancePercent >= CONFIG.minBalanceThreshold) {
-    log.info(`✅ Баланс > 55% — все HIGH сигналы разрешены`);
+    log.info(`✅ Баланс > 55% от депозита — все HIGH сигналы разрешены`);
     return signals;
   }
   if (balancePercent >= CONFIG.highOnlyThreshold && balancePercent < CONFIG.minBalanceThreshold) {
     const highSignals = signals.filter(s => s.confidence === 'high');
-    log.info(`⚠️ Баланс ${(balancePercent * 100).toFixed(1)}% — только HIGH`);
+    log.info(`⚠️ Баланс ${(balancePercent * 100).toFixed(1)}% от депозита — только HIGH`);
     return highSignals;
   }
-  log.warn(`🚨 Баланс < 50% — СДЕЛКИ ОСТАНОВЛЕНЫ!`);
+  log.warn(`🚨 Баланс < 50% от депозита — СДЕЛКИ ОСТАНОВЛЕНЫ!`);
   return [];
 }
 
-// ========================================
+// ============================================
 //  ИСПОЛНЕНИЕ СДЕЛКИ
-// ========================================
+// ============================================
 async function executeTrade(signal) {
   try {
     const currentPositions = await getActivePositions();
@@ -243,23 +286,35 @@ async function executeTrade(signal) {
     const balance = await getBalance();
     if (!balance || balance < 5) throw new Error(`Недостаточно средств: ${balance || 0} USDT`);
 
-    // 🔥 РАСЧЁТ РАЗМЕРА (5% ОТ ДЕПОЗИТА)
-    const quantity = calculatePositionSize(balance, signal.entry_price, symbol);
+    // 🔥 РАСЧЁТ РАЗМЕРА (5% ОТ ФИКСИРОВАННОГО ДЕПОЗИТА)
+    const quantity = calculatePositionSize(signal.entry_price, symbol);
+    const leverage = CONFIG.defaultLeverage;
+
+    // 🔥 РАСЧЁТ TP/SL
+    const { stopLoss, takeProfit, liqPrice, riskPercent } = calculateTPSL(
+      signal.entry_price, 
+      signal.side, 
+      leverage
+    );
 
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
     const positionSide = signal.side;
 
-    // Используем рыночный ордер
+    // Формируем ордер
     const order = {
       symbol: symbol,
       side: side,
       positionSide: positionSide,
       type: 'MARKET',
       quantity: quantity,
-      leverage: 10, // Плечо можно настроить
+      leverage: leverage,
+      stopLoss: stopLoss,
+      takeProfit: takeProfit
     };
 
-    log.info(`📤 Параметры ордера: ${JSON.stringify(order, null, 2)}`);
+    log.info(`📤 Ордер: ${JSON.stringify(order, null, 2)}`);
+    log.info(`🎯 TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)} | Риск: ${(riskPercent * 100)}%`);
+    log.info(`⚡ Ликвидация: $${liqPrice.toFixed(4)} (${leverage}x)`);
 
     const result = await exchangeClient.placeOrder(order);
     log.info(`✅ Сделка открыта: ${symbol} ${signal.side} | Размер: ${quantity}`);
@@ -282,9 +337,9 @@ async function executeTrade(signal) {
   }
 }
 
-// ========================================
+// ============================================
 //  ГЛАВНЫЙ ЦИКЛ
-// ========================================
+// ============================================
 async function mainLoop() {
   if (isProcessing) {
     log.debug('⏳ Уже обрабатывается...');
@@ -302,7 +357,8 @@ async function mainLoop() {
 
     if (initialBalance === 0) {
       initialBalance = currentBalance;
-      log.info(`💰 Начальный баланс: $${initialBalance.toFixed(2)}`);
+      log.info(`💰 Фиксированный депозит: $${initialBalance.toFixed(2)}`);
+      log.info(`💰 Размер сделки: $${(initialBalance * CONFIG.positionSizePercent).toFixed(2)} (${CONFIG.positionSizePercent * 100}%)`);
     }
 
     const positions = await getActivePositions();
@@ -321,7 +377,7 @@ async function mainLoop() {
       return;
     }
 
-    // 🔥 ФИЛЬТР: ТОЛЬКО HIGH
+    // Фильтр: только HIGH
     signals = filterHighConfidenceSignals(signals);
     if (signals.length === 0) {
       log.debug('📭 Нет HIGH сигналов');
@@ -329,7 +385,7 @@ async function mainLoop() {
       return;
     }
 
-    // Фильтр по риску
+    // Фильтр по риску (относительно фиксированного депозита)
     signals = filterSignalsByRisk(signals, currentBalance);
     if (signals.length === 0) {
       log.debug('📭 Нет сигналов по риск-параметрам');
@@ -353,15 +409,17 @@ async function mainLoop() {
   }
 }
 
-// ========================================
+// ============================================
 //  ЗАПУСК
-// ========================================
+// ============================================
 async function start() {
-  log.info('🚀 Trade Executor Bot запущен (СТАБИЛЬНАЯ ВЕРСИЯ)');
+  log.info('🚀 Trade Executor Bot запущен (FULL VERSION)');
   log.info(`📋 Максимум позиций: ${CONFIG.maxPositions}`);
   log.info(`📋 Интервал: ${CONFIG.checkInterval / 1000}с`);
-  log.info(`💰 Размер сделки: ${CONFIG.positionSizePercent * 100}% от депозита`);
+  log.info(`💰 Размер сделки: ${CONFIG.positionSizePercent * 100}% от фиксированного депозита`);
   log.info(`🔒 Уровень сигнала: ${CONFIG.confidenceLevel.toUpperCase()}`);
+  log.info(`🛡️ Риск на сделку: ${CONFIG.riskPercent * 100}% | Соотношение: 1:${CONFIG.rewardRatio}`);
+  log.info(`⚡ Плечо: ${CONFIG.defaultLeverage}x`);
   
   exchangeClient = getExchange("bingx",
     process.env.BINGX_API_KEY || "BOe6nx3Hlo8puQvg2wPIjNCWW4ISUY7SdYNlvi2jDApQr50hDvbv6At4vBoSDVN9o9LcEgEI4dcOkgY52A",
@@ -370,6 +428,13 @@ async function start() {
   log.info('✅ Клиент инициализирован');
 
   await loadMinOrderSizes();
+  
+  // Сохраняем начальный баланс
+  const balance = await getBalance();
+  initialBalance = balance;
+  log.info(`💰 Фиксированный депозит: $${initialBalance.toFixed(2)}`);
+  log.info(`💰 Размер одной сделки: $${(initialBalance * CONFIG.positionSizePercent).toFixed(2)} (${CONFIG.positionSizePercent * 100}%)`);
+  
   await mainLoop();
   setInterval(mainLoop, CONFIG.checkInterval);
 }
