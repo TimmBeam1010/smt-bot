@@ -9,7 +9,9 @@ const aiPredictor = require("../../shared/ai-predictor");
 const newsMonitor = require("../../shared/news-monitor");
 const notifier = require('../../shared/notifier');
 
-
+// ============================================
+//  ЛОГГЕР
+// ============================================
 const log = {
   info: (msg) => console.log(`[${new Date().toISOString()}] [INFO] ${msg}`),
   warn: (msg) => console.warn(`[${new Date().toISOString()}] [WARN] ${msg}`),
@@ -17,6 +19,9 @@ const log = {
   debug: (msg) => console.log(`[${new Date().toISOString()}] [DEBUG] ${msg}`)
 };
 
+// ============================================
+//  КОНФИГУРАЦИЯ
+// ============================================
 const CONFIG = {
   symbols: [
     'BTC-USDT', 'ETH-USDT', 'LINK-USDT', 'BCH-USDT', 'ADA-USDT',
@@ -51,7 +56,10 @@ const CONFIG = {
   ],
   interval: '5m',
   limit: 100,
-  checkInterval: 30000,
+  checkInterval: 60000,          // 🔥 60 секунд (было 30)
+  requestDelay: 300,             // 🔥 Задержка между запросами 300 мс
+  maxRetries: 3,                 // 🔥 Максимум повторных попыток
+  retryDelay: 5000,              // 🔥 Задержка между повторами
 };
 
 const supabaseUrl = "https://sbpyuigmrqycqlrjlqqv.supabase.co";
@@ -61,6 +69,10 @@ let exchangeClient = null;
 const ai = new aiPredictor.AIPredictor();
 const news = new newsMonitor.NewsMonitor();
 let sentimentData = null;
+
+// ============================================
+//  SUPABASE
+// ============================================
 async function supabaseRequest(method, endpoint, data = null) {
   const url = `${supabaseUrl}/rest/v1/${endpoint}`;
   const headers = {
@@ -79,6 +91,9 @@ async function supabaseRequest(method, endpoint, data = null) {
   return response.json();
 }
 
+// ============================================
+//  TP/SL
+// ============================================
 function calculateTPSL(entryPrice, side, atr) {
   const atrValue = atr || entryPrice * 0.02;
   const slDistance = atrValue * 1.5;
@@ -96,6 +111,10 @@ function calculateTPSL(entryPrice, side, atr) {
     };
   }
 }
+
+// ============================================
+//  АНАЛИЗ С МОДУЛЯМИ
+// ============================================
 async function analyzeWithModules(symbol, candles, prices, highs, lows, volumes) {
   const lastPrice = prices[prices.length - 1];
   const modulesResult = {
@@ -147,6 +166,10 @@ async function analyzeWithModules(symbol, candles, prices, highs, lows, volumes)
 
   return modulesResult;
 }
+
+// ============================================
+//  СОХРАНЕНИЕ СИГНАЛА
+// ============================================
 async function saveSignalDirectly(signal, modules) {
   try {
     if (!signal) return null;
@@ -207,14 +230,13 @@ async function saveSignalDirectly(signal, modules) {
     const result = await supabaseRequest("POST", "signals", signalData);
     log.info(`✅ СОХРАНЕН! ID: ${result?.[0]?.id || "OK"}`);
     
-    // ← ДОБАВИТЬ ЭТОТ БЛОК
+    // Отправка в Telegram
     try {
       await notifier.notifySignal(signalData);
       log.info(`📨 Telegram: сигнал отправлен для ${signal.symbol}`);
     } catch (e) {
       log.debug(`Telegram ошибка: ${e.message}`);
     }
-    // ← КОНЕЦ БЛОКА
     
     return result;
   } catch (error) {
@@ -222,34 +244,57 @@ async function saveSignalDirectly(signal, modules) {
     return null;
   }
 }
+
+// ============================================
+//  🔥 АНАЛИЗ СИГНАЛА (С ПОВТОРАМИ И ЗАДЕРЖКОЙ)
+// ============================================
 async function analyzeAndGenerateSignal(symbol) {
-  try {
-    if (!exchangeClient) return;
-    const candles = await exchangeClient.getCandles(symbol, CONFIG.interval, CONFIG.limit);
-    if (!candles || candles.length < 30) {
-      log.debug(`❌ Недостаточно свечей для ${symbol}`);
+  let retries = 0;
+  while (retries < CONFIG.maxRetries) {
+    try {
+      if (!exchangeClient) return;
+      
+      const candles = await exchangeClient.getCandles(symbol, CONFIG.interval, CONFIG.limit);
+      if (!candles || candles.length < 30) {
+        log.debug(`❌ Недостаточно свечей для ${symbol}`);
+        return;
+      }
+      
+      const prices = candles.map(c => c.close);
+      const highs = candles.map(c => c.high);
+      const lows = candles.map(c => c.low);
+      const volumes = candles.map(c => c.volume);
+
+      const signal = trading.generateSignal(symbol, prices, { highs, lows, volumes });
+      if (!signal) {
+        log.debug(`❌ Нет сигнала для ${symbol}`);
+        return;
+      }
+
+      const modules = await analyzeWithModules(symbol, candles, prices, highs, lows, volumes);
+      log.debug(`📊 Сгенерирован сигнал: ${symbol} ${signal.side} (${signal.confidence})`);
+
+      await saveSignalDirectly(signal, modules);
+      return; // Успешно завершили
+
+    } catch (error) {
+      retries++;
+      if (error.message?.includes('502') || error.message?.includes('429') || error.message?.includes('109500')) {
+        log.warn(`⚠️ Ошибка API (${retries}/${CONFIG.maxRetries}) для ${symbol}: ${error.message}`);
+        if (retries < CONFIG.maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, CONFIG.retryDelay));
+          continue;
+        }
+      }
+      log.error(`❌ Ошибка анализа ${symbol}: ${error.message}`);
       return;
     }
-    const prices = candles.map(c => c.close);
-    const highs = candles.map(c => c.high);
-    const lows = candles.map(c => c.low);
-    const volumes = candles.map(c => c.volume);
-
-    const signal = trading.generateSignal(symbol, prices, { highs, lows, volumes });
-    if (!signal) {
-      log.debug(`❌ Нет сигнала для ${symbol}`);
-      return;
-    }
-
-    const modules = await analyzeWithModules(symbol, candles, prices, highs, lows, volumes);
-    log.debug(`📊 Сгенерирован сигнал: ${symbol} ${signal.side} (${signal.confidence})`);
-
-    await saveSignalDirectly(signal, modules);
-  } catch (error) {
-    log.error(`❌ Ошибка анализа ${symbol}: ${error.message}`);
   }
 }
 
+// ============================================
+//  🔥 ГЛАВНЫЙ ЦИКЛ (С ЗАДЕРЖКОЙ МЕЖДУ ЗАПРОСАМИ)
+// ============================================
 async function mainLoop() {
   try {
     if (!exchangeClient) {
@@ -261,19 +306,29 @@ async function mainLoop() {
       log.info("✅ Клиент инициализирован");
     }
     log.info(`📊 Анализ ${CONFIG.symbols.length} символов...`);
+    
     for (const symbol of CONFIG.symbols) {
       await analyzeAndGenerateSignal(symbol);
+      // 🔥 ЗАДЕРЖКА МЕЖДУ ЗАПРОСАМИ
+      await new Promise(resolve => setTimeout(resolve, CONFIG.requestDelay));
     }
+    
+    log.info(`✅ Цикл завершен. Следующий через ${CONFIG.checkInterval / 1000}с`);
   } catch (error) {
     log.error(`❌ Ошибка: ${error.message}`);
   }
 }
 
+// ============================================
+//  ЗАПУСК
+// ============================================
 async function start() {
   log.info("🚀 Signal Generator Bot запущен (FULL версия)");
   log.info(`📋 Таймфрейм: ${CONFIG.interval}`);
   log.info(`📋 Символы: ${CONFIG.symbols.length}`);
   log.info(`⏱️ Интервал: ${CONFIG.checkInterval / 1000}с`);
+  log.info(`⏱️ Задержка между запросами: ${CONFIG.requestDelay}мс`);
+  log.info(`🔄 Повторы: ${CONFIG.maxRetries} раз`);
   log.info("🧠 Модули: Volume Profile, Sentiment, AI, Market Maker, News");
   await mainLoop();
   setInterval(mainLoop, CONFIG.checkInterval);
