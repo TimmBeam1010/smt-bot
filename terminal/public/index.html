@@ -2,77 +2,84 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes"/>
     <title>SMT Bot Terminal v3.0</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Courier New', monospace;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace;
             background: #0a0a0a;
             color: #00ff88;
-            padding: 20px;
+            padding: 12px;
             min-height: 100vh;
         }
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 1200px; margin: 0 auto; }
 
+        /* HEADER */
         .header {
             border-bottom: 2px solid #00ff88;
             padding-bottom: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 6px;
         }
-        .header h1 { font-size: 24px; color: #00ff88; }
-        .header .status { font-size: 14px; color: #888; }
-        .header .status .online { color: #00ff88; }
-        .header .status .offline { color: #ff2244; }
+        .header h1 { font-size: 20px; color: #00ff88; }
+        .header .status { font-size: 13px; color: #888; }
 
+        /* GRID — адаптивные карточки */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        @media (min-width: 600px) {
+            .grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 1000px) {
+            .grid { grid-template-columns: repeat(3, 1fr); }
         }
 
         .card {
             background: #111;
             border: 1px solid #222;
             border-radius: 12px;
-            padding: 20px;
+            padding: 14px 16px;
             transition: border-color 0.3s;
         }
         .card:hover { border-color: #00ff88; }
         .card h3 {
-            font-size: 16px;
+            font-size: 14px;
             color: #00ff88;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             border-bottom: 1px solid #222;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
+            letter-spacing: 0.5px;
         }
         .card .row {
             display: flex;
             justify-content: space-between;
-            padding: 6px 0;
-            font-size: 14px;
+            padding: 4px 0;
+            font-size: 13px;
             border-bottom: 1px solid #1a1a1a;
         }
         .card .row:last-child { border-bottom: none; }
         .card .label { color: #888; }
-        .card .value { color: #00ff88; font-weight: bold; }
+        .card .value { color: #00ff88; font-weight: 600; }
         .card .value.high { color: #00ff88; }
         .card .value.danger { color: #ff4444; }
         .card .value.warning { color: #ffaa00; }
 
+        /* Toggle кнопки */
         .toggle-btn {
             background: #222;
             border: 1px solid #444;
             color: #888;
-            padding: 4px 14px;
+            padding: 2px 12px;
             border-radius: 20px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-family: inherit;
             transition: all 0.3s;
         }
@@ -81,39 +88,54 @@
             color: #0a0a0a;
             border-color: #00ff88;
         }
-        .toggle-btn:hover { border-color: #00ff88; }
 
-        .signals-table {
-            width: 100%;
-            font-size: 13px;
-            border-collapse: collapse;
-            margin-top: 10px;
+        /* ===== ТАБЛИЦЫ — адаптивные ===== */
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 8px 0 4px 0;
+            border-radius: 8px;
+            border: 1px solid #1a1a1a;
         }
-        .signals-table th {
+        .table-wrap table {
+            width: 100%;
+            min-width: 600px; /* Чтобы не сжималась слишком сильно */
+            font-size: 12px;
+            border-collapse: collapse;
+        }
+        .table-wrap th {
             text-align: left;
             color: #888;
-            padding: 6px 4px;
+            padding: 8px 6px;
             border-bottom: 1px solid #222;
-            font-weight: normal;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
         }
-        .signals-table td {
-            padding: 6px 4px;
+        .table-wrap td {
+            padding: 8px 6px;
             border-bottom: 1px solid #1a1a1a;
+            white-space: nowrap;
         }
-        .signals-table .side-long { color: #00ff88; }
-        .signals-table .side-short { color: #ff4444; }
-        .signals-table .confidence-high { color: #00ff88; }
-        .signals-table .confidence-medium { color: #ffaa00; }
-        .signals-table .confidence-low { color: #ff4444; }
-        .signals-table .pnl-high { color: #00ff88; }
-        .signals-table .pnl-danger { color: #ff4444; }
+        .table-wrap tr:last-child td { border-bottom: none; }
+
+        /* Цвета */
+        .side-long { color: #00ff88; }
+        .side-short { color: #ff4444; }
+        .pnl-high { color: #00ff88; }
+        .pnl-danger { color: #ff4444; }
+        .confidence-high { color: #00ff88; }
+        .confidence-medium { color: #ffaa00; }
+        .confidence-low { color: #ff4444; }
 
         .badge {
             display: inline-block;
-            padding: 2px 10px;
+            padding: 1px 10px;
             border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
+            font-size: 10px;
+            font-weight: 600;
         }
         .badge.pending { background: #ffaa00; color: #0a0a0a; }
         .badge.executed { background: #00ff88; color: #0a0a0a; }
@@ -123,53 +145,62 @@
             color: #555;
             text-align: center;
             padding: 20px 0;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .refresh {
             text-align: right;
-            font-size: 12px;
+            font-size: 11px;
             color: #555;
-            margin-top: 8px;
+            margin-top: 6px;
         }
         .refresh button {
             background: none;
             border: 1px solid #333;
             color: #888;
-            padding: 4px 16px;
+            padding: 3px 14px;
             border-radius: 20px;
             cursor: pointer;
             font-family: inherit;
+            font-size: 11px;
         }
         .refresh button:hover { border-color: #00ff88; color: #00ff88; }
 
-        @media (max-width: 600px) {
-            .grid { grid-template-columns: 1fr; }
-            .header { flex-direction: column; align-items: flex-start; gap: 8px; }
+        /* Блоки с таблицами */
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #222;
+            padding-bottom: 6px;
+            margin-top: 24px;
+            margin-bottom: 4px;
+        }
+        .section-title h3 {
+            color: #00ff88;
+            font-size: 15px;
+        }
+        .section-title span {
+            font-size: 11px;
+            color: #555;
         }
 
-        /* Стили для позиций */
-        .positions-table {
-            width: 100%;
-            font-size: 13px;
-            border-collapse: collapse;
-            margin-top: 10px;
+        /* Телефон: убираем лишние колонки */
+        @media (max-width: 480px) {
+            body { padding: 8px; }
+            .header h1 { font-size: 17px; }
+            .card { padding: 10px 12px; }
+            .card .row { font-size: 12px; }
+            .table-wrap table { min-width: 460px; font-size: 11px; }
+            .table-wrap th, .table-wrap td { padding: 5px 4px; }
+            /* Скрываем колонки "Размер" и "Плечо" на телефонах */
+            .table-wrap .col-hide-mobile { display: none; }
         }
-        .positions-table th {
-            text-align: left;
-            color: #888;
-            padding: 6px 4px;
-            border-bottom: 1px solid #222;
-            font-weight: normal;
+        @media (max-width: 380px) {
+            .table-wrap table { min-width: 340px; font-size: 10px; }
+            .table-wrap th, .table-wrap td { padding: 4px 3px; }
         }
-        .positions-table td {
-            padding: 6px 4px;
-            border-bottom: 1px solid #1a1a1a;
-        }
-        .positions-table .side-long { color: #00ff88; }
-        .positions-table .side-short { color: #ff4444; }
-        .positions-table .pnl-high { color: #00ff88; }
-        .positions-table .pnl-danger { color: #ff4444; }
     </style>
 </head>
 <body>
@@ -189,52 +220,22 @@
             <!-- БЛОК: БИРЖА -->
             <div class="card">
                 <h3>📊 БИРЖА</h3>
-                <div class="row">
-                    <span class="label">Биржа</span>
-                    <span class="value">BingX</span>
-                </div>
-                <div class="row">
-                    <span class="label">Статус</span>
-                    <span id="exchangeStatus" class="value high">● Онлайн</span>
-                </div>
-                <div class="row">
-                    <span class="label">💰 Баланс</span>
-                    <span id="balance" class="value">$0.00</span>
-                </div>
-                <div class="row">
-                    <span class="label">📈 Общий PnL</span>
-                    <span id="totalPnl" class="value">$0.00</span>
-                </div>
-                <div class="row">
-                    <span class="label">📊 Позиции</span>
-                    <span id="positionsCount" class="value">0</span>
-                </div>
-                <div class="row">
-                    <span class="label">🔹 Long / Short</span>
-                    <span id="longShort" class="value">0 / 0</span>
-                </div>
+                <div class="row"><span class="label">Биржа</span><span class="value">BingX</span></div>
+                <div class="row"><span class="label">Статус</span><span id="exchangeStatus" class="value high">● Онлайн</span></div>
+                <div class="row"><span class="label">💰 Баланс</span><span id="balance" class="value">$0.00</span></div>
+                <div class="row"><span class="label">📈 Общий PnL</span><span id="totalPnl" class="value">$0.00</span></div>
+                <div class="row"><span class="label">📊 Позиции</span><span id="positionsCount" class="value">0</span></div>
+                <div class="row"><span class="label">🔹 Long / Short</span><span id="longShort" class="value">0 / 0</span></div>
             </div>
 
             <!-- БЛОК: БОТЫ -->
             <div class="card">
                 <h3>🤖 БОТЫ</h3>
-                <div class="row">
-                    <span class="label">Grid Strategy</span>
-                    <button class="toggle-btn" id="toggleGrid">🔴 Off</button>
-                </div>
-                <div class="row">
-                    <span class="label">DCA Strategy</span>
-                    <button class="toggle-btn" id="toggleDca">🔴 Off</button>
-                </div>
-                <div class="row">
-                    <span class="label">Arbitrage</span>
-                    <button class="toggle-btn" id="toggleArbitrage">🔴 Off</button>
-                </div>
-                <div class="row">
-                    <span class="label">Copy Trading</span>
-                    <button class="toggle-btn" id="toggleCopy">🔴 Off</button>
-                </div>
-                <div class="row" style="margin-top:10px; border-top:1px solid #222; padding-top:10px;">
+                <div class="row"><span class="label">Grid Strategy</span><button class="toggle-btn" id="toggleGrid">🔴 Off</button></div>
+                <div class="row"><span class="label">DCA Strategy</span><button class="toggle-btn" id="toggleDca">🔴 Off</button></div>
+                <div class="row"><span class="label">Arbitrage</span><button class="toggle-btn" id="toggleArbitrage">🔴 Off</button></div>
+                <div class="row"><span class="label">Copy Trading</span><button class="toggle-btn" id="toggleCopy">🔴 Off</button></div>
+                <div class="row" style="margin-top:8px; border-top:1px solid #222; padding-top:8px;">
                     <span class="label">📊 Активные сигналы</span>
                     <span id="activeSignalsCount" class="value">0</span>
                 </div>
@@ -243,75 +244,45 @@
             <!-- БЛОК: РИСК-МЕНЕДЖМЕНТ -->
             <div class="card">
                 <h3>🛡️ РИСК-МЕНЕДЖМЕНТ</h3>
-                <div class="row">
-                    <span class="label">Макс. позиций</span>
-                    <span class="value">10</span>
-                </div>
-                <div class="row">
-                    <span class="label">Размер сделки</span>
-                    <span class="value">5%</span>
-                </div>
-                <div class="row">
-                    <span class="label">Риск на сделку</span>
-                    <span class="value">0.2–0.4%</span>
-                </div>
-                <div class="row">
-                    <span class="label">Плечо</span>
-                    <span class="value">5x – 15x</span>
-                </div>
-                <div class="row">
-                    <span class="label">Трейлинг-стоп</span>
-                    <span class="value">2%</span>
-                </div>
-                <div class="row">
-                    <span class="label">Частичное закрытие</span>
-                    <span class="value">50% / 30% / 20%</span>
-                </div>
-                <div class="row">
-                    <span class="label">Мин. баланс</span>
-                    <span class="value">$0.55</span>
-                </div>
+                <div class="row"><span class="label">Макс. позиций</span><span class="value">10</span></div>
+                <div class="row"><span class="label">Размер сделки</span><span class="value">5%</span></div>
+                <div class="row"><span class="label">Риск на сделку</span><span class="value">0.2–0.4%</span></div>
+                <div class="row"><span class="label">Плечо</span><span class="value">5x – 15x</span></div>
+                <div class="row"><span class="label">Трейлинг-стоп</span><span class="value">2%</span></div>
+                <div class="row"><span class="label">Частичное закрытие</span><span class="value">50% / 30% / 20%</span></div>
+                <div class="row"><span class="label">Мин. баланс</span><span class="value">$0.55</span></div>
             </div>
         </div>
 
         <!-- АКТИВНЫЕ ПОЗИЦИИ -->
-        <div style="margin-top: 30px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; border-bottom:1px solid #222; padding-bottom:8px;">
-                <h3 style="color:#00ff88; font-size:16px;">📊 АКТИВНЫЕ ПОЗИЦИИ</h3>
-                <span style="font-size:12px; color:#555;">Обновлено: <span id="lastUpdatePositions">--</span></span>
-            </div>
-            <div id="positionsContainer">
-                <div class="empty">⏳ Загрузка позиций...</div>
-            </div>
+        <div class="section-title">
+            <h3>📊 АКТИВНЫЕ ПОЗИЦИИ</h3>
+            <span>Обновлено: <span id="lastUpdatePositions">--</span></span>
+        </div>
+        <div class="table-wrap" id="positionsContainer">
+            <div class="empty">⏳ Загрузка позиций...</div>
         </div>
 
         <!-- СИГНАЛЫ -->
-        <div style="margin-top: 30px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; border-bottom:1px solid #222; padding-bottom:8px;">
-                <h3 style="color:#00ff88; font-size:16px;">📡 ПОСЛЕДНИЕ СИГНАЛЫ</h3>
-                <span style="font-size:12px; color:#555;">Обновлено: <span id="lastUpdateSignals">--</span></span>
-            </div>
-            <div id="signalsContainer">
-                <div class="empty">⏳ Загрузка сигналов...</div>
-            </div>
-            <div class="refresh">
-                <button onclick="fetchData()">🔄 Обновить</button>
-            </div>
+        <div class="section-title">
+            <h3>📡 ПОСЛЕДНИЕ СИГНАЛЫ</h3>
+            <span>Обновлено: <span id="lastUpdateSignals">--</span></span>
+        </div>
+        <div class="table-wrap" id="signalsContainer">
+            <div class="empty">⏳ Загрузка сигналов...</div>
+        </div>
+
+        <div class="refresh">
+            <button onclick="fetchData()">🔄 Обновить</button>
         </div>
     </div>
 
     <script>
         const API_BASE = 'https://bot.smtbot.pro/api';
 
-        // ===== СОСТОЯНИЯ БОТОВ =====
-        let botStates = {
-            grid: false,
-            dca: false,
-            arbitrage: false,
-            copy: false,
-        };
+        let botStates = { grid: false, dca: false, arbitrage: false, copy: false };
 
-        // ===== ЗАГРУЗКА ДАННЫХ =====
+        // ===== ЗАГРУЗКА =====
         async function fetchData() {
             try {
                 const [statusRes, signalsRes, balanceRes, positionsRes] = await Promise.all([
@@ -359,7 +330,6 @@
                 // --- Позиции ---
                 renderPositions(positions);
                 document.getElementById('positionsCount').textContent = positions.length;
-                
                 const longs = positions.filter(p => p.side === 'LONG').length;
                 const shorts = positions.filter(p => p.side === 'SHORT').length;
                 document.getElementById('longShort').textContent = `${longs} / ${shorts}`;
@@ -376,9 +346,7 @@
             }
         }
 
-        // ============================================
-        //  🔥 ОТРИСОВКА ПОЗИЦИЙ С TP И SL
-        // ============================================
+        // ===== ПОЗИЦИИ =====
         function renderPositions(positions) {
             const container = document.getElementById('positionsContainer');
             
@@ -388,15 +356,14 @@
             }
 
             let html = `
-                <table class="positions-table">
+                <table>
                     <thead>
                         <tr>
                             <th>Символ</th>
                             <th>Направление</th>
                             <th>Цена входа</th>
-                            <th>Текущая цена</th>
-                            <th>Размер</th>
-                            <th>Плечо</th>
+                            <th class="col-hide-mobile">Размер</th>
+                            <th class="col-hide-mobile">Плечо</th>
                             <th>PnL</th>
                             <th>TP</th>
                             <th>SL</th>
@@ -410,44 +377,36 @@
                 const pnlClass = pnl < 0 ? 'pnl-danger' : 'pnl-high';
                 const sideClass = p.side === 'LONG' ? 'side-long' : 'side-short';
                 const entryPrice = p.entryPrice ? p.entryPrice.toFixed(4) : '—';
-                const markPrice = p.markPrice ? p.markPrice.toFixed(4) : '—';
                 
-                // 🔥 РАСЧЁТ TP И SL (НА ОСНОВЕ 2% РИСКА И 1:2)
+                // Расчёт TP/SL (2% риск, 1:2)
                 const riskPercent = 0.02;
                 const rewardRatio = 2;
-                const slDistance = entryPrice !== '—' ? parseFloat(entryPrice) * riskPercent : 0;
-                const tpDistance = slDistance * rewardRatio;
-                
-                let tp = '—';
-                let sl = '—';
+                let tp = '—', sl = '—';
                 if (entryPrice !== '—') {
                     const price = parseFloat(entryPrice);
+                    const slDist = price * riskPercent;
+                    const tpDist = slDist * rewardRatio;
                     if (p.side === 'LONG') {
-                        sl = (price - slDistance).toFixed(4);
-                        tp = (price + tpDistance).toFixed(4);
+                        sl = (price - slDist).toFixed(4);
+                        tp = (price + tpDist).toFixed(4);
                     } else {
-                        sl = (price + slDistance).toFixed(4);
-                        tp = (price - tpDistance).toFixed(4);
+                        sl = (price + slDist).toFixed(4);
+                        tp = (price - tpDist).toFixed(4);
                     }
                 }
 
                 let pnlDisplay = '';
-                if (pnl > 0) {
-                    pnlDisplay = `+$${pnl.toFixed(2)}`;
-                } else if (pnl < 0) {
-                    pnlDisplay = `-$${Math.abs(pnl).toFixed(2)}`;
-                } else {
-                    pnlDisplay = `$${pnl.toFixed(2)}`;
-                }
+                if (pnl > 0) pnlDisplay = `+$${pnl.toFixed(2)}`;
+                else if (pnl < 0) pnlDisplay = `-$${Math.abs(pnl).toFixed(2)}`;
+                else pnlDisplay = `$${pnl.toFixed(2)}`;
 
                 html += `
                     <tr>
                         <td><strong>${p.symbol}</strong></td>
                         <td class="${sideClass}">${p.side}</td>
                         <td>$${entryPrice}</td>
-                        <td>$${markPrice}</td>
-                        <td>${p.quantity || '—'}</td>
-                        <td>${p.leverage || '1'}x</td>
+                        <td class="col-hide-mobile">${p.quantity || '—'}</td>
+                        <td class="col-hide-mobile">${p.leverage || '1'}x</td>
                         <td class="${pnlClass}">${pnlDisplay}</td>
                         <td class="pnl-high">$${tp}</td>
                         <td class="pnl-danger">$${sl}</td>
@@ -455,15 +414,11 @@
                 `;
             }
 
-            html += `
-                    </tbody>
-                </table>
-            `;
-            
+            html += `</tbody></table>`;
             container.innerHTML = html;
         }
 
-        // ===== ОТРИСОВКА СИГНАЛОВ =====
+        // ===== СИГНАЛЫ =====
         function renderSignals(signals) {
             const container = document.getElementById('signalsContainer');
 
@@ -474,7 +429,7 @@
 
             const recent = signals.slice(0, 10);
             let html = `
-                <table class="signals-table">
+                <table>
                     <thead>
                         <tr>
                             <th>Символ</th>
@@ -504,14 +459,11 @@
                 `;
             }
 
-            html += `
-                    </tbody>
-                </table>
-            `;
+            html += `</tbody></table>`;
             container.innerHTML = html;
         }
 
-        // ===== ФОРМАТ UPTIME =====
+        // ===== UPTIME =====
         function formatUptime(seconds) {
             const h = Math.floor(seconds / 3600);
             const m = Math.floor((seconds % 3600) / 60);
@@ -519,7 +471,7 @@
             return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
         }
 
-        // ===== Toggle ботов =====
+        // ===== Toggle =====
         function setupToggle(btnId, key) {
             const btn = document.getElementById(btnId);
             if (!btn) return;
@@ -527,16 +479,14 @@
                 botStates[key] = !botStates[key];
                 btn.textContent = botStates[key] ? '🟢 On' : '🔴 Off';
                 btn.classList.toggle('active', botStates[key]);
-                console.log(`[${key}] => ${botStates[key]}`);
             });
         }
-
         setupToggle('toggleGrid', 'grid');
         setupToggle('toggleDca', 'dca');
         setupToggle('toggleArbitrage', 'arbitrage');
         setupToggle('toggleCopy', 'copy');
 
-        // ===== АВТООБНОВЛЕНИЕ =====
+        // ===== ЗАПУСК =====
         fetchData();
         setInterval(fetchData, 10000);
     </script>
