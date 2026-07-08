@@ -1,6 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT - ИСПРАВЛЕННАЯ ВЕРСИЯ
-//  FIX: Убран positionSide из MARKET ордеров
+//  BINGX EXCHANGE CLIENT - ПОЛНОСТЬЮ ИСПРАВЛЕН
 // ============================================
 
 const crypto = require('crypto');
@@ -207,7 +206,7 @@ class BingXExchange {
   }
 
   // =============================================
-  //  ИСПРАВЛЕННЫЙ placeOrder - БЕЗ positionSide
+  //  placeOrder - ИГНОРИРУЕТ positionSide
   // =============================================
   async placeOrder(params) {
     try {
@@ -215,15 +214,13 @@ class BingXExchange {
       
       const normalizedSymbol = symbol.replace(/_/g, '-');
       
-      // Базовые параметры ордера
       const orderData = {
         symbol: normalizedSymbol,
-        side: side.toUpperCase(),  // BUY или SELL
-        type: type.toUpperCase(),  // MARKET или LIMIT
+        side: side.toUpperCase(),
+        type: type.toUpperCase(),
         quantity: quantity.toString(),
       };
       
-      // Только для LIMIT ордеров добавляем цену
       if (price && type !== 'MARKET') {
         orderData.price = price.toString();
       }
@@ -245,16 +242,13 @@ class BingXExchange {
     }
   }
 
-  // =============================================
-  //  closePosition - ОСТАЁТСЯ С positionSide
-  // =============================================
   async closePosition(symbol, positionSide) {
     try {
       const normalizedSymbol = symbol.replace(/_/g, '-');
       
       const response = await this._request('POST', '/openApi/swap/v2/trade/close', {}, {
         symbol: normalizedSymbol,
-        positionSide: positionSide,  // ✅ ДЛЯ /close ЭТО НУЖНО
+        positionSide: positionSide,
         type: 'MARKET',
         quantity: '0',
       });
