@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (ФИНАЛЬНАЯ ВЕРСИЯ)
+//  BINGX EXCHANGE CLIENT (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 // ============================================
 
 const crypto = require('crypto');
@@ -26,8 +26,11 @@ class BingXExchange {
   async _request(method, endpoint, params = {}, body = null) {
     const timestamp = Date.now();
     
-    // ВСЕ параметры участвуют в подписи
+    // Все параметры (включая body) участвуют в подписи
     const allParams = { ...params, ...body, timestamp };
+    const signature = this._sign(allParams);
+    
+    // Формируем URL с параметрами подписи
     const sortedKeys = Object.keys(allParams).sort();
     let queryString = '';
     for (const key of sortedKeys) {
@@ -36,24 +39,30 @@ class BingXExchange {
         queryString += `${key}=${allParams[key]}`;
       }
     }
-    const signature = this._sign(allParams);
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
     // Тело: параметры ордера (без timestamp)
     const requestBody = body ? { ...body } : {};
     
     console.log(`📤 ${method} URL: ${url}`);
-    console.log(`📤 BODY:`, JSON.stringify(requestBody, null, 2));
     
-    const response = await fetch(url, {
+    const options = {
       method: method,
       headers: {
         'X-BX-APIKEY': this.apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
-    });
+    };
     
+    // 🔥 ТОЛЬКО ДЛЯ POST: добавляем тело
+    if (method === 'POST') {
+      options.body = JSON.stringify(requestBody);
+      console.log(`📤 BODY:`, JSON.stringify(requestBody, null, 2));
+    } else {
+      console.log(`📤 (GET, без тела)`);
+    }
+    
+    const response = await fetch(url, options);
     const data = await response.json();
     console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
     return data;
