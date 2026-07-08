@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT
-//  Поддержка: MARKET, LIMIT, STOP_LOSS, TAKE_PROFIT
+//  Поддержка: MARKET, LIMIT, STOP, TAKE_PROFIT
 // ============================================
 
 const crypto = require('crypto');
@@ -174,7 +174,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  УСТАНОВКА TP/SL (УПРОЩЁННЫЙ ФОРМАТ)
+  //  УСТАНОВКА TP/SL (БЕЗ reduceOnly)
   // ============================================
   async setTPSL(orderId, symbol, side, quantity, stopLoss, takeProfit) {
     try {
@@ -189,11 +189,10 @@ class BingXExchange {
           symbol: symbolFormatted,
           side: closeSide,
           positionSide: positionSide,
-          type: 'STOP_LOSS',
+          type: 'STOP',
           quantity: quantity.toString(),
           stopPrice: stopLoss.toString(),
           price: stopLoss.toString(),
-          reduceOnly: true,
         };
         console.log('📤 Установка SL:', JSON.stringify(slParams, null, 2));
         const slResponse = await this._signedPost('/openApi/swap/v2/trade/order', slParams);
@@ -215,7 +214,6 @@ class BingXExchange {
           quantity: quantity.toString(),
           stopPrice: takeProfit.toString(),
           price: takeProfit.toString(),
-          reduceOnly: true,
         };
         console.log('📤 Установка TP:', JSON.stringify(tpParams, null, 2));
         const tpResponse = await this._signedPost('/openApi/swap/v2/trade/order', tpParams);
