@@ -1,5 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT - ИСПРАВЛЕННАЯ ВЕРСИЯ
+//  FIX: Убран positionSide из MARKET ордеров
 // ============================================
 
 const crypto = require('crypto');
@@ -26,6 +27,7 @@ class BingXExchange {
   async _request(method, endpoint, params = {}, body = null) {
     const timestamp = Date.now();
 
+    // ============ GET ЗАПРОСЫ ============
     if (method === 'GET') {
       const allParams = { ...params, timestamp };
       const signature = this._sign(allParams);
@@ -53,6 +55,7 @@ class BingXExchange {
       return data;
     }
 
+    // ============ POST ЗАПРОСЫ ============
     if (method === 'POST') {
       const requestBody = { ...body, timestamp };
       
@@ -204,26 +207,22 @@ class BingXExchange {
   }
 
   // =============================================
-  //  placeOrder - С positionSide для открытия
+  //  placeOrder - БЕЗ positionSide
   // =============================================
   async placeOrder(params) {
     try {
-      const { symbol, side, type = 'MARKET', quantity, price = null, positionSide = null } = params;
+      const { symbol, side, type = 'MARKET', quantity, price = null } = params;
       
       const normalizedSymbol = symbol.replace(/_/g, '-');
       
       const orderData = {
         symbol: normalizedSymbol,
-        side: side.toUpperCase(),
-        type: type.toUpperCase(),
+        side: side.toUpperCase(),  // BUY или SELL
+        type: type.toUpperCase(),  // MARKET или LIMIT
         quantity: quantity.toString(),
       };
       
-      // ✅ positionSide НУЖЕН для открытия позиций
-      if (positionSide) {
-        orderData.positionSide = positionSide.toUpperCase();
-      }
-      
+      // Только для LIMIT ордеров добавляем цену
       if (price && type !== 'MARKET') {
         orderData.price = price.toString();
       }
