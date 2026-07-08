@@ -1,5 +1,6 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (ПО ДОКУМЕНТАЦИИ)
+//  BINGX EXCHANGE CLIENT (ПРОВЕРЕННАЯ ВЕРСИЯ)
+//  Основано на официальной документации
 // ============================================
 
 const crypto = require('crypto');
@@ -12,155 +13,110 @@ class BingXExchange {
   }
 
   // ============================================
-  //  ПОДПИСЬ ЗАПРОСА (HEX, СОРТИРОВКА ПО АЛФАВИТУ)
+  //  ПОДПИСЬ (ТОЧНО ПО ДОКУМЕНТАЦИИ)
   // ============================================
   _sign(params) {
     const sortedKeys = Object.keys(params).sort();
     let queryString = '';
     for (const key of sortedKeys) {
-      const value = params[key];
-      if (value !== undefined && value !== null && value !== '') {
+      if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
         if (queryString) queryString += '&';
-        queryString += `${key}=${value}`;
+        queryString += `${key}=${params[key]}`;
       }
     }
-    const signature = crypto
-      .createHmac('sha256', this.secretKey)
-      .update(queryString)
-      .digest('hex');
-    
-    return { queryString, signature };
+    return crypto.createHmac('sha256', this.secretKey).update(queryString).digest('hex');
   }
 
   // ============================================
-  //  POST ЗАПРОСЫ (ПОДПИСЬ ТОЛЬКО ИЗ QUERY STRING)
+  //  ЗАПРОС (УНИВЕРСАЛЬНЫЙ)
   // ============================================
-  async _signedPost(endpoint, params = {}) {
+  async _request(method, endpoint, params = {}, body = null) {
     const timestamp = Date.now();
+    const allParams = { ...params, timestamp };
     
-    // 1. Подпись ТОЛЬКО из параметров строки запроса
-    const queryParams = { timestamp };
-    const { queryString, signature } = this._sign(queryParams);
+    // Сортируем параметры и формируем строку запроса
+    const sortedKeys = Object.keys(allParams).sort();
+    let queryString = '';
+    for (const key of sortedKeys) {
+      if (allParams[key] !== undefined && allParams[key] !== null && allParams[key] !== '') {
+        if (queryString) queryString += '&';
+        queryString += `${key}=${allParams[key]}`;
+      }
+    }
     
-    // 2. URL: параметры подписи в query string
+    const signature = this._sign(allParams);
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
-    // 3. Тело: параметры ордера
-    const bodyParams = { ...params };
+    console.log(`📤 ${method} URL: ${url}`);
+    if (body) console.log(`📤 BODY:`, JSON.stringify(body, null, 2));
     
-    console.log(`📤 POST URL: ${url}`);
-    console.log(`📤 BODY:`, JSON.stringify(bodyParams, null, 2));
-    
-    const response = await fetch(url, {
-      method: 'POST',
+    const options = {
+      method: method,
       headers: {
         'X-BX-APIKEY': this.apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(bodyParams),
-    });
+    };
     
-    const data = await response.json();
-    console.log(`📥 ОТВЕТ БИРЖИ:`, JSON.stringify(data, null, 2));
-    
-    if (data.code !== 0) {
-      console.error(`❌ Ошибка:`, JSON.stringify(data, null, 2));
+    if (body) {
+      options.body = JSON.stringify(body);
     }
+    
+    const response = await fetch(url, options);
+    const data = await response.json();
+    
+    console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
+    
     return data;
   }
 
   // ============================================
-  //  GET ЗАПРОСЫ (ПОДПИСЬ ИЗ ВСЕХ ПАРАМЕТРОВ)
+  //  API МЕТОДЫ
   // ============================================
-  async _signedGet(endpoint, params = {}) {
-    const timestamp = Date.now();
-    const allParams = { ...params, timestamp };
-    const { queryString, signature } = this._sign(allParams);
-    const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
-    
-    console.log(`📤 GET URL: ${url}`);
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'X-BX-APIKEY': this.apiKey,
-      },
-    });
-    
-    const data = await response.json();
-    console.log(`📥 ОТВЕТ БИРЖИ:`, JSON.stringify(data, null, 2));
-    
-    if (data.code !== 0) {
-      console.error(`❌ Ошибка:`, JSON.stringify(data, null, 2));
-    }
-    return data;
-  }
 
-  // ============================================
-  //  ПОЛУЧЕНИЕ БАЛАНСА
-  // ============================================
   async getBalance() {
     try {
-      const response = await this._signedGet('/openApi/swap/v3/user/balance');
+      const response = await this._request('GET', '/openApi/swap/v3/user/balance');
       if (response?.code === 0 && Array.isArray(response?.data)) {
-        const usdtAsset = response.data.find(item => item.asset === 'USDT');
-        if (usdtAsset) {
-          const balance = parseFloat(usdtAsset.balance) || 0;
-          console.log(`💰 Баланс: $${balance}`);
-          return balance;
-        }
-        console.error('❌ USDT не найден в балансе');
-        return 0;
+        const usdt = response.data.find(a => a.asset === 'USDT');
+        return parseFloat(usdt?.balance || 0);
       }
-      console.error('❌ Ошибка получения баланса:', response);
       return 0;
     } catch (error) {
-      console.error('❌ Ошибка getBalance:', error.message);
+      console.error('❌ getBalance error:', error.message);
       return 0;
     }
   }
 
-  // ============================================
-  //  ПОЛУЧЕНИЕ ПОЗИЦИЙ
-  // ============================================
   async getPositions() {
     try {
-      const response = await this._signedGet('/openApi/swap/v2/user/positions');
+      const response = await this._request('GET', '/openApi/swap/v2/user/positions');
       if (response?.code === 0 && response?.data) {
         return response.data;
       }
-      console.error('❌ Ошибка получения позиций:', response);
       return [];
     } catch (error) {
-      console.error('❌ Ошибка getPositions:', error.message);
+      console.error('❌ getPositions error:', error.message);
       return [];
     }
   }
 
-  // ============================================
-  //  ПОЛУЧЕНИЕ КОНТРАКТОВ
-  // ============================================
   async getContracts() {
     try {
-      const response = await this._signedGet('/openApi/swap/v2/quote/contracts');
+      const response = await this._request('GET', '/openApi/swap/v2/quote/contracts');
       if (response?.code === 0 && response?.data) {
         return response.data;
       }
-      console.error('❌ Ошибка получения контрактов:', response);
       return [];
     } catch (error) {
-      console.error('❌ Ошибка getContracts:', error.message);
+      console.error('❌ getContracts error:', error.message);
       return [];
     }
   }
 
-  // ============================================
-  //  ПОЛУЧЕНИЕ СВЕЧЕЙ
-  // ============================================
   async getCandles(symbol, interval = '5m', limit = 100) {
     try {
-      const params = { symbol, interval, limit };
-      const response = await this._signedGet('/openApi/swap/v3/quote/klines', params);
+      const response = await this._request('GET', '/openApi/swap/v3/quote/klines', { symbol, interval, limit });
       if (response?.code === 0 && response?.data) {
         return response.data.map(c => ({
           open: parseFloat(c.open),
@@ -171,43 +127,35 @@ class BingXExchange {
           timestamp: c.timestamp,
         }));
       }
-      console.error(`❌ Ошибка получения свечей для ${symbol}:`, response);
       return [];
     } catch (error) {
-      console.error(`❌ Ошибка getCandles:`, error.message);
+      console.error('❌ getCandles error:', error.message);
       return [];
     }
   }
 
   // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА (ПО ДОКУМЕНТАЦИИ)
+  //  РАЗМЕЩЕНИЕ ОРДЕРА (ГЛАВНОЕ)
   // ============================================
   async placeOrder(params) {
     try {
-      const {
-        symbol,
-        side,
-        type = 'MARKET',
-        quantity,
-        price = null,
-      } = params;
-
-      const symbolFormatted = symbol.replace('_', '-');
+      const { symbol, side, type = 'MARKET', quantity, price = null } = params;
       
-      const orderParams = {
-        symbol: symbolFormatted,
+      const orderData = {
+        symbol: symbol.replace('_', '-'),
         side: side,
         type: type,
         quantity: quantity.toString(),
       };
-
+      
       if (price && type !== 'MARKET') {
-        orderParams.price = price.toString();
+        orderData.price = price.toString();
       }
-
-      console.log(`📤 РЫНОЧНЫЙ ОРДЕР:`, JSON.stringify(orderParams, null, 2));
-
-      const response = await this._signedPost('/openApi/swap/v2/trade/order', orderParams);
+      
+      console.log(`📤 РЫНОЧНЫЙ ОРДЕР:`, JSON.stringify(orderData, null, 2));
+      
+      // Для POST запросов параметры передаются в теле
+      const response = await this._request('POST', '/openApi/swap/v2/trade/order', {}, orderData);
       
       if (response?.code === 0 && response?.data?.order) {
         console.log(`✅ Ордер создан: ${response.data.order.orderId || response.data.order.orderID}`);
@@ -217,34 +165,27 @@ class BingXExchange {
       console.error(`❌ Ошибка ордера:`, response);
       return null;
     } catch (error) {
-      console.error(`❌ Ошибка placeOrder:`, error.message);
+      console.error(`❌ placeOrder error:`, error.message);
       return null;
     }
   }
 
-  // ============================================
-  //  ЗАКРЫТИЕ ПОЗИЦИИ
-  // ============================================
   async closePosition(symbol, positionSide) {
     try {
-      const response = await this._signedPost('/openApi/swap/v2/trade/close', { 
-        symbol, 
-        positionSide, 
-        type: 'MARKET', 
-        quantity: '0' 
+      const response = await this._request('POST', '/openApi/swap/v2/trade/close', {}, {
+        symbol: symbol.replace('_', '-'),
+        positionSide: positionSide,
+        type: 'MARKET',
+        quantity: '0',
       });
       if (response?.code === 0) return response.data;
-      console.error('❌ Ошибка закрытия позиции:', response);
       return null;
     } catch (error) {
-      console.error('❌ Ошибка closePosition:', error.message);
+      console.error('❌ closePosition error:', error.message);
       return null;
     }
   }
 
-  // ============================================
-  //  ПРОВЕРКА КЛЮЧЕЙ
-  // ============================================
   async testCredentials() {
     const balance = await this.getBalance();
     return balance !== null && balance !== undefined;
