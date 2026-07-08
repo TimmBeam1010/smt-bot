@@ -20,46 +20,48 @@ const log = {
 };
 
 // ============================================
-//  КОНФИГУРАЦИЯ (С УВЕЛИЧЕННЫМИ ИНТЕРВАЛАМИ)
+//  КОНФИГУРАЦИЯ (ОБНОВЛЁННЫЙ СПИСОК СИМВОЛОВ)
 // ============================================
 const CONFIG = {
   symbols: [
-    'BTC-USDT', 'ETH-USDT', 'LINK-USDT', 'BCH-USDT', 'ADA-USDT',
-    'XRP-USDT', 'LTC-USDT', 'DOT-USDT', 'AVAX-USDT', 'THETA-USDT',
-    'ALGO-USDT', 'AXS-USDT', 'DYDX-USDT', 'ICP-USDT', 'SAND-USDT',
-    'KSM-USDT', 'VET-USDT', 'SUSHI-USDT', 'SOL-USDT', 'NEAR-USDT',
-    'ATOM-USDT', 'BSV-USDT', 'UNI-USDT', 'FIL-USDT', 'AAVE-USDT',
-    'DOGE-USDT', 'ENJ-USDT', 'MANA-USDT', 'CHZ-USDT', 'TRX-USDT',
-    'SKL-USDT', 'ZRX-USDT', 'SNX-USDT', 'CRV-USDT', 'YFI-USDT',
-    '1INCH-USDT', 'COMP-USDT', 'GRT-USDT', 'MASK-USDT', 'AR-USDT',
-    'ENS-USDT', 'BAT-USDT', 'STORJ-USDT', 'IMX-USDT', 'XLM-USDT',
-    'ZEC-USDT', 'DASH-USDT', 'XMR-USDT', 'WAVES-USDT', 'ONT-USDT',
-    'ONE-USDT', 'EGLD-USDT', 'HBAR-USDT', 'CELO-USDT', 'KAVA-USDT',
-    'BNB-USDT', 'GALA-USDT', 'YGG-USDT', 'ALICE-USDT', 'CHR-USDT',
-    'APE-USDT', 'RSR-USDT', 'KNC-USDT', 'FLOW-USDT', 'GMT-USDT',
-    'RUNE-USDT', 'RVN-USDT', 'NEO-USDT', 'IOST-USDT', 'ETC-USDT',
-    'ROSE-USDT', 'MINA-USDT', 'CFX-USDT', 'API3-USDT', 'AGLD-USDT',
-    'SLP-USDT', 'JASMY-USDT', 'CTK-USDT', 'MTL-USDT', 'PEOPLE-USDT',
-    'ANKR-USDT', 'WOO-USDT', 'CRO-USDT', 'LUNC-USDT', 'LUNA-USDT',
-    'OP-USDT', 'LDO-USDT', 'STG-USDT', 'INJ-USDT', 'APT-USDT',
-    'QNT-USDT', 'ARPA-USDT', 'SFP-USDT', 'MAGIC-USDT', 'FET-USDT',
-    'GMX-USDT', 'COTI-USDT', 'METIS-USDT', 'ASTR-USDT', 'DUSK-USDT',
-    'BLUR-USDT', 'STX-USDT', 'ACH-USDT', 'TRB-USDT', 'FLOKI-USDT',
-    'ILV-USDT', 'ZEN-USDT', 'SCRT-USDT', 'RLC-USDT', 'LPT-USDT',
-    'CKB-USDT', 'QTUM-USDT', 'SUN-USDT', 'IOTA-USDT', 'SSV-USDT',
-    'BICO-USDT', 'TLM-USDT', 'XCN-USDT', 'TWT-USDT', 'LQTY-USDT',
-    'ID-USDT', 'ARB-USDT', 'EDU-USDT', 'SUI-USDT', 'TURBO-USDT',
+    // Основные криптовалюты
+    'BTC-USDT', 'ETH-USDT', 'BNB-USDT', 'SOL-USDT', 'XRP-USDT',
+    'ADA-USDT', 'DOGE-USDT', 'DOT-USDT', 'LTC-USDT', 'LINK-USDT',
+    'BCH-USDT', 'AVAX-USDT', 'MATIC-USDT', 'UNI-USDT', 'ATOM-USDT',
+    'ETC-USDT', 'FIL-USDT', 'AAVE-USDT', 'NEAR-USDT', 'VET-USDT',
+    'ALGO-USDT', 'TRX-USDT', 'XLM-USDT', 'ICP-USDT', 'EGLD-USDT',
+    'HBAR-USDT', 'KAVA-USDT', 'KSM-USDT', 'MKR-USDT', 'ZEC-USDT',
+    'XMR-USDT', 'DASH-USDT', 'YFI-USDT', 'COMP-USDT', 'GRT-USDT',
+    'SNX-USDT', 'CRV-USDT', '1INCH-USDT', 'ENJ-USDT', 'MANA-USDT',
+    'SAND-USDT', 'CHZ-USDT', 'AXS-USDT', 'DYDX-USDT', 'GALA-USDT',
+    'APE-USDT', 'OP-USDT', 'ARB-USDT', 'INJ-USDT', 'SEI-USDT',
+    'SUI-USDT', 'APT-USDT', 'LDO-USDT', 'RUNE-USDT', 'FLOW-USDT',
+    'STX-USDT', 'AR-USDT', 'ENS-USDT', 'BAT-USDT', 'STORJ-USDT',
+    'IMX-USDT', 'ZRX-USDT', 'SKL-USDT', 'SUSHI-USDT', 'YGG-USDT',
+    'RSR-USDT', 'KNC-USDT', 'GMT-USDT', 'ROSE-USDT', 'MINA-USDT',
+    'CFX-USDT', 'API3-USDT', 'AGLD-USDT', 'SLP-USDT', 'JASMY-USDT',
+    'CTK-USDT', 'MTL-USDT', 'PEOPLE-USDT', 'ANKR-USDT', 'WOO-USDT',
+    'CRO-USDT', 'LUNC-USDT', 'LUNA-USDT', 'QNT-USDT', 'ARPA-USDT',
+    'SFP-USDT', 'MAGIC-USDT', 'FET-USDT', 'GMX-USDT', 'COTI-USDT',
+    'METIS-USDT', 'ASTR-USDT', 'DUSK-USDT', 'BLUR-USDT', 'ACH-USDT',
+    'TRB-USDT', 'FLOKI-USDT', 'ILV-USDT', 'ZEN-USDT', 'SCRT-USDT',
+    'RLC-USDT', 'LPT-USDT', 'CKB-USDT', 'QTUM-USDT', 'SUN-USDT',
+    'IOTA-USDT', 'SSV-USDT', 'BICO-USDT', 'TLM-USDT', 'XCN-USDT',
+    'TWT-USDT', 'LQTY-USDT', 'ID-USDT', 'EDU-USDT', 'TURBO-USDT',
     'ORDI-USDT', 'UMA-USDT', 'OKB-USDT', 'NMR-USDT', 'MAV-USDT',
-    'WLD-USDT', 'PENDLE-USDT', 'ARKM-USDT', 'CYBER-USDT', 'SEI-USDT',
+    'WLD-USDT', 'PENDLE-USDT', 'ARKM-USDT', 'CYBER-USDT',
     '1000PEPE-USDT', 'ARK-USDT', 'KAS-USDT', 'BIGTIME-USDT',
-    'RIF-USDT', 'POLYX-USDT', 'GAS-USDT'
+    'RIF-USDT', 'POLYX-USDT', 'GAS-USDT', 'THETA-USDT',
+    'NEO-USDT', 'IOST-USDT', 'XMR-USDT', 'WAVES-USDT',
+    'ONT-USDT', 'ONE-USDT', 'CELO-USDT', 'CHR-USDT',
+    'ALICE-USDT', 'RVN-USDT'
   ],
   interval: '5m',
   limit: 100,
-  checkInterval: 120000,          // 🔥 120 секунд (было 30)
-  requestDelay: 500,              // 🔥 500 мс между запросами (было 300)
-  maxRetries: 3,                  // 🔥 Максимум повторных попыток
-  retryDelay: 10000,              // 🔥 10 секунд между повторами
+  checkInterval: 120000,          // 120 секунд
+  requestDelay: 500,              // 500 мс между запросами
+  maxRetries: 3,                  // Максимум повторных попыток
+  retryDelay: 10000,              // 10 секунд между повторами
 };
 
 const supabaseUrl = "https://sbpyuigmrqycqlrjlqqv.supabase.co";
@@ -246,7 +248,7 @@ async function saveSignalDirectly(signal, modules) {
 }
 
 // ============================================
-//  🔥 АНАЛИЗ СИГНАЛА (С ПОВТОРАМИ И ЗАДЕРЖКОЙ)
+//  АНАЛИЗ СИГНАЛА (С ПОВТОРАМИ И ЗАДЕРЖКОЙ)
 // ============================================
 async function analyzeAndGenerateSignal(symbol) {
   let retries = 0;
@@ -275,7 +277,7 @@ async function analyzeAndGenerateSignal(symbol) {
       log.debug(`📊 Сгенерирован сигнал: ${symbol} ${signal.side} (${signal.confidence})`);
 
       await saveSignalDirectly(signal, modules);
-      return; // Успешно завершили
+      return;
 
     } catch (error) {
       retries++;
@@ -293,7 +295,7 @@ async function analyzeAndGenerateSignal(symbol) {
 }
 
 // ============================================
-//  🔥 ГЛАВНЫЙ ЦИКЛ (С УВЕЛИЧЕННОЙ ЗАДЕРЖКОЙ)
+//  ГЛАВНЫЙ ЦИКЛ (С ЗАДЕРЖКОЙ МЕЖДУ ЗАПРОСАМИ)
 // ============================================
 async function mainLoop() {
   try {
@@ -309,7 +311,7 @@ async function mainLoop() {
     
     for (const symbol of CONFIG.symbols) {
       await analyzeAndGenerateSignal(symbol);
-      // 🔥 ЗАДЕРЖКА МЕЖДУ ЗАПРОСАМИ (500 мс)
+      // Задержка между запросами
       await new Promise(resolve => setTimeout(resolve, CONFIG.requestDelay));
     }
     
