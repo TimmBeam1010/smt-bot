@@ -235,7 +235,7 @@ function filterSignalsByRisk(signals, balance) {
 
 // ============================================
 //  🔥 ИСПРАВЛЕННАЯ ФУНКЦИЯ executeTrade
-//  positionSide ПЕРЕДАЁТСЯ В ОРДЕР
+//  positionSide УБРАН из MARKET ордера
 // ============================================
 async function executeTrade(signal) {
   try {
@@ -273,11 +273,10 @@ async function executeTrade(signal) {
     // ✅ ПРАВИЛЬНО: side = BUY для LONG, SELL для SHORT
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
 
-    // ✅ marketOrder С positionSide!
+    // ✅ marketOrder БЕЗ positionSide!
     const marketOrder = {
       symbol: symbol,
-      side: side,                    // BUY или SELL
-      positionSide: signal.side,     // LONG или SHORT ✅
+      side: side,          // BUY или SELL (определяет направление)
       type: 'MARKET',
       quantity: quantity,
       leverage: leverage,
