@@ -2,7 +2,6 @@
 
 const { getExchange } = require("../../shared/exchanges");
 const { TrailingStopManager } = require("../../shared/trailing-manager");
-const { calculateDynamicTPSL } = require("../../shared/dynamic-levels");
 
 // ============================================
 //  ЛОГГЕР
@@ -188,83 +187,54 @@ function calculatePositionSize(entryPrice, symbol) {
 }
 
 // ============================================
-//  🔥 РАСЧЁТ TP/SL (ДИНАМИЧЕСКИЙ)
+//  🔥 РАСЧЁТ TP/SL (ФИКСИРОВАННЫЙ, СТАБИЛЬНЫЙ)
 // ============================================
-async function calculateTPSLWithModules(symbol, entryPrice, side, leverage, candles) {
-  try {
-    // Используем динамический расчёт из модуля
-    const result = calculateDynamicTPSL(
-      symbol,
-      entryPrice,
-      side,
-      candles || [],
-      leverage,
-      {
-        atrMultiplierSL: 1.5,
-        atrMultiplierTP: 2.5,
-        useSMC: true,
-        useVolume: true,
-        minRiskPercent: 0.01,
-        maxRiskPercent: 0.05,
-        defaultRiskPercent: 0.02,
-      }
-    );
-    
-    log.info(`📊 Метод: ${result.methods} | Уверенность: ${result.confidence}%`);
-    log.info(`📊 Риск: ${result.riskPercent}% | Профит: ${result.rewardPercent}%`);
-    
-    return result;
-  } catch (error) {
-    log.warn(`⚠️ Ошибка динамического расчёта, использую фиксированный: ${error.message}`);
-    // Fallback на фиксированный расчёт
-    const riskPercent = 0.02;
-    const rewardRatio = 2;
-    const slDistance = entryPrice * riskPercent;
-    const tpDistance = slDistance * rewardRatio;
-    
-    let stopLoss, takeProfit;
-    if (side === 'LONG') {
-      stopLoss = entryPrice - slDistance;
-      takeProfit = entryPrice + tpDistance;
-    } else {
-      stopLoss = entryPrice + slDistance;
-      takeProfit = entryPrice - tpDistance;
-    }
-    
-    const liqPrice = side === 'LONG' 
-      ? entryPrice * (1 - 1/leverage) 
-      : entryPrice * (1 + 1/leverage);
-    
-    return {
-      stopLoss,
-      takeProfit,
-      liqPrice,
-      methods: 'FIXED (fallback)',
-      confidence: 50,
-      riskPercent: riskPercent * 100,
-      rewardPercent: (riskPercent * rewardRatio) * 100,
-    };
+function calculateTPSL(entryPrice, side, leverage) {
+  const riskPercent = 0.02;   // 2% риск
+  const rewardRatio = 2;      // 1:2
+  const slDistance = entryPrice * riskPercent;
+  const tpDistance = slDistance * rewardRatio;
+  
+  let stopLoss, takeProfit;
+  if (side === 'LONG') {
+    stopLoss = entryPrice - slDistance;
+    takeProfit = entryPrice + tpDistance;
+  } else {
+    stopLoss = entryPrice + slDistance;
+    takeProfit = entryPrice - tpDistance;
   }
+  
+  // Проверка на ликвидацию
+  const liqPrice = side === 'LONG' 
+    ? entryPrice * (1 - 1/leverage) 
+    : entryPrice * (1 + 1/leverage);
+  
+  if (side === 'LONG' && stopLoss <= liqPrice) {
+    log.warn(`⚠️ SL ${stopLoss.toFixed(4)} за ликвидацией ${liqPrice.toFixed(4)}, корректируем`);
+    stopLoss = liqPrice * 1.02;
+  }
+  if (side === 'SHORT' && stopLoss >= liqPrice) {
+    log.warn(`⚠️ SL ${stopLoss.toFixed(4)} за ликвидацией ${liqPrice.toFixed(4)}, корректируем`);
+    stopLoss = liqPrice * 0.98;
+  }
+  
+  return { stopLoss, takeProfit, liqPrice };
 }
 
 // ============================================
 //  ФИЛЬТР СИГНАЛОВ (HIGH → MEDIUM)
 // ============================================
 function filterSignalsByConfidence(signals) {
-  // Сначала ищем HIGH
   const highSignals = signals.filter(s => s.confidence === 'high');
   if (highSignals.length > 0) {
     log.info(`🔍 Приоритет HIGH: ${highSignals.length} сигналов`);
     return highSignals;
   }
-  
-  // Если HIGH нет — берём MEDIUM
   const mediumSignals = signals.filter(s => s.confidence === 'medium');
   if (mediumSignals.length > 0) {
     log.info(`🔍 HIGH нет, берём ${mediumSignals.length} MEDIUM сигналов`);
     return mediumSignals;
   }
-  
   log.debug('📭 Нет HIGH или MEDIUM сигналов');
   return [];
 }
@@ -292,7 +262,7 @@ function filterSignalsByRisk(signals, balance) {
 }
 
 // ============================================
-//  🔥 ИСПОЛНЕНИЕ СДЕЛКИ (С ДИНАМИЧЕСКИМИ TP/SL)
+//  ИСПОЛНЕНИЕ СДЕЛКИ
 // ============================================
 async function executeTrade(signal) {
   try {
@@ -319,26 +289,19 @@ async function executeTrade(signal) {
     const quantity = calculatePositionSize(signal.entry_price, symbol);
     const leverage = CONFIG.defaultLeverage;
 
-    // 🔥 ПОЛУЧАЕМ ДИНАМИЧЕСКИЕ TP/SL
-    const candles = await getCandles(symbol, '5m', 50);
-    const { stopLoss, takeProfit, liqPrice, methods, confidence, riskPercent, rewardPercent } = 
-      await calculateTPSLWithModules(
-        symbol,
-        signal.entry_price,
-        signal.side,
-        leverage,
-        candles
-      );
+    // 🔥 РАСЧЁТ TP/SL (ФИКСИРОВАННЫЙ)
+    const { stopLoss, takeProfit, liqPrice } = calculateTPSL(
+      signal.entry_price, 
+      signal.side, 
+      leverage
+    );
 
-    log.info(`📊 Уровни рассчитаны методом: ${methods} (уверенность ${confidence}%)`);
-    log.info(`📊 Риск: ${riskPercent}% | Профит: ${rewardPercent}%`);
+    log.info(`🎯 TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)} | Ликвидация: $${liqPrice.toFixed(4)}`);
 
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
     const positionSide = signal.side;
 
-    // ============================================
-    //  ШАГ 1: ОТКРЫВАЕМ РЫНОЧНЫЙ ОРДЕР
-    // ============================================
+    // ШАГ 1: Рыночный ордер
     const marketOrder = {
       symbol: symbol,
       side: side,
@@ -352,12 +315,7 @@ async function executeTrade(signal) {
     const result = await exchangeClient.placeOrder(marketOrder);
     log.info(`✅ Сделка открыта: ${symbol} ${signal.side} | Размер: ${quantity}`);
 
-    // ============================================
-    //  ШАГ 2: ВЫСТАВЛЯЕМ TP И SL (ОТДЕЛЬНЫМИ ОРДЕРАМИ)
-    // ============================================
-    log.info(`🎯 Установка TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)}`);
-
-    // Ордер на тейк-профит (LIMIT)
+    // ШАГ 2: TP и SL отдельными ордерами
     const tpOrder = {
       symbol: symbol,
       side: side === 'BUY' ? 'SELL' : 'BUY',
@@ -368,7 +326,6 @@ async function executeTrade(signal) {
       leverage: leverage,
     };
 
-    // Ордер на стоп-лосс (STOP_MARKET)
     const slOrder = {
       symbol: symbol,
       side: side === 'BUY' ? 'SELL' : 'BUY',
@@ -379,7 +336,6 @@ async function executeTrade(signal) {
       leverage: leverage,
     };
 
-    // Выставляем TP
     try {
       await exchangeClient.placeOrder(tpOrder);
       log.info(`✅ TP установлен: $${takeProfit.toFixed(4)}`);
@@ -387,7 +343,6 @@ async function executeTrade(signal) {
       log.warn(`⚠️ Ошибка установки TP: ${tpError.message}`);
     }
 
-    // Выставляем SL
     try {
       await exchangeClient.placeOrder(slOrder);
       log.info(`✅ SL установлен: $${stopLoss.toFixed(4)}`);
@@ -395,7 +350,6 @@ async function executeTrade(signal) {
       log.warn(`⚠️ Ошибка установки SL: ${slError.message}`);
     }
 
-    // Обновляем статус сигнала
     await updateSignalStatus(signal.id, 'executed', { 
       executed_price: signal.entry_price,
       quantity: quantity,
@@ -404,7 +358,6 @@ async function executeTrade(signal) {
       stop_loss: stopLoss,
     });
 
-    // Инициализируем трейлинг-стоп
     trailingManager.update(symbol, signal.entry_price, signal.side, signal.entry_price, CONFIG.trailingStopPercent);
 
     return result;
@@ -455,7 +408,6 @@ async function mainLoop() {
       return;
     }
 
-    // Фильтр: HIGH → MEDIUM
     signals = filterSignalsByConfidence(signals);
     if (signals.length === 0) {
       log.debug('📭 Нет подходящих сигналов (HIGH/MEDIUM)');
@@ -495,7 +447,7 @@ async function start() {
   log.info(`📋 Интервал: ${CONFIG.checkInterval / 1000}с`);
   log.info(`💰 Размер сделки: ${CONFIG.positionSizePercent * 100}% от фиксированного депозита`);
   log.info(`📊 Приоритет сигналов: HIGH → MEDIUM`);
-  log.info(`🛡️ TP/SL: ДИНАМИЧЕСКИЙ (ATR + SMC + Volume Profile)`);
+  log.info(`🛡️ TP/SL: ФИКСИРОВАННЫЙ (2% риск, 1:2)`);
   log.info(`⚡ Плечо: ${CONFIG.defaultLeverage}x`);
   
   exchangeClient = getExchange("bingx",
