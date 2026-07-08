@@ -187,7 +187,7 @@ function calculatePositionSize(entryPrice, symbol) {
 }
 
 // ============================================
-//  🔥 РАСЧЁТ TP/SL (ФИКСИРОВАННЫЙ, ИСПРАВЛЕННЫЙ)
+//  РАСЧЁТ TP/SL (ФИКСИРОВАННЫЙ, ИСПРАВЛЕННЫЙ)
 // ============================================
 function calculateTPSL(entryPrice, side, leverage) {
   const riskPercent = 0.02;   // 2% риск
@@ -197,18 +197,15 @@ function calculateTPSL(entryPrice, side, leverage) {
   
   let stopLoss, takeProfit;
   if (side === 'LONG') {
-    // Для LONG: SL ниже, TP выше
     stopLoss = entryPrice - slDistance;
     takeProfit = entryPrice + tpDistance;
   } else if (side === 'SHORT') {
-    // Для SHORT: SL выше, TP ниже
     stopLoss = entryPrice + slDistance;
     takeProfit = entryPrice - tpDistance;
   } else {
     throw new Error(`Неизвестный side: ${side}`);
   }
   
-  // Проверка на ликвидацию
   const liqPrice = side === 'LONG' 
     ? entryPrice * (1 - 1/leverage) 
     : entryPrice * (1 + 1/leverage);
@@ -266,7 +263,7 @@ function filterSignalsByRisk(signals, balance) {
 }
 
 // ============================================
-//  ИСПОЛНЕНИЕ СДЕЛКИ
+//  ИСПОЛНЕНИЕ СДЕЛКИ (С ЗАДЕРЖКОЙ ДЛЯ TP/SL)
 // ============================================
 async function executeTrade(signal) {
   try {
@@ -293,7 +290,6 @@ async function executeTrade(signal) {
     const quantity = calculatePositionSize(signal.entry_price, symbol);
     const leverage = CONFIG.defaultLeverage;
 
-    // 🔥 РАСЧЁТ TP/SL (ИСПРАВЛЕННЫЙ)
     const { stopLoss, takeProfit, liqPrice } = calculateTPSL(
       signal.entry_price, 
       signal.side, 
@@ -305,7 +301,9 @@ async function executeTrade(signal) {
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
     const positionSide = signal.side;
 
-    // ШАГ 1: Рыночный ордер
+    // ============================================
+    //  ШАГ 1: ОТКРЫВАЕМ РЫНОЧНЫЙ ОРДЕР
+    // ============================================
     const marketOrder = {
       symbol: symbol,
       side: side,
@@ -319,7 +317,18 @@ async function executeTrade(signal) {
     const result = await exchangeClient.placeOrder(marketOrder);
     log.info(`✅ Сделка открыта: ${symbol} ${signal.side} | Размер: ${quantity}`);
 
-    // ШАГ 2: TP и SL отдельными ордерами
+    // ============================================
+    //  ШАГ 2: ЖДЁМ 1 СЕКУНДУ, ЧТОБЫ ПОЗИЦИЯ ОТКРЫЛАСЬ
+    // ============================================
+    log.info(`⏳ Ожидание 1 секунду перед установкой TP/SL...`);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // ============================================
+    //  ШАГ 3: ВЫСТАВЛЯЕМ TP И SL
+    // ============================================
+    log.info(`🎯 Установка TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)}`);
+
+    // Ордер на тейк-профит (LIMIT)
     const tpOrder = {
       symbol: symbol,
       side: side === 'BUY' ? 'SELL' : 'BUY',
@@ -330,6 +339,7 @@ async function executeTrade(signal) {
       leverage: leverage,
     };
 
+    // Ордер на стоп-лосс (STOP_MARKET)
     const slOrder = {
       symbol: symbol,
       side: side === 'BUY' ? 'SELL' : 'BUY',
@@ -340,6 +350,7 @@ async function executeTrade(signal) {
       leverage: leverage,
     };
 
+    // Выставляем TP
     try {
       await exchangeClient.placeOrder(tpOrder);
       log.info(`✅ TP установлен: $${takeProfit.toFixed(4)}`);
@@ -347,6 +358,7 @@ async function executeTrade(signal) {
       log.warn(`⚠️ Ошибка установки TP: ${tpError.message}`);
     }
 
+    // Выставляем SL
     try {
       await exchangeClient.placeOrder(slOrder);
       log.info(`✅ SL установлен: $${stopLoss.toFixed(4)}`);
