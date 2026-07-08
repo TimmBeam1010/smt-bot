@@ -187,11 +187,11 @@ function calculatePositionSize(entryPrice, symbol) {
 }
 
 // ============================================
-//  РАСЧЁТ TP/SL (ФИКСИРОВАННЫЙ, ИСПРАВЛЕННЫЙ)
+//  РАСЧЁТ TP/SL
 // ============================================
 function calculateTPSL(entryPrice, side, leverage) {
-  const riskPercent = 0.02;   // 2% риск
-  const rewardRatio = 2;      // 1:2
+  const riskPercent = 0.02;
+  const rewardRatio = 2;
   const slDistance = entryPrice * riskPercent;
   const tpDistance = slDistance * rewardRatio;
   
@@ -199,11 +199,9 @@ function calculateTPSL(entryPrice, side, leverage) {
   if (side === 'LONG') {
     stopLoss = entryPrice - slDistance;
     takeProfit = entryPrice + tpDistance;
-  } else if (side === 'SHORT') {
+  } else {
     stopLoss = entryPrice + slDistance;
     takeProfit = entryPrice - tpDistance;
-  } else {
-    throw new Error(`Неизвестный side: ${side}`);
   }
   
   const liqPrice = side === 'LONG' 
@@ -211,11 +209,9 @@ function calculateTPSL(entryPrice, side, leverage) {
     : entryPrice * (1 + 1/leverage);
   
   if (side === 'LONG' && stopLoss <= liqPrice) {
-    log.warn(`⚠️ SL ${stopLoss.toFixed(4)} за ликвидацией ${liqPrice.toFixed(4)}, корректируем`);
     stopLoss = liqPrice * 1.02;
   }
   if (side === 'SHORT' && stopLoss >= liqPrice) {
-    log.warn(`⚠️ SL ${stopLoss.toFixed(4)} за ликвидацией ${liqPrice.toFixed(4)}, корректируем`);
     stopLoss = liqPrice * 0.98;
   }
   
@@ -223,7 +219,7 @@ function calculateTPSL(entryPrice, side, leverage) {
 }
 
 // ============================================
-//  ФИЛЬТР СИГНАЛОВ (HIGH → MEDIUM)
+//  ФИЛЬТР СИГНАЛОВ
 // ============================================
 function filterSignalsByConfidence(signals) {
   const highSignals = signals.filter(s => s.confidence === 'high');
@@ -236,7 +232,6 @@ function filterSignalsByConfidence(signals) {
     log.info(`🔍 HIGH нет, берём ${mediumSignals.length} MEDIUM сигналов`);
     return mediumSignals;
   }
-  log.debug('📭 Нет HIGH или MEDIUM сигналов');
   return [];
 }
 
@@ -244,32 +239,25 @@ function filterSignalsByConfidence(signals) {
 //  ФИЛЬТР ПО РИСКУ
 // ============================================
 function filterSignalsByRisk(signals, balance) {
-  if (initialBalance === 0) {
-    log.warn('⚠️ Начальный баланс не определён');
-    return [];
-  }
+  if (initialBalance === 0) return [];
   const balancePercent = balance / initialBalance;
   if (balancePercent >= CONFIG.minBalanceThreshold) {
-    log.info(`✅ Баланс > 55% от депозита — все сигналы разрешены`);
     return signals;
   }
-  if (balancePercent >= CONFIG.highOnlyThreshold && balancePercent < CONFIG.minBalanceThreshold) {
-    const highSignals = signals.filter(s => s.confidence === 'high');
-    log.info(`⚠️ Баланс ${(balancePercent * 100).toFixed(1)}% от депозита — только HIGH`);
-    return highSignals;
+  if (balancePercent >= CONFIG.highOnlyThreshold) {
+    return signals.filter(s => s.confidence === 'high');
   }
-  log.warn(`🚨 Баланс < 50% от депозита — СДЕЛКИ ОСТАНОВЛЕНЫ!`);
   return [];
 }
 
 // ============================================
-//  ИСПОЛНЕНИЕ СДЕЛКИ (С setTPSL)
+//  ИСПОЛНЕНИЕ СДЕЛКИ
 // ============================================
 async function executeTrade(signal) {
   try {
     const currentPositions = await getActivePositions();
     if (currentPositions.total >= CONFIG.maxPositions) {
-      log.warn(`🚨 ЛИМИТ ДОСТИГНУТ! СДЕЛКА НЕ ОТКРЫТА!`);
+      log.warn(`🚨 ЛИМИТ ДОСТИГНУТ!`);
       await updateSignalStatus(signal.id, 'failed');
       return null;
     }
@@ -285,7 +273,7 @@ async function executeTrade(signal) {
     if (!exchangeClient) throw new Error('Клиент не инициализирован');
 
     const balance = await getBalance();
-    if (!balance || balance < 5) throw new Error(`Недостаточно средств: ${balance || 0} USDT`);
+    if (!balance || balance < 5) throw new Error(`Недостаточно средств`);
 
     const quantity = calculatePositionSize(signal.entry_price, symbol);
     const leverage = CONFIG.defaultLeverage;
@@ -296,13 +284,13 @@ async function executeTrade(signal) {
       leverage
     );
 
-    log.info(`🎯 TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)} | Ликвидация: $${liqPrice.toFixed(4)}`);
+    log.info(`🎯 TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)}`);
 
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
     const positionSide = signal.side;
 
     // ============================================
-    //  ШАГ 1: ОТКРЫВАЕМ РЫНОЧНЫЙ ОРДЕР
+    //  ШАГ 1: РЫНОЧНЫЙ ОРДЕР
     // ============================================
     const marketOrder = {
       symbol: symbol,
@@ -313,36 +301,49 @@ async function executeTrade(signal) {
       leverage: leverage,
     };
 
-    log.info(`📤 Рыночный ордер: ${JSON.stringify(marketOrder, null, 2)}`);
     const result = await exchangeClient.placeOrder(marketOrder);
     log.info(`✅ Сделка открыта: ${symbol} ${signal.side} | Размер: ${quantity}`);
 
-    // ============================================
-    //  ШАГ 2: ЖДЁМ 1 СЕКУНДУ, ЧТОБЫ ПОЗИЦИЯ ОТКРЫЛАСЬ
-    // ============================================
-    log.info(`⏳ Ожидание 1 секунду перед установкой TP/SL...`);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // ============================================
-    //  ШАГ 3: ВЫСТАВЛЯЕМ TP И SL (ЧЕРЕЗ setTPSL)
+    //  ШАГ 2: TP (LIMIT) + SL (setTPSL)
     // ============================================
     log.info(`🎯 Установка TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)}`);
 
+    // TP через LIMIT ордер
+    const tpOrder = {
+      symbol: symbol,
+      side: side === 'BUY' ? 'SELL' : 'BUY',
+      positionSide: positionSide,
+      type: 'LIMIT',
+      quantity: quantity,
+      price: takeProfit,
+      leverage: leverage,
+    };
+
     try {
-      const tpslResult = await exchangeClient.setTPSL(
+      await exchangeClient.placeOrder(tpOrder);
+      log.info(`✅ TP установлен: $${takeProfit.toFixed(4)}`);
+    } catch (tpError) {
+      log.warn(`⚠️ Ошибка TP: ${tpError.message}`);
+    }
+
+    // SL через setTPSL
+    try {
+      await exchangeClient.setTPSL(
         result?.orderId || 'N/A',
         symbol,
         side === 'BUY' ? 'BUY' : 'SELL',
         quantity,
         stopLoss,
-        takeProfit
+        null
       );
-      log.info(`✅ TP/SL установлены: TP $${takeProfit.toFixed(4)} | SL $${stopLoss.toFixed(4)}`);
-    } catch (error) {
-      log.warn(`⚠️ Ошибка установки TP/SL: ${error.message}`);
+      log.info(`✅ SL установлен: $${stopLoss.toFixed(4)}`);
+    } catch (slError) {
+      log.warn(`⚠️ Ошибка SL: ${slError.message}`);
     }
 
-    // Обновляем статус сигнала
     await updateSignalStatus(signal.id, 'executed', { 
       executed_price: signal.entry_price,
       quantity: quantity,
@@ -351,12 +352,11 @@ async function executeTrade(signal) {
       stop_loss: stopLoss,
     });
 
-    // Инициализируем трейлинг-стоп
     trailingManager.update(symbol, signal.entry_price, signal.side, signal.entry_price, CONFIG.trailingStopPercent);
 
     return result;
   } catch (error) {
-    log.error(`❌ Ошибка открытия сделки: ${error.message}`);
+    log.error(`❌ Ошибка: ${error.message}`);
     await updateSignalStatus(signal.id, 'failed');
     return null;
   }
@@ -366,52 +366,43 @@ async function executeTrade(signal) {
 //  ГЛАВНЫЙ ЦИКЛ
 // ============================================
 async function mainLoop() {
-  if (isProcessing) {
-    log.debug('⏳ Уже обрабатывается...');
-    return;
-  }
-
+  if (isProcessing) return;
   isProcessing = true;
+
   try {
     const currentBalance = await getBalance();
     if (currentBalance === 0) {
-      log.warn('⚠️ Баланс недоступен или равен 0');
       isProcessing = false;
       return;
     }
 
     if (initialBalance === 0) {
       initialBalance = currentBalance;
-      log.info(`💰 Фиксированный депозит: $${initialBalance.toFixed(2)}`);
-      log.info(`💰 Размер сделки: $${(initialBalance * CONFIG.positionSizePercent).toFixed(2)} (${CONFIG.positionSizePercent * 100}%)`);
+      log.info(`💰 Депозит: $${initialBalance.toFixed(2)}`);
     }
 
     const positions = await getActivePositions();
-    log.info(`📊 АКТУАЛЬНЫХ ПОЗИЦИЙ: ${positions.total} из ${CONFIG.maxPositions}`);
+    log.info(`📊 ПОЗИЦИЙ: ${positions.total} из ${CONFIG.maxPositions}`);
 
     if (positions.total >= CONFIG.maxPositions) {
-      log.warn(`🚨 ДОСТИГНУТ ЛИМИТ! НОВЫЕ СДЕЛКИ НЕ ОТКРЫВАЮТСЯ!`);
       isProcessing = false;
       return;
     }
 
     let signals = await getPendingSignals();
     if (signals.length === 0) {
-      log.debug('📭 Нет сигналов');
       isProcessing = false;
       return;
     }
 
     signals = filterSignalsByConfidence(signals);
     if (signals.length === 0) {
-      log.debug('📭 Нет подходящих сигналов (HIGH/MEDIUM)');
       isProcessing = false;
       return;
     }
 
     signals = filterSignalsByRisk(signals, currentBalance);
     if (signals.length === 0) {
-      log.debug('📭 Нет сигналов по риск-параметрам');
       isProcessing = false;
       return;
     }
@@ -423,7 +414,7 @@ async function mainLoop() {
       if (result) opened++;
     }
 
-    log.info(`✅ Открыто ${opened} новых позиций в этом цикле`);
+    log.info(`✅ Открыто ${opened} позиций`);
 
   } catch (error) {
     log.error(`❌ Ошибка: ${error.message}`);
@@ -436,13 +427,10 @@ async function mainLoop() {
 //  ЗАПУСК
 // ============================================
 async function start() {
-  log.info('🚀 Trade Executor Bot запущен (FULL VERSION)');
-  log.info(`📋 Максимум позиций: ${CONFIG.maxPositions}`);
-  log.info(`📋 Интервал: ${CONFIG.checkInterval / 1000}с`);
-  log.info(`💰 Размер сделки: ${CONFIG.positionSizePercent * 100}% от фиксированного депозита`);
-  log.info(`📊 Приоритет сигналов: HIGH → MEDIUM`);
-  log.info(`🛡️ TP/SL: ЧЕРЕЗ setTPSL (2% риск, 1:2)`);
-  log.info(`⚡ Плечо: ${CONFIG.defaultLeverage}x`);
+  log.info('🚀 Trade Executor Bot запущен');
+  log.info(`💰 Размер сделки: 5% от депозита`);
+  log.info(`📊 Приоритет: HIGH → MEDIUM`);
+  log.info(`🛡️ TP: LIMIT | SL: setTPSL`);
   
   exchangeClient = getExchange("bingx",
     process.env.BINGX_API_KEY || "BOe6nx3Hlo8puQvg2wPIjNCWW4ISUY7SdYNlvi2jDApQr50hDvbv6At4vBoSDVN9o9LcEgEI4dcOkgY52A",
@@ -454,8 +442,7 @@ async function start() {
   
   const balance = await getBalance();
   initialBalance = balance;
-  log.info(`💰 Фиксированный депозит: $${initialBalance.toFixed(2)}`);
-  log.info(`💰 Размер одной сделки: $${(initialBalance * CONFIG.positionSizePercent).toFixed(2)} (${CONFIG.positionSizePercent * 100}%)`);
+  log.info(`💰 Депозит: $${initialBalance.toFixed(2)}`);
   
   await mainLoop();
   setInterval(mainLoop, CONFIG.checkInterval);
