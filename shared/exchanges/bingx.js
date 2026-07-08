@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (БЕЗ positionSide)
+//  BINGX EXCHANGE CLIENT (УПРОЩЁННЫЙ)
 // ============================================
 
 const crypto = require('crypto');
@@ -141,7 +141,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА (БЕЗ positionSide)
+  //  РАЗМЕЩЕНИЕ ОРДЕРА (УПРОЩЁННЫЙ ВАРИАНТ)
   // ============================================
   async placeOrder(params) {
     try {
@@ -155,6 +155,7 @@ class BingXExchange {
 
       const symbolFormatted = symbol.replace('_', '-');
       
+      // Минимальный набор полей
       const orderParams = {
         symbol: symbolFormatted,
         side: side,
