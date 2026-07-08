@@ -1,6 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (ФИНАЛЬНАЯ ВЕРСИЯ)
-//  Основано на документации BingX
+//  BINGX EXCHANGE CLIENT (ПО ДОКУМЕНТАЦИИ)
 // ============================================
 
 const crypto = require('crypto');
@@ -16,10 +15,7 @@ class BingXExchange {
   //  ПОДПИСЬ ЗАПРОСА (HEX, СОРТИРОВКА ПО АЛФАВИТУ)
   // ============================================
   _sign(params) {
-    // 1. Сортируем ключи по алфавиту
     const sortedKeys = Object.keys(params).sort();
-    
-    // 2. Формируем строку параметров
     let queryString = '';
     for (const key of sortedKeys) {
       const value = params[key];
@@ -28,8 +24,6 @@ class BingXExchange {
         queryString += `${key}=${value}`;
       }
     }
-    
-    // 3. Подпись в HEX (не Base64!)
     const signature = crypto
       .createHmac('sha256', this.secretKey)
       .update(queryString)
@@ -39,26 +33,24 @@ class BingXExchange {
   }
 
   // ============================================
-  //  POST ЗАПРОСЫ (ПАРАМЕТРЫ В ТЕЛЕ)
+  //  POST ЗАПРОСЫ (ПОДПИСЬ ТОЛЬКО ИЗ QUERY STRING)
   // ============================================
   async _signedPost(endpoint, params = {}) {
     const timestamp = Date.now();
     
-    // 1. Все параметры (включая timestamp) участвуют в подписи
-    const allParams = { ...params, timestamp };
-    const { queryString, signature } = this._sign(allParams);
+    // 1. Подпись ТОЛЬКО из параметров строки запроса
+    const queryParams = { timestamp };
+    const { queryString, signature } = this._sign(queryParams);
     
     // 2. URL: параметры подписи в query string
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
-    // 3. Тело: ТОЛЬКО параметры ордера (timestamp НЕ отправляем в теле)
+    // 3. Тело: параметры ордера
     const bodyParams = { ...params };
-    delete bodyParams.timestamp;
     
     console.log(`📤 POST URL: ${url}`);
     console.log(`📤 BODY:`, JSON.stringify(bodyParams, null, 2));
     
-    // 4. Отправка запроса
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -71,11 +63,14 @@ class BingXExchange {
     const data = await response.json();
     console.log(`📥 ОТВЕТ БИРЖИ:`, JSON.stringify(data, null, 2));
     
+    if (data.code !== 0) {
+      console.error(`❌ Ошибка:`, JSON.stringify(data, null, 2));
+    }
     return data;
   }
 
   // ============================================
-  //  GET ЗАПРОСЫ
+  //  GET ЗАПРОСЫ (ПОДПИСЬ ИЗ ВСЕХ ПАРАМЕТРОВ)
   // ============================================
   async _signedGet(endpoint, params = {}) {
     const timestamp = Date.now();
@@ -95,6 +90,9 @@ class BingXExchange {
     const data = await response.json();
     console.log(`📥 ОТВЕТ БИРЖИ:`, JSON.stringify(data, null, 2));
     
+    if (data.code !== 0) {
+      console.error(`❌ Ошибка:`, JSON.stringify(data, null, 2));
+    }
     return data;
   }
 
@@ -196,7 +194,6 @@ class BingXExchange {
 
       const symbolFormatted = symbol.replace('_', '-');
       
-      // Параметры ордера (только то, что требует документация)
       const orderParams = {
         symbol: symbolFormatted,
         side: side,
@@ -204,7 +201,6 @@ class BingXExchange {
         quantity: quantity.toString(),
       };
 
-      // Для LIMIT ордеров добавляем price
       if (price && type !== 'MARKET') {
         orderParams.price = price.toString();
       }
