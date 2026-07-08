@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT
-//  Поддержка: MARKET, LIMIT, STOP, TAKE_PROFIT
+//  Поддержка: MARKET, LIMIT, STOP_LOSS, TAKE_PROFIT
 // ============================================
 
 const crypto = require('crypto');
@@ -189,11 +189,11 @@ class BingXExchange {
           symbol: symbolFormatted,
           side: closeSide,
           positionSide: positionSide,
-          type: 'STOP',
+          type: 'STOP_LOSS',
           quantity: quantity.toString(),
           stopPrice: stopLoss.toString(),
           price: stopLoss.toString(),
-          workingType: 'MARK_PRICE'
+          reduceOnly: true,
         };
         console.log('📤 Установка SL:', JSON.stringify(slParams, null, 2));
         const slResponse = await this._signedPost('/openApi/swap/v2/trade/order', slParams);
@@ -215,7 +215,7 @@ class BingXExchange {
           quantity: quantity.toString(),
           stopPrice: takeProfit.toString(),
           price: takeProfit.toString(),
-          workingType: 'MARK_PRICE'
+          reduceOnly: true,
         };
         console.log('📤 Установка TP:', JSON.stringify(tpParams, null, 2));
         const tpResponse = await this._signedPost('/openApi/swap/v2/trade/order', tpParams);
