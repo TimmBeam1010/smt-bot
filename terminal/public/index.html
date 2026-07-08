@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>SMT Bot Terminal v3.0</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Courier New', monospace;
             background: #0a0a0a;
@@ -17,12 +13,8 @@
             padding: 20px;
             min-height: 100vh;
         }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1400px; margin: 0 auto; }
 
-        /* HEADER */
         .header {
             border-bottom: 2px solid #00ff88;
             padding-bottom: 10px;
@@ -32,22 +24,11 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        .header h1 {
-            font-size: 24px;
-            color: #00ff88;
-        }
-        .header .status {
-            font-size: 14px;
-            color: #888;
-        }
-        .header .status .online {
-            color: #00ff88;
-        }
-        .header .status .offline {
-            color: #ff2244;
-        }
+        .header h1 { font-size: 24px; color: #00ff88; }
+        .header .status { font-size: 14px; color: #888; }
+        .header .status .online { color: #00ff88; }
+        .header .status .offline { color: #ff2244; }
 
-        /* GRID */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -55,7 +36,6 @@
             margin-top: 20px;
         }
 
-        /* CARDS */
         .card {
             background: #111;
             border: 1px solid #222;
@@ -63,14 +43,11 @@
             padding: 20px;
             transition: border-color 0.3s;
         }
-        .card:hover {
-            border-color: #00ff88;
-        }
+        .card:hover { border-color: #00ff88; }
         .card h3 {
             font-size: 16px;
             color: #00ff88;
             margin-bottom: 15px;
-            letter-spacing: 1px;
             border-bottom: 1px solid #222;
             padding-bottom: 8px;
         }
@@ -81,27 +58,13 @@
             font-size: 14px;
             border-bottom: 1px solid #1a1a1a;
         }
-        .card .row:last-child {
-            border-bottom: none;
-        }
-        .card .label {
-            color: #888;
-        }
-        .card .value {
-            color: #00ff88;
-            font-weight: bold;
-        }
-        .card .value.high {
-            color: #00ff88;
-        }
-        .card .value.danger {
-            color: #ff4444;
-        }
-        .card .value.warning {
-            color: #ffaa00;
-        }
+        .card .row:last-child { border-bottom: none; }
+        .card .label { color: #888; }
+        .card .value { color: #00ff88; font-weight: bold; }
+        .card .value.high { color: #00ff88; }
+        .card .value.danger { color: #ff4444; }
+        .card .value.warning { color: #ffaa00; }
 
-        /* TOGGLE BUTTONS */
         .toggle-btn {
             background: #222;
             border: 1px solid #444;
@@ -118,11 +81,8 @@
             color: #0a0a0a;
             border-color: #00ff88;
         }
-        .toggle-btn:hover {
-            border-color: #00ff88;
-        }
+        .toggle-btn:hover { border-color: #00ff88; }
 
-        /* TABLES */
         .signals-table {
             width: 100%;
             font-size: 13px;
@@ -140,21 +100,13 @@
             padding: 6px 4px;
             border-bottom: 1px solid #1a1a1a;
         }
-        .signals-table .side-long {
-            color: #00ff88;
-        }
-        .signals-table .side-short {
-            color: #ff4444;
-        }
-        .signals-table .confidence-high {
-            color: #00ff88;
-        }
-        .signals-table .confidence-medium {
-            color: #ffaa00;
-        }
-        .signals-table .confidence-low {
-            color: #ff4444;
-        }
+        .signals-table .side-long { color: #00ff88; }
+        .signals-table .side-short { color: #ff4444; }
+        .signals-table .confidence-high { color: #00ff88; }
+        .signals-table .confidence-medium { color: #ffaa00; }
+        .signals-table .confidence-low { color: #ff4444; }
+        .signals-table .pnl-high { color: #00ff88; }
+        .signals-table .pnl-danger { color: #ff4444; }
 
         .badge {
             display: inline-block;
@@ -163,18 +115,9 @@
             font-size: 11px;
             font-weight: bold;
         }
-        .badge.pending {
-            background: #ffaa00;
-            color: #0a0a0a;
-        }
-        .badge.executed {
-            background: #00ff88;
-            color: #0a0a0a;
-        }
-        .badge.failed {
-            background: #ff4444;
-            color: #0a0a0a;
-        }
+        .badge.pending { background: #ffaa00; color: #0a0a0a; }
+        .badge.executed { background: #00ff88; color: #0a0a0a; }
+        .badge.failed { background: #ff4444; color: #0a0a0a; }
 
         .empty {
             color: #555;
@@ -198,29 +141,35 @@
             cursor: pointer;
             font-family: inherit;
         }
-        .refresh button:hover {
-            border-color: #00ff88;
-            color: #00ff88;
+        .refresh button:hover { border-color: #00ff88; color: #00ff88; }
+
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+            .header { flex-direction: column; align-items: flex-start; gap: 8px; }
         }
 
-        /* RESPONSIVE */
-        @media (max-width: 600px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
+        /* Стили для позиций */
+        .positions-table {
+            width: 100%;
+            font-size: 13px;
+            border-collapse: collapse;
+            margin-top: 10px;
         }
-        /* Цвета PnL в таблице позиций */
-        .signals-table .high {
-            color: #00ff88;
+        .positions-table th {
+            text-align: left;
+            color: #888;
+            padding: 6px 4px;
+            border-bottom: 1px solid #222;
+            font-weight: normal;
         }
-        .signals-table .danger {
-            color: #ff4444;
+        .positions-table td {
+            padding: 6px 4px;
+            border-bottom: 1px solid #1a1a1a;
         }
+        .positions-table .side-long { color: #00ff88; }
+        .positions-table .side-short { color: #ff4444; }
+        .positions-table .pnl-high { color: #00ff88; }
+        .positions-table .pnl-danger { color: #ff4444; }
     </style>
 </head>
 <body>
@@ -258,7 +207,7 @@
                 </div>
                 <div class="row">
                     <span class="label">📊 Позиции</span>
-                    <span id="positions" class="value">0</span>
+                    <span id="positionsCount" class="value">0</span>
                 </div>
                 <div class="row">
                     <span class="label">🔹 Long / Short</span>
@@ -395,7 +344,6 @@
                 
                 document.getElementById('balance').textContent = `$${totalBalance.toFixed(2)}`;
                 
-                // 🔥 ИСПРАВЛЕННОЕ ФОРМАТИРОВАНИЕ ОБЩЕГО PNL
                 const pnlElement = document.getElementById('totalPnl');
                 let pnlDisplay = '';
                 if (totalPnl > 0) {
@@ -410,7 +358,7 @@
 
                 // --- Позиции ---
                 renderPositions(positions);
-                document.getElementById('positions').textContent = positions.length;
+                document.getElementById('positionsCount').textContent = positions.length;
                 
                 const longs = positions.filter(p => p.side === 'LONG').length;
                 const shorts = positions.filter(p => p.side === 'SHORT').length;
@@ -428,7 +376,9 @@
             }
         }
 
-        // ===== ОТРИСОВКА ПОЗИЦИЙ =====
+        // ============================================
+        //  🔥 ОТРИСОВКА ПОЗИЦИЙ С TP И SL
+        // ============================================
         function renderPositions(positions) {
             const container = document.getElementById('positionsContainer');
             
@@ -436,29 +386,51 @@
                 container.innerHTML = '<div class="empty">📭 Нет открытых позиций</div>';
                 return;
             }
-        
+
             let html = `
-                <table class="signals-table">
+                <table class="positions-table">
                     <thead>
                         <tr>
                             <th>Символ</th>
                             <th>Направление</th>
                             <th>Цена входа</th>
+                            <th>Текущая цена</th>
                             <th>Размер</th>
                             <th>Плечо</th>
                             <th>PnL</th>
+                            <th>TP</th>
+                            <th>SL</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
-        
+
             for (const p of positions) {
                 const pnl = parseFloat(p.unrealizedPnl) || 0;
-                const pnlClass = pnl < 0 ? 'danger' : 'high';
+                const pnlClass = pnl < 0 ? 'pnl-danger' : 'pnl-high';
                 const sideClass = p.side === 'LONG' ? 'side-long' : 'side-short';
                 const entryPrice = p.entryPrice ? p.entryPrice.toFixed(4) : '—';
+                const markPrice = p.markPrice ? p.markPrice.toFixed(4) : '—';
                 
-                // 🔥 ПРАВИЛЬНОЕ ФОРМАТИРОВАНИЕ
+                // 🔥 РАСЧЁТ TP И SL (НА ОСНОВЕ 2% РИСКА И 1:2)
+                const riskPercent = 0.02;
+                const rewardRatio = 2;
+                const slDistance = entryPrice !== '—' ? parseFloat(entryPrice) * riskPercent : 0;
+                const tpDistance = slDistance * rewardRatio;
+                
+                let tp = '—';
+                let sl = '—';
+                if (entryPrice !== '—') {
+                    const price = parseFloat(entryPrice);
+                    if (p.side === 'LONG') {
+                        sl = (price - slDistance).toFixed(4);
+                        tp = (price + tpDistance).toFixed(4);
+                    } else {
+                        sl = (price + slDistance).toFixed(4);
+                        tp = (price - tpDistance).toFixed(4);
+                    }
+                }
+
                 let pnlDisplay = '';
                 if (pnl > 0) {
                     pnlDisplay = `+$${pnl.toFixed(2)}`;
@@ -467,15 +439,18 @@
                 } else {
                     pnlDisplay = `$${pnl.toFixed(2)}`;
                 }
-        
+
                 html += `
                     <tr>
                         <td><strong>${p.symbol}</strong></td>
                         <td class="${sideClass}">${p.side}</td>
                         <td>$${entryPrice}</td>
+                        <td>$${markPrice}</td>
                         <td>${p.quantity || '—'}</td>
                         <td>${p.leverage || '1'}x</td>
                         <td class="${pnlClass}">${pnlDisplay}</td>
+                        <td class="pnl-high">$${tp}</td>
+                        <td class="pnl-danger">$${sl}</td>
                     </tr>
                 `;
             }
