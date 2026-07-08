@@ -1,6 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT - РАБОТАЮЩАЯ ВЕРСИЯ
-//  Основано на официальной документации
+//  BINGX EXCHANGE CLIENT - ПОСЛЕДНЯЯ ВЕРСИЯ
 // ============================================
 
 const crypto = require('crypto');
@@ -12,10 +11,8 @@ class BingXExchange {
     this.baseUrl = baseUrl;
   }
 
-  // ============================================
-  //  ПРАВИЛЬНАЯ ПОДПИСЬ
-  // ============================================
   _sign(params) {
+    // 1. СОРТИРУЕМ КЛЮЧИ ПО АЛФАВИТУ
     const sortedKeys = Object.keys(params).sort();
     let queryString = '';
     for (const key of sortedKeys) {
@@ -24,32 +21,22 @@ class BingXExchange {
         queryString += `${key}=${params[key]}`;
       }
     }
+    // 2. ПОДПИСЬ В HEX
     return crypto.createHmac('sha256', this.secretKey).update(queryString).digest('hex');
   }
 
-  // ============================================
-  //  POST ЗАПРОСЫ (ПАРАМЕТРЫ В ТЕЛЕ)
-  // ============================================
   async _request(method, endpoint, params = {}, body = null) {
     const timestamp = Date.now();
     
-    // Подпись: все параметры (включая тело и timestamp)
+    // 3. ВСЕ ПАРАМЕТРЫ (ВКЛЮЧАЯ ТЕЛО) УЧАСТВУЮТ В ПОДПИСИ
     const allParams = { ...body, ...params, timestamp };
     const signature = this._sign(allParams);
     
-    // URL: только параметры подписи
-    const queryParams = { ...params, timestamp, signature };
-    const sortedKeys = Object.keys(queryParams).sort();
-    let queryString = '';
-    for (const key of sortedKeys) {
-      if (queryParams[key] !== undefined && queryParams[key] !== null && queryParams[key] !== '') {
-        if (queryString) queryString += '&';
-        queryString += `${key}=${queryParams[key]}`;
-      }
-    }
+    // 4. URL: ТОЛЬКО timestamp И signature
+    const queryString = `timestamp=${timestamp}&signature=${signature}`;
     const url = `${this.baseUrl}${endpoint}?${queryString}`;
     
-    // Тело: параметры ордера (БЕЗ timestamp)
+    // 5. ТЕЛО: ПАРАМЕТРЫ ОРДЕРА
     const requestBody = body ? { ...body } : {};
     
     console.log(`📤 ${method} URL: ${url}`);
@@ -72,10 +59,6 @@ class BingXExchange {
     console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
     return data;
   }
-
-  // ============================================
-  //  API МЕТОДЫ
-  // ============================================
 
   async getBalance() {
     try {
