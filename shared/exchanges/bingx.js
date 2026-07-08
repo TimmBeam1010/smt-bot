@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (ФИНАЛЬНАЯ ВЕРСИЯ)
+//  BINGX EXCHANGE CLIENT (ИСПРАВЛЕННАЯ ПОДПИСЬ)
 // ============================================
 
 const crypto = require('crypto');
@@ -25,16 +25,14 @@ class BingXExchange {
   }
 
   async _signedPost(endpoint, params = {}) {
-    // Убираем лишние параметры для подписи
-    const { positionSide, leverage, ...cleanParams } = params;
-    
+    // ВСЕ параметры участвуют в подписи
     const timestamp = Date.now();
-    const allParams = { ...cleanParams, timestamp };
+    const allParams = { ...params, timestamp };
     const { queryString, signature } = this._sign(allParams);
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
-    // Тело запроса содержит только параметры ордера
-    const bodyParams = { ...cleanParams };
+    // В теле отправляем ТОЛЬКО параметры ордера (без timestamp)
+    const bodyParams = { ...params };
     delete bodyParams.timestamp;
     
     console.log(`📤 POST URL: ${url}`);
@@ -151,7 +149,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА (ПО ДОКУМЕНТАЦИИ)
+  //  РАЗМЕЩЕНИЕ ОРДЕРА
   // ============================================
   async placeOrder(params) {
     try {
