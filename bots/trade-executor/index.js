@@ -219,7 +219,7 @@ function calculateTPSL(entryPrice, side, leverage) {
 }
 
 // ============================================
-//  🔥 ФИЛЬТР СИГНАЛОВ (HIGH → MEDIUM)
+//  ФИЛЬТР СИГНАЛОВ (HIGH → MEDIUM)
 // ============================================
 function filterSignalsByConfidence(signals) {
   // Сначала ищем HIGH
@@ -263,7 +263,7 @@ function filterSignalsByRisk(signals, balance) {
 }
 
 // ============================================
-//  ИСПОЛНЕНИЕ СДЕЛКИ
+//  🔥 ИСПОЛНЕНИЕ СДЕЛКИ (С ОТДЕЛЬНЫМИ TP/SL)
 // ============================================
 async function executeTrade(signal) {
   try {
@@ -298,30 +298,75 @@ async function executeTrade(signal) {
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
     const positionSide = signal.side;
 
-    const order = {
+    // ============================================
+    //  ШАГ 1: ОТКРЫВАЕМ РЫНОЧНЫЙ ОРДЕР
+    // ============================================
+    const marketOrder = {
       symbol: symbol,
       side: side,
       positionSide: positionSide,
       type: 'MARKET',
       quantity: quantity,
       leverage: leverage,
-      stopLoss: stopLoss,
-      takeProfit: takeProfit
     };
 
-    log.info(`📤 Ордер: ${JSON.stringify(order, null, 2)}`);
-    log.info(`🎯 TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)} | Риск: ${(riskPercent * 100)}%`);
-    log.info(`⚡ Ликвидация: $${liqPrice.toFixed(4)} (${leverage}x)`);
-
-    const result = await exchangeClient.placeOrder(order);
+    log.info(`📤 Рыночный ордер: ${JSON.stringify(marketOrder, null, 2)}`);
+    const result = await exchangeClient.placeOrder(marketOrder);
     log.info(`✅ Сделка открыта: ${symbol} ${signal.side} | Размер: ${quantity}`);
 
+    // ============================================
+    //  ШАГ 2: ВЫСТАВЛЯЕМ TP И SL (ОТДЕЛЬНЫМИ ОРДЕРАМИ)
+    // ============================================
+    log.info(`🎯 Установка TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)}`);
+
+    // Ордер на тейк-профит (LIMIT)
+    const tpOrder = {
+      symbol: symbol,
+      side: side === 'BUY' ? 'SELL' : 'BUY',
+      positionSide: positionSide,
+      type: 'LIMIT',
+      quantity: quantity,
+      price: takeProfit,
+      leverage: leverage,
+    };
+
+    // Ордер на стоп-лосс (STOP_MARKET)
+    const slOrder = {
+      symbol: symbol,
+      side: side === 'BUY' ? 'SELL' : 'BUY',
+      positionSide: positionSide,
+      type: 'STOP_MARKET',
+      quantity: quantity,
+      stopPrice: stopLoss,
+      leverage: leverage,
+    };
+
+    // Выставляем TP
+    try {
+      await exchangeClient.placeOrder(tpOrder);
+      log.info(`✅ TP установлен: $${takeProfit.toFixed(4)}`);
+    } catch (tpError) {
+      log.warn(`⚠️ Ошибка установки TP: ${tpError.message}`);
+    }
+
+    // Выставляем SL
+    try {
+      await exchangeClient.placeOrder(slOrder);
+      log.info(`✅ SL установлен: $${stopLoss.toFixed(4)}`);
+    } catch (slError) {
+      log.warn(`⚠️ Ошибка установки SL: ${slError.message}`);
+    }
+
+    // Обновляем статус сигнала
     await updateSignalStatus(signal.id, 'executed', { 
       executed_price: signal.entry_price,
       quantity: quantity,
-      order_id: result?.orderId || 'N/A'
+      order_id: result?.orderId || 'N/A',
+      take_profit: takeProfit,
+      stop_loss: stopLoss,
     });
 
+    // Инициализируем трейлинг-стоп
     trailingManager.update(symbol, signal.entry_price, signal.side, signal.entry_price, CONFIG.trailingStopPercent);
 
     return result;
@@ -372,7 +417,7 @@ async function mainLoop() {
       return;
     }
 
-    // 🔥 НОВАЯ ЛОГИКА: HIGH → MEDIUM
+    // Фильтр: HIGH → MEDIUM
     signals = filterSignalsByConfidence(signals);
     if (signals.length === 0) {
       log.debug('📭 Нет подходящих сигналов (HIGH/MEDIUM)');
