@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (ИСПРАВЛЕННЫЙ)
+//  BINGX EXCHANGE CLIENT (БЕЗ clientOrderId)
 // ============================================
 
 const crypto = require('crypto');
@@ -140,9 +140,6 @@ class BingXExchange {
     }
   }
 
-  // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА (ИСПРАВЛЕННЫЙ ФОРМАТ)
-  // ============================================
   async placeOrder(params) {
     try {
       const {
@@ -156,15 +153,15 @@ class BingXExchange {
 
       const symbolFormatted = symbol.replace('_', '-');
       
-      // 🔥 ПРОБУЕМ ФОРМАТ БЕЗ positionSide В ТЕЛЕ
+      // БЕЗ clientOrderId
       const orderParams = {
         symbol: symbolFormatted,
         side: side,
+        positionSide: positionSide,
         type: type,
         quantity: quantity.toString(),
       };
 
-      // Для лимитных ордеров добавляем price
       if (price && type !== 'MARKET') {
         orderParams.price = price.toString();
       }
