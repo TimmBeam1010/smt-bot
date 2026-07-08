@@ -3,9 +3,6 @@
 const { getExchange } = require("../../shared/exchanges");
 const { TrailingStopManager } = require("../../shared/trailing-manager");
 
-// ============================================
-//  ЛОГГЕР
-// ============================================
 const log = {
   info: (msg) => console.log(`[${new Date().toISOString()}] [INFO] ${msg}`),
   warn: (msg) => console.warn(`[${new Date().toISOString()}] [WARN] ${msg}`),
@@ -13,9 +10,6 @@ const log = {
   debug: (msg) => console.log(`[${new Date().toISOString()}] [DEBUG] ${msg}`)
 };
 
-// ============================================
-//  КОНФИГУРАЦИЯ
-// ============================================
 const CONFIG = {
   userId: 11,                        
   maxPositions: 10,                  
@@ -58,9 +52,6 @@ async function supabaseRequest(method, endpoint, data = null) {
   return response.json();
 }
 
-// ============================================
-//  ЗАГРУЗКА МИНИМАЛЬНЫХ РАЗМЕРОВ
-// ============================================
 async function loadMinOrderSizes() {
   try {
     if (!exchangeClient) return;
@@ -77,9 +68,6 @@ async function loadMinOrderSizes() {
   }
 }
 
-// ============================================
-//  ПОЛУЧЕНИЕ БАЛАНСА
-// ============================================
 async function getBalance() {
   try {
     if (!exchangeClient) return 0;
@@ -91,9 +79,6 @@ async function getBalance() {
   }
 }
 
-// ============================================
-//  ПОЛУЧЕНИЕ СВЕЧЕЙ
-// ============================================
 async function getCandles(symbol, interval = '5m', limit = 50) {
   try {
     if (!exchangeClient) return [];
@@ -104,9 +89,6 @@ async function getCandles(symbol, interval = '5m', limit = 50) {
   }
 }
 
-// ============================================
-//  ПОЛУЧЕНИЕ АКТИВНЫХ ПОЗИЦИЙ
-// ============================================
 async function getActivePositions() {
   try {
     if (!exchangeClient) return { total: 0, positions: [] };
@@ -126,18 +108,12 @@ async function getActivePositions() {
   }
 }
 
-// ============================================
-//  ПРОВЕРКА СИМВОЛА
-// ============================================
 async function isValidSymbol(symbol) {
   if (!symbol) return false;
   const s = String(symbol).trim().toUpperCase();
   return Object.keys(minOrderSizes).some(key => key.toUpperCase() === s);
 }
 
-// ============================================
-//  ПОЛУЧЕНИЕ ОЖИДАЮЩИХ СИГНАЛОВ
-// ============================================
 async function getPendingSignals() {
   try {
     const data = await supabaseRequest('GET', 
@@ -155,9 +131,6 @@ async function getPendingSignals() {
   }
 }
 
-// ============================================
-//  ОБНОВЛЕНИЕ СТАТУСА СИГНАЛА
-// ============================================
 async function updateSignalStatus(signalId, status, data = {}) {
   try {
     const updateData = { status, executed_at: new Date().toISOString() };
@@ -170,9 +143,6 @@ async function updateSignalStatus(signalId, status, data = {}) {
   }
 }
 
-// ============================================
-//  РАСЧЁТ РАЗМЕРА ПОЗИЦИИ
-// ============================================
 function calculatePositionSize(entryPrice, symbol) {
   const riskAmount = initialBalance * CONFIG.positionSizePercent;
   let quantity = riskAmount / entryPrice;
@@ -186,9 +156,6 @@ function calculatePositionSize(entryPrice, symbol) {
   return quantity;
 }
 
-// ============================================
-//  РАСЧЁТ TP/SL (ДЛЯ ИНФОРМАЦИИ, НЕ ИСПОЛЬЗУЕТСЯ)
-// ============================================
 function calculateTPSL(entryPrice, side, leverage) {
   const riskPercent = 0.02;
   const rewardRatio = 2;
@@ -218,9 +185,6 @@ function calculateTPSL(entryPrice, side, leverage) {
   return { stopLoss, takeProfit, liqPrice };
 }
 
-// ============================================
-//  ФИЛЬТР СИГНАЛОВ (HIGH → MEDIUM)
-// ============================================
 function filterSignalsByConfidence(signals) {
   const highSignals = signals.filter(s => s.confidence === 'high');
   if (highSignals.length > 0) {
@@ -236,9 +200,6 @@ function filterSignalsByConfidence(signals) {
   return [];
 }
 
-// ============================================
-//  ФИЛЬТР ПО РИСКУ
-// ============================================
 function filterSignalsByRisk(signals, balance) {
   if (initialBalance === 0) {
     log.warn('⚠️ Начальный баланс не определён');
@@ -259,7 +220,7 @@ function filterSignalsByRisk(signals, balance) {
 }
 
 // ============================================
-//  ИСПОЛНЕНИЕ СДЕЛКИ (БЕЗ TP/SL)
+//  🔥 ИСПОЛНЕНИЕ СДЕЛКИ (С ПРОВЕРКОЙ ОТВЕТА)
 // ============================================
 async function executeTrade(signal) {
   try {
@@ -309,6 +270,14 @@ async function executeTrade(signal) {
 
     log.info(`📤 Рыночный ордер: ${JSON.stringify(marketOrder, null, 2)}`);
     const result = await exchangeClient.placeOrder(marketOrder);
+    
+    // 🔥 ПРОВЕРЯЕМ, ЧТО ОРДЕР СОЗДАН
+    if (!result) {
+      log.error(`❌ Ордер не создан: ${symbol} ${signal.side}`);
+      await updateSignalStatus(signal.id, 'failed');
+      return null;
+    }
+    
     log.info(`✅ Сделка открыта: ${symbol} ${signal.side} | Размер: ${quantity}`);
 
     // ШАГ 2: TP И SL — ВРЕМЕННО ОТКЛЮЧЕНЫ
