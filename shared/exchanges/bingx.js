@@ -25,8 +25,9 @@ class BingXExchange {
 
   async _request(method, endpoint, params = {}, body = null) {
     const timestamp = Date.now();
-    const allParams = { ...params, timestamp };
     
+    // ВСЕ параметры участвуют в подписи
+    const allParams = { ...params, ...body, timestamp };
     const sortedKeys = Object.keys(allParams).sort();
     let queryString = '';
     for (const key of sortedKeys) {
@@ -38,26 +39,21 @@ class BingXExchange {
     const signature = this._sign(allParams);
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
-    console.log(`📤 ${method} URL: ${url}`);
+    // Тело: параметры ордера (без timestamp)
+    const requestBody = body ? { ...body } : {};
     
-    const options = {
+    console.log(`📤 ${method} URL: ${url}`);
+    console.log(`📤 BODY:`, JSON.stringify(requestBody, null, 2));
+    
+    const response = await fetch(url, {
       method: method,
       headers: {
         'X-BX-APIKEY': this.apiKey,
         'Content-Type': 'application/json',
       },
-    };
+      body: JSON.stringify(requestBody),
+    });
     
-    // 🔥 ТОЛЬКО ДЛЯ POST: добавляем тело с timestamp
-    if (method === 'POST') {
-      const requestBody = body ? { ...body, timestamp } : { timestamp };
-      options.body = JSON.stringify(requestBody);
-      console.log(`📤 BODY:`, JSON.stringify(requestBody, null, 2));
-    } else {
-      console.log(`📤 (GET, без тела)`);
-    }
-    
-    const response = await fetch(url, options);
     const data = await response.json();
     console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
     return data;
