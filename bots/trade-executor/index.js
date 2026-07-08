@@ -309,7 +309,40 @@ async function executeTrade(signal) {
     // ============================================
     //  ШАГ 2: TP И SL ЧЕРЕЗ setTPSL
     // ============================================
-    log.info(`🎯 Установка TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)}`);
+    // 🔥 КОРРЕКЦИЯ TP ДЛЯ SHORT
+    let finalTakeProfit = takeProfit;
+    let finalStopLoss = stopLoss;
+
+    // Получаем текущую цену (используем entry_price как референс)
+    const currentPrice = signal.entry_price;
+
+    if (signal.side === 'SHORT') {
+      // Для SHORT: TP должен быть НИЖЕ текущей цены
+      if (finalTakeProfit >= currentPrice) {
+        finalTakeProfit = currentPrice * 0.98; // 2% ниже
+        log.warn(`⚠️ TP для SHORT скорректирован: ${takeProfit.toFixed(4)} → ${finalTakeProfit.toFixed(4)}`);
+      }
+      // Для SHORT: SL должен быть ВЫШЕ текущей цены
+      if (finalStopLoss <= currentPrice) {
+        finalStopLoss = currentPrice * 1.02; // 2% выше
+        log.warn(`⚠️ SL для SHORT скорректирован: ${stopLoss.toFixed(4)} → ${finalStopLoss.toFixed(4)}`);
+      }
+    }
+
+    if (signal.side === 'LONG') {
+      // Для LONG: TP должен быть ВЫШЕ текущей цены
+      if (finalTakeProfit <= currentPrice) {
+        finalTakeProfit = currentPrice * 1.02; // 2% выше
+        log.warn(`⚠️ TP для LONG скорректирован: ${takeProfit.toFixed(4)} → ${finalTakeProfit.toFixed(4)}`);
+      }
+      // Для LONG: SL должен быть НИЖЕ текущей цены
+      if (finalStopLoss >= currentPrice) {
+        finalStopLoss = currentPrice * 0.98; // 2% ниже
+        log.warn(`⚠️ SL для LONG скорректирован: ${stopLoss.toFixed(4)} → ${finalStopLoss.toFixed(4)}`);
+      }
+    }
+
+    log.info(`🎯 Финальные уровни: TP $${finalTakeProfit.toFixed(4)} | SL $${finalStopLoss.toFixed(4)}`);
 
     try {
       const tpslResult = await exchangeClient.setTPSL(
@@ -317,8 +350,8 @@ async function executeTrade(signal) {
         symbol,
         side,
         quantity,
-        stopLoss,
-        takeProfit
+        finalStopLoss,
+        finalTakeProfit
       );
       if (tpslResult && tpslResult.length > 0) {
         const success = tpslResult.filter(r => r.status === 'success').map(r => r.type);
@@ -334,8 +367,8 @@ async function executeTrade(signal) {
       executed_price: signal.entry_price,
       quantity: quantity,
       order_id: result?.orderId || 'N/A',
-      take_profit: takeProfit,
-      stop_loss: stopLoss,
+      take_profit: finalTakeProfit,
+      stop_loss: finalStopLoss,
     });
 
     trailingManager.update(symbol, signal.entry_price, signal.side, signal.entry_price, CONFIG.trailingStopPercent);
