@@ -17,18 +17,17 @@ const log = {
 //  КОНФИГУРАЦИЯ
 // ============================================
 const CONFIG = {
-  userId: 11,                        // ID пользователя для сигналов
-  maxPositions: 10,                  // Максимум открытых позиций
-  checkInterval: 30000,              // Интервал проверки (30 сек)
-  maxSignalsPerRun: 10,              // Максимум сигналов за один цикл
-  minBalanceThreshold: 0.55,         // 55% — только HIGH сигналы
-  highOnlyThreshold: 0.50,           // 50% — ниже этого останавливаем
-  trailingStopPercent: 0.02,         // Трейлинг-стоп 2%
-  positionSizePercent: 0.05,         // 🔥 5% от фиксированного депозита
-  confidenceLevel: 'high',           // 🔥 ТОЛЬКО HIGH сигналы
-  riskPercent: 0.02,                 // 🔥 Риск 2% от цены входа
-  rewardRatio: 2,                    // 🔥 Соотношение риск/прибыль 1:2
-  defaultLeverage: 30,               // 🔥 Плечо по умолчанию
+  userId: 11,                        
+  maxPositions: 10,                  
+  checkInterval: 30000,              
+  maxSignalsPerRun: 10,              
+  minBalanceThreshold: 0.55,         
+  highOnlyThreshold: 0.50,           
+  trailingStopPercent: 0.02,         
+  positionSizePercent: 0.05,         
+  riskPercent: 0.02,                 
+  rewardRatio: 2,                    
+  defaultLeverage: 30,               
 };
 
 const supabaseUrl = 'https://sbpyuigmrqycqlrjlqqv.supabase.co';
@@ -37,7 +36,7 @@ const supabaseKey = 'sb_publishable_TRnw7p3BXwp9_AbHiJR55A_yJBtEyGd';
 let exchangeClient = null;
 let isProcessing = false;
 let minOrderSizes = {};
-let initialBalance = 0;              // 🔥 ФИКСИРОВАННЫЙ ДЕПОЗИТ
+let initialBalance = 0;
 let trailingManager = new TrailingStopManager();
 
 // ============================================
@@ -174,35 +173,29 @@ async function updateSignalStatus(signalId, status, data = {}) {
 }
 
 // ============================================
-//  🔥 РАСЧЁТ РАЗМЕРА ПОЗИЦИИ (5% ОТ ФИКСИРОВАННОГО ДЕПОЗИТА)
+//  РАСЧЁТ РАЗМЕРА ПОЗИЦИИ
 // ============================================
 function calculatePositionSize(entryPrice, symbol) {
-  // Используем фиксированный депозит, а не текущий баланс
   const riskAmount = initialBalance * CONFIG.positionSizePercent;
   let quantity = riskAmount / entryPrice;
-  
-  // Проверка минимального размера
   const minQty = minOrderSizes[symbol] || 0;
   if (minQty > 0 && quantity < minQty) {
     log.warn(`⚠️ Размер ${quantity} меньше минимального ${minQty} для ${symbol}, устанавливаем минимум`);
     quantity = minQty;
   }
-  
   quantity = Math.floor(quantity * 1e8) / 1e8;
   log.info(`💰 Расчёт: $${riskAmount.toFixed(2)} (5% от $${initialBalance.toFixed(2)}) → ${quantity} ${symbol}`);
   return quantity;
 }
 
 // ============================================
-//  🔥 РАСЧЁТ TP/SL С УЧЁТОМ ПЛЕЧА
+//  РАСЧЁТ TP/SL
 // ============================================
 function calculateTPSL(entryPrice, side, leverage) {
-  const riskPercent = CONFIG.riskPercent; // 2%
-  const rewardRatio = CONFIG.rewardRatio; // 2:1
-  
+  const riskPercent = CONFIG.riskPercent;
+  const rewardRatio = CONFIG.rewardRatio;
   const slDistance = entryPrice * riskPercent;
   const tpDistance = slDistance * rewardRatio;
-  
   let stopLoss, takeProfit;
   if (side === 'LONG') {
     stopLoss = entryPrice - slDistance;
@@ -211,31 +204,40 @@ function calculateTPSL(entryPrice, side, leverage) {
     stopLoss = entryPrice + slDistance;
     takeProfit = entryPrice - tpDistance;
   }
-  
-  // Проверка, что SL не за точкой ликвидации
   const liqPrice = side === 'LONG' 
     ? entryPrice * (1 - 1/leverage) 
     : entryPrice * (1 + 1/leverage);
-  
   if (side === 'LONG' && stopLoss <= liqPrice) {
     log.warn(`⚠️ SL ${stopLoss.toFixed(4)} за точкой ликвидации ${liqPrice.toFixed(4)}, корректируем`);
-    stopLoss = liqPrice * 1.02; // 2% выше ликвидации
+    stopLoss = liqPrice * 1.02;
   }
   if (side === 'SHORT' && stopLoss >= liqPrice) {
     log.warn(`⚠️ SL ${stopLoss.toFixed(4)} за точкой ликвидации ${liqPrice.toFixed(4)}, корректируем`);
-    stopLoss = liqPrice * 0.98; // 2% ниже ликвидации
+    stopLoss = liqPrice * 0.98;
   }
-  
   return { stopLoss, takeProfit, liqPrice, riskPercent };
 }
 
 // ============================================
-//  🔥 ФИЛЬТР СИГНАЛОВ (ТОЛЬКО HIGH)
+//  🔥 ФИЛЬТР СИГНАЛОВ (HIGH → MEDIUM)
 // ============================================
-function filterHighConfidenceSignals(signals) {
-  const filtered = signals.filter(s => s.confidence === CONFIG.confidenceLevel);
-  log.info(`🔍 Фильтр HIGH: ${filtered.length} из ${signals.length} сигналов`);
-  return filtered;
+function filterSignalsByConfidence(signals) {
+  // Сначала ищем HIGH
+  const highSignals = signals.filter(s => s.confidence === 'high');
+  if (highSignals.length > 0) {
+    log.info(`🔍 Приоритет HIGH: ${highSignals.length} сигналов`);
+    return highSignals;
+  }
+  
+  // Если HIGH нет — берём MEDIUM
+  const mediumSignals = signals.filter(s => s.confidence === 'medium');
+  if (mediumSignals.length > 0) {
+    log.info(`🔍 HIGH нет, берём ${mediumSignals.length} MEDIUM сигналов`);
+    return mediumSignals;
+  }
+  
+  log.debug('📭 Нет HIGH или MEDIUM сигналов');
+  return [];
 }
 
 // ============================================
@@ -246,10 +248,9 @@ function filterSignalsByRisk(signals, balance) {
     log.warn('⚠️ Начальный баланс не определён');
     return [];
   }
-  
   const balancePercent = balance / initialBalance;
   if (balancePercent >= CONFIG.minBalanceThreshold) {
-    log.info(`✅ Баланс > 55% от депозита — все HIGH сигналы разрешены`);
+    log.info(`✅ Баланс > 55% от депозита — все сигналы разрешены`);
     return signals;
   }
   if (balancePercent >= CONFIG.highOnlyThreshold && balancePercent < CONFIG.minBalanceThreshold) {
@@ -286,11 +287,8 @@ async function executeTrade(signal) {
     const balance = await getBalance();
     if (!balance || balance < 5) throw new Error(`Недостаточно средств: ${balance || 0} USDT`);
 
-    // 🔥 РАСЧЁТ РАЗМЕРА (5% ОТ ФИКСИРОВАННОГО ДЕПОЗИТА)
     const quantity = calculatePositionSize(signal.entry_price, symbol);
     const leverage = CONFIG.defaultLeverage;
-
-    // 🔥 РАСЧЁТ TP/SL
     const { stopLoss, takeProfit, liqPrice, riskPercent } = calculateTPSL(
       signal.entry_price, 
       signal.side, 
@@ -300,7 +298,6 @@ async function executeTrade(signal) {
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
     const positionSide = signal.side;
 
-    // Формируем ордер
     const order = {
       symbol: symbol,
       side: side,
@@ -319,14 +316,12 @@ async function executeTrade(signal) {
     const result = await exchangeClient.placeOrder(order);
     log.info(`✅ Сделка открыта: ${symbol} ${signal.side} | Размер: ${quantity}`);
 
-    // Обновляем статус сигнала
     await updateSignalStatus(signal.id, 'executed', { 
       executed_price: signal.entry_price,
       quantity: quantity,
       order_id: result?.orderId || 'N/A'
     });
 
-    // Инициализируем трейлинг-стоп
     trailingManager.update(symbol, signal.entry_price, signal.side, signal.entry_price, CONFIG.trailingStopPercent);
 
     return result;
@@ -377,15 +372,14 @@ async function mainLoop() {
       return;
     }
 
-    // Фильтр: только HIGH
-    signals = filterHighConfidenceSignals(signals);
+    // 🔥 НОВАЯ ЛОГИКА: HIGH → MEDIUM
+    signals = filterSignalsByConfidence(signals);
     if (signals.length === 0) {
-      log.debug('📭 Нет HIGH сигналов');
+      log.debug('📭 Нет подходящих сигналов (HIGH/MEDIUM)');
       isProcessing = false;
       return;
     }
 
-    // Фильтр по риску (относительно фиксированного депозита)
     signals = filterSignalsByRisk(signals, currentBalance);
     if (signals.length === 0) {
       log.debug('📭 Нет сигналов по риск-параметрам');
@@ -417,7 +411,7 @@ async function start() {
   log.info(`📋 Максимум позиций: ${CONFIG.maxPositions}`);
   log.info(`📋 Интервал: ${CONFIG.checkInterval / 1000}с`);
   log.info(`💰 Размер сделки: ${CONFIG.positionSizePercent * 100}% от фиксированного депозита`);
-  log.info(`🔒 Уровень сигнала: ${CONFIG.confidenceLevel.toUpperCase()}`);
+  log.info(`📊 Приоритет сигналов: HIGH → MEDIUM`);
   log.info(`🛡️ Риск на сделку: ${CONFIG.riskPercent * 100}% | Соотношение: 1:${CONFIG.rewardRatio}`);
   log.info(`⚡ Плечо: ${CONFIG.defaultLeverage}x`);
   
@@ -429,7 +423,6 @@ async function start() {
 
   await loadMinOrderSizes();
   
-  // Сохраняем начальный баланс
   const balance = await getBalance();
   initialBalance = balance;
   log.info(`💰 Фиксированный депозит: $${initialBalance.toFixed(2)}`);
