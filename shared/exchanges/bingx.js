@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (БЕЗ clientOrderId)
+//  BINGX EXCHANGE CLIENT (БЕЗ positionSide)
 // ============================================
 
 const crypto = require('crypto');
@@ -140,6 +140,9 @@ class BingXExchange {
     }
   }
 
+  // ============================================
+  //  РАЗМЕЩЕНИЕ ОРДЕРА (БЕЗ positionSide)
+  // ============================================
   async placeOrder(params) {
     try {
       const {
@@ -148,16 +151,14 @@ class BingXExchange {
         type = 'MARKET',
         quantity,
         price = null,
-        positionSide = side === 'BUY' ? 'LONG' : 'SHORT',
       } = params;
 
       const symbolFormatted = symbol.replace('_', '-');
       
-      // БЕЗ clientOrderId
+      // БЕЗ positionSide
       const orderParams = {
         symbol: symbolFormatted,
         side: side,
-        positionSide: positionSide,
         type: type,
         quantity: quantity.toString(),
       };
