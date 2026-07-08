@@ -307,41 +307,27 @@ async function executeTrade(signal) {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // ============================================
-    //  ШАГ 2: TP (LIMIT) + SL (setTPSL)
+    //  ШАГ 2: TP И SL ЧЕРЕЗ setTPSL
     // ============================================
     log.info(`🎯 Установка TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)}`);
 
-    // TP через LIMIT ордер
-    const tpOrder = {
-      symbol: symbol,
-      side: side === 'BUY' ? 'SELL' : 'BUY',
-      positionSide: positionSide,
-      type: 'LIMIT',
-      quantity: quantity,
-      price: takeProfit,
-      leverage: leverage,
-    };
-
     try {
-      await exchangeClient.placeOrder(tpOrder);
-      log.info(`✅ TP установлен: $${takeProfit.toFixed(4)}`);
-    } catch (tpError) {
-      log.warn(`⚠️ Ошибка TP: ${tpError.message}`);
-    }
-
-    // SL через setTPSL
-    try {
-      await exchangeClient.setTPSL(
+      const tpslResult = await exchangeClient.setTPSL(
         result?.orderId || 'N/A',
         symbol,
-        side === 'BUY' ? 'BUY' : 'SELL',
+        side,
         quantity,
         stopLoss,
-        null
+        takeProfit
       );
-      log.info(`✅ SL установлен: $${stopLoss.toFixed(4)}`);
-    } catch (slError) {
-      log.warn(`⚠️ Ошибка SL: ${slError.message}`);
+      if (tpslResult && tpslResult.length > 0) {
+        const success = tpslResult.filter(r => r.status === 'success').map(r => r.type);
+        const failed = tpslResult.filter(r => r.status === 'failed').map(r => r.type);
+        if (success.length > 0) log.info(`✅ Установлены: ${success.join(', ')}`);
+        if (failed.length > 0) log.warn(`⚠️ Не установлены: ${failed.join(', ')}`);
+      }
+    } catch (error) {
+      log.warn(`⚠️ Ошибка установки TP/SL: ${error.message}`);
     }
 
     await updateSignalStatus(signal.id, 'executed', { 
@@ -430,7 +416,7 @@ async function start() {
   log.info('🚀 Trade Executor Bot запущен');
   log.info(`💰 Размер сделки: 5% от депозита`);
   log.info(`📊 Приоритет: HIGH → MEDIUM`);
-  log.info(`🛡️ TP: LIMIT | SL: setTPSL`);
+  log.info(`🛡️ TP/SL: setTPSL (STOP_MARKET + TAKE_PROFIT_MARKET)`);
   
   exchangeClient = getExchange("bingx",
     process.env.BINGX_API_KEY || "BOe6nx3Hlo8puQvg2wPIjNCWW4ISUY7SdYNlvi2jDApQr50hDvbv6At4vBoSDVN9o9LcEgEI4dcOkgY52A",
