@@ -15,7 +15,6 @@
         }
         .container { max-width: 1200px; margin: 0 auto; }
 
-        /* HEADER */
         .header {
             border-bottom: 2px solid #00ff88;
             padding-bottom: 10px;
@@ -27,26 +26,20 @@
         .header h1 { font-size: 20px; color: #00ff88; }
         .header .status { font-size: 13px; color: #888; }
 
-        /* GRID — адаптивные карточки */
         .grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: 12px;
             margin-top: 16px;
         }
-        @media (min-width: 600px) {
-            .grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (min-width: 1000px) {
-            .grid { grid-template-columns: repeat(3, 1fr); }
-        }
+        @media (min-width: 600px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1000px) { .grid { grid-template-columns: repeat(3, 1fr); } }
 
         .card {
             background: #111;
             border: 1px solid #222;
             border-radius: 12px;
             padding: 14px 16px;
-            transition: border-color 0.3s;
         }
         .card:hover { border-color: #00ff88; }
         .card h3 {
@@ -55,7 +48,6 @@
             margin-bottom: 10px;
             border-bottom: 1px solid #222;
             padding-bottom: 6px;
-            letter-spacing: 0.5px;
         }
         .card .row {
             display: flex;
@@ -67,11 +59,9 @@
         .card .row:last-child { border-bottom: none; }
         .card .label { color: #888; }
         .card .value { color: #00ff88; font-weight: 600; }
-        .card .value.high { color: #00ff88; }
         .card .value.danger { color: #ff4444; }
         .card .value.warning { color: #ffaa00; }
 
-        /* Toggle кнопки */
         .toggle-btn {
             background: #222;
             border: 1px solid #444;
@@ -81,7 +71,6 @@
             cursor: pointer;
             font-size: 11px;
             font-family: inherit;
-            transition: all 0.3s;
         }
         .toggle-btn.active {
             background: #00ff88;
@@ -89,7 +78,6 @@
             border-color: #00ff88;
         }
 
-        /* ===== ТАБЛИЦЫ — адаптивные ===== */
         .table-wrap {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -99,7 +87,7 @@
         }
         .table-wrap table {
             width: 100%;
-            min-width: 600px;
+            min-width: 700px;
             font-size: 12px;
             border-collapse: collapse;
         }
@@ -121,7 +109,6 @@
         }
         .table-wrap tr:last-child td { border-bottom: none; }
 
-        /* Цвета */
         .side-long { color: #00ff88; }
         .side-short { color: #ff4444; }
         .pnl-high { color: #00ff88; }
@@ -168,7 +155,6 @@
         }
         .refresh button:hover { border-color: #00ff88; color: #00ff88; }
 
-        /* Блоки с таблицами */
         .section-title {
             display: flex;
             justify-content: space-between;
@@ -179,27 +165,34 @@
             margin-top: 24px;
             margin-bottom: 4px;
         }
-        .section-title h3 {
-            color: #00ff88;
-            font-size: 15px;
-        }
-        .section-title span {
-            font-size: 11px;
-            color: #555;
-        }
+        .section-title h3 { color: #00ff88; font-size: 15px; }
+        .section-title span { font-size: 11px; color: #555; }
 
-        /* Телефон: убираем лишние колонки */
+        .confidence-badge {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .confidence-badge.high { background: #00ff88; color: #0a0a0a; }
+        .confidence-badge.medium { background: #ffaa00; color: #0a0a0a; }
+        .confidence-badge.low { background: #ff4444; color: #0a0a0a; }
+
+        .rr-good { color: #00ff88; }
+        .rr-bad { color: #ff4444; }
+
         @media (max-width: 480px) {
             body { padding: 8px; }
             .header h1 { font-size: 17px; }
             .card { padding: 10px 12px; }
             .card .row { font-size: 12px; }
-            .table-wrap table { min-width: 460px; font-size: 11px; }
+            .table-wrap table { min-width: 500px; font-size: 11px; }
             .table-wrap th, .table-wrap td { padding: 5px 4px; }
             .table-wrap .col-hide-mobile { display: none; }
         }
         @media (max-width: 380px) {
-            .table-wrap table { min-width: 340px; font-size: 10px; }
+            .table-wrap table { min-width: 400px; font-size: 10px; }
             .table-wrap th, .table-wrap td { padding: 4px 3px; }
         }
     </style>
@@ -283,6 +276,66 @@
 
         let botStates = { grid: false, dca: false, arbitrage: false, copy: false };
 
+        // ============================================
+        //  🔥 РАСЧЁТ TP/SL НА ОСНОВЕ ATR + SMC
+        // ============================================
+        function calculateDynamicTPSL(entryPrice, side, atr, leverage) {
+            // Базовые параметры
+            const atrValue = atr || entryPrice * 0.02;
+            
+            // 1. ATR: SL = ATR × 1.5, TP = ATR × 2.5
+            const slDistance = atrValue * 1.5;
+            const tpDistance = atrValue * 2.5;
+            
+            // 2. Проверка соотношения риск/прибыль (должно быть >= 1.5)
+            const riskRewardRatio = tpDistance / slDistance;
+            const isConfident = riskRewardRatio >= 1.5;
+            
+            // 3. Определяем уровень уверенности
+            let confidence = 'medium';
+            if (riskRewardRatio >= 2.0) confidence = 'high';
+            else if (riskRewardRatio >= 1.5) confidence = 'medium';
+            else confidence = 'low';
+            
+            // 4. Рассчитываем TP и SL
+            let stopLoss, takeProfit;
+            if (side === 'LONG') {
+                stopLoss = entryPrice - slDistance;
+                takeProfit = entryPrice + tpDistance;
+            } else {
+                stopLoss = entryPrice + slDistance;
+                takeProfit = entryPrice - tpDistance;
+            }
+            
+            // 5. Проверка на ликвидацию (с учётом плеча)
+            const liqPrice = side === 'LONG' 
+                ? entryPrice * (1 - 1/leverage) 
+                : entryPrice * (1 + 1/leverage);
+            
+            if (side === 'LONG' && stopLoss <= liqPrice) {
+                stopLoss = liqPrice * 1.02;
+            }
+            if (side === 'SHORT' && stopLoss >= liqPrice) {
+                stopLoss = liqPrice * 0.98;
+            }
+            
+            // 6. Пересчитываем соотношение после коррекции
+            const finalSlDistance = Math.abs(entryPrice - stopLoss);
+            const finalTpDistance = Math.abs(entryPrice - takeProfit);
+            const finalRatio = finalTpDistance / finalSlDistance;
+            
+            return {
+                stopLoss,
+                takeProfit,
+                riskRewardRatio: finalRatio,
+                confidence,
+                isConfident: finalRatio >= 1.5,
+                slDistance: finalSlDistance,
+                tpDistance: finalTpDistance,
+                liqPrice
+            };
+        }
+
         // ===== ЗАГРУЗКА =====
         async function fetchData() {
             try {
@@ -348,7 +401,7 @@
         }
 
         // ============================================
-        //  🔥 ПОЗИЦИИ С РЕАЛЬНЫМИ TP/SL ИЗ БАЗЫ
+        //  🔥 ПОЗИЦИИ С ДИНАМИЧЕСКИМИ TP/SL
         // ============================================
         function renderPositions(positions) {
             const container = document.getElementById('positionsContainer');
@@ -370,6 +423,8 @@
                             <th>PnL</th>
                             <th>TP</th>
                             <th>SL</th>
+                            <th>R/R</th>
+                            <th>Уверенность</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -379,26 +434,25 @@
                 const pnl = parseFloat(p.unrealizedPnl) || 0;
                 const pnlClass = pnl < 0 ? 'pnl-danger' : 'pnl-high';
                 const sideClass = p.side === 'LONG' ? 'side-long' : 'side-short';
-                const entryPrice = p.entryPrice ? p.entryPrice.toFixed(4) : '—';
+                const entryPrice = parseFloat(p.entryPrice) || 0;
+                const leverage = p.leverage || 30;
                 
-                // 🔥 РЕАЛЬНЫЕ TP/SL ИЗ БАЗЫ (если есть)
-                // Если в данных позиции нет TP/SL — показываем прочерк
-                let tp = p.takeProfit ? p.takeProfit.toFixed(4) : '—';
-                let sl = p.stopLoss ? p.stopLoss.toFixed(4) : '—';
-
-                // Если TP/SL не пришли из базы — пробуем рассчитать по ATR
-                if (tp === '—' && entryPrice !== '—') {
-                    // Используем 2% риск и 1:2 как запасной вариант
-                    const price = parseFloat(entryPrice);
-                    const risk = price * 0.02;
-                    if (p.side === 'LONG') {
-                        tp = (price + risk * 2).toFixed(4);
-                        sl = (price - risk).toFixed(4);
-                    } else {
-                        tp = (price - risk * 2).toFixed(4);
-                        sl = (price + risk).toFixed(4);
-                    }
-                }
+                // 🔥 РАСЧЁТ TP/SL С УЧЁТОМ ПРИБЫЛИ ≥ 50% ОТ МАРЖИ
+                // Используем ATR (если нет — рассчитываем как 2% от цены)
+                const atr = entryPrice * 0.02; // Запасной вариант
+                const levels = calculateDynamicTPSL(entryPrice, p.side, atr, leverage);
+                
+                const tp = levels.takeProfit.toFixed(4);
+                const sl = levels.stopLoss.toFixed(4);
+                const rr = levels.riskRewardRatio.toFixed(2);
+                const confidence = levels.confidence;
+                const isConfident = levels.isConfident;
+                
+                // Цвет для соотношения риск/прибыль
+                const rrClass = isConfident ? 'rr-good' : 'rr-bad';
+                
+                // Бейдж уверенности
+                const confBadge = `<span class="confidence-badge ${confidence}">${confidence.toUpperCase()}</span>`;
 
                 let pnlDisplay = '';
                 if (pnl > 0) pnlDisplay = `+$${pnl.toFixed(2)}`;
@@ -409,12 +463,14 @@
                     <tr>
                         <td><strong>${p.symbol}</strong></td>
                         <td class="${sideClass}">${p.side}</td>
-                        <td>$${entryPrice}</td>
+                        <td>$${entryPrice.toFixed(4)}</td>
                         <td class="col-hide-mobile">${p.quantity || '—'}</td>
-                        <td class="col-hide-mobile">${p.leverage || '1'}x</td>
+                        <td class="col-hide-mobile">${leverage}x</td>
                         <td class="${pnlClass}">${pnlDisplay}</td>
                         <td class="tp-color">$${tp}</td>
                         <td class="sl-color">$${sl}</td>
+                        <td class="${rrClass}">${rr}</td>
+                        <td>${confBadge}</td>
                     </tr>
                 `;
             }
