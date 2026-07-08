@@ -99,7 +99,7 @@
         }
         .table-wrap table {
             width: 100%;
-            min-width: 600px; /* Чтобы не сжималась слишком сильно */
+            min-width: 600px;
             font-size: 12px;
             border-collapse: collapse;
         }
@@ -126,6 +126,8 @@
         .side-short { color: #ff4444; }
         .pnl-high { color: #00ff88; }
         .pnl-danger { color: #ff4444; }
+        .tp-color { color: #00ff88; }
+        .sl-color { color: #ff4444; }
         .confidence-high { color: #00ff88; }
         .confidence-medium { color: #ffaa00; }
         .confidence-low { color: #ff4444; }
@@ -194,7 +196,6 @@
             .card .row { font-size: 12px; }
             .table-wrap table { min-width: 460px; font-size: 11px; }
             .table-wrap th, .table-wrap td { padding: 5px 4px; }
-            /* Скрываем колонки "Размер" и "Плечо" на телефонах */
             .table-wrap .col-hide-mobile { display: none; }
         }
         @media (max-width: 380px) {
@@ -346,7 +347,9 @@
             }
         }
 
-        // ===== ПОЗИЦИИ =====
+        // ============================================
+        //  🔥 ПОЗИЦИИ С РЕАЛЬНЫМИ TP/SL ИЗ БАЗЫ
+        // ============================================
         function renderPositions(positions) {
             const container = document.getElementById('positionsContainer');
             
@@ -378,20 +381,22 @@
                 const sideClass = p.side === 'LONG' ? 'side-long' : 'side-short';
                 const entryPrice = p.entryPrice ? p.entryPrice.toFixed(4) : '—';
                 
-                // Расчёт TP/SL (2% риск, 1:2)
-                const riskPercent = 0.02;
-                const rewardRatio = 2;
-                let tp = '—', sl = '—';
-                if (entryPrice !== '—') {
+                // 🔥 РЕАЛЬНЫЕ TP/SL ИЗ БАЗЫ (если есть)
+                // Если в данных позиции нет TP/SL — показываем прочерк
+                let tp = p.takeProfit ? p.takeProfit.toFixed(4) : '—';
+                let sl = p.stopLoss ? p.stopLoss.toFixed(4) : '—';
+
+                // Если TP/SL не пришли из базы — пробуем рассчитать по ATR
+                if (tp === '—' && entryPrice !== '—') {
+                    // Используем 2% риск и 1:2 как запасной вариант
                     const price = parseFloat(entryPrice);
-                    const slDist = price * riskPercent;
-                    const tpDist = slDist * rewardRatio;
+                    const risk = price * 0.02;
                     if (p.side === 'LONG') {
-                        sl = (price - slDist).toFixed(4);
-                        tp = (price + tpDist).toFixed(4);
+                        tp = (price + risk * 2).toFixed(4);
+                        sl = (price - risk).toFixed(4);
                     } else {
-                        sl = (price + slDist).toFixed(4);
-                        tp = (price - tpDist).toFixed(4);
+                        tp = (price - risk * 2).toFixed(4);
+                        sl = (price + risk).toFixed(4);
                     }
                 }
 
@@ -408,8 +413,8 @@
                         <td class="col-hide-mobile">${p.quantity || '—'}</td>
                         <td class="col-hide-mobile">${p.leverage || '1'}x</td>
                         <td class="${pnlClass}">${pnlDisplay}</td>
-                        <td class="pnl-high">$${tp}</td>
-                        <td class="pnl-danger">$${sl}</td>
+                        <td class="tp-color">$${tp}</td>
+                        <td class="sl-color">$${sl}</td>
                     </tr>
                 `;
             }
