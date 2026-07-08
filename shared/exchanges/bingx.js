@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (УПРОЩЁННЫЙ)
+//  BINGX EXCHANGE CLIENT (ФИНАЛЬНАЯ ВЕРСИЯ)
 // ============================================
 
 const crypto = require('crypto');
@@ -141,7 +141,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА (УПРОЩЁННЫЙ ВАРИАНТ)
+  //  РАЗМЕЩЕНИЕ ОРДЕРА (С quoteOrderQty)
   // ============================================
   async placeOrder(params) {
     try {
@@ -155,12 +155,12 @@ class BingXExchange {
 
       const symbolFormatted = symbol.replace('_', '-');
       
-      // Минимальный набор полей
+      // Для MARKET-ордеров используем quoteOrderQty
       const orderParams = {
         symbol: symbolFormatted,
         side: side,
         type: type,
-        quantity: quantity.toString(),
+        quoteOrderQty: quantity.toString(),
       };
 
       if (price && type !== 'MARKET') {
