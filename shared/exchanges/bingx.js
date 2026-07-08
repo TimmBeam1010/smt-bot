@@ -65,14 +65,21 @@ class BingXExchange {
   }
 
   // ============================================
-  //  ПОЛУЧЕНИЕ БАЛАНСА
+  //  ПОЛУЧЕНИЕ БАЛАНСА (ИСПРАВЛЕНО)
   // ============================================
   async getBalance() {
     try {
       const response = await this._signedGet('/openApi/swap/v3/user/balance');
-      if (response?.code === 0 && response?.data?.balance) {
-        const balance = response.data.balance.find(b => b.asset === 'USDT');
-        return parseFloat(balance?.balance || 0);
+      if (response?.code === 0 && Array.isArray(response?.data)) {
+        // Ищем USDT в массиве
+        const usdtAsset = response.data.find(item => item.asset === 'USDT');
+        if (usdtAsset) {
+          const balance = parseFloat(usdtAsset.balance) || 0;
+          console.log(`💰 Баланс: $${balance}`);
+          return balance;
+        }
+        console.error('❌ USDT не найден в балансе');
+        return 0;
       }
       console.error('❌ Ошибка получения баланса:', response);
       return 0;
@@ -194,7 +201,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  УСТАНОВКА TP/SL (ИСПРАВЛЕННАЯ)
+  //  УСТАНОВКА TP/SL
   // ============================================
   async setTPSL(orderId, symbol, side, quantity, stopLoss, takeProfit) {
     try {
