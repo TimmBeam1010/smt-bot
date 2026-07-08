@@ -174,7 +174,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  УСТАНОВКА TP/SL (ИСПРАВЛЕННЫЙ ФОРМАТ)
+  //  УСТАНОВКА TP/SL (УПРОЩЁННЫЙ ФОРМАТ)
   // ============================================
   async setTPSL(orderId, symbol, side, quantity, stopLoss, takeProfit) {
     try {
