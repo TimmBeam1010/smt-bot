@@ -108,10 +108,17 @@ async function getActivePositions() {
   }
 }
 
+// ============================================
+//  🔥 ПРОВЕРКА СИМВОЛА (С ФИЛЬТРАЦИЕЙ)
+// ============================================
 async function isValidSymbol(symbol) {
   if (!symbol) return false;
   const s = String(symbol).trim().toUpperCase();
-  return Object.keys(minOrderSizes).some(key => key.toUpperCase() === s);
+  const isValid = Object.keys(minOrderSizes).some(key => key.toUpperCase() === s);
+  if (!isValid) {
+    log.warn(`⚠️ Символ ${symbol} НЕ ПОДДЕРЖИВАЕТСЯ биржей (нет в списке контрактов)`);
+  }
+  return isValid;
 }
 
 async function getPendingSignals() {
@@ -220,7 +227,7 @@ function filterSignalsByRisk(signals, balance) {
 }
 
 // ============================================
-//  🔥 ИСПОЛНЕНИЕ СДЕЛКИ (С ПРОВЕРКОЙ ОТВЕТА)
+//  ИСПОЛНЕНИЕ СДЕЛКИ (С ФИЛЬТРАЦИЕЙ СИМВОЛОВ)
 // ============================================
 async function executeTrade(signal) {
   try {
@@ -232,8 +239,10 @@ async function executeTrade(signal) {
     }
 
     const symbol = String(signal.symbol).trim();
+    
+    // 🔥 ПРОВЕРЯЕМ, ПОДДЕРЖИВАЕТСЯ ЛИ СИМВОЛ
     if (!await isValidSymbol(symbol)) {
-      log.warn(`Символ ${symbol} не поддерживается`);
+      log.warn(`⚠️ Символ ${symbol} НЕ ПОДДЕРЖИВАЕТСЯ биржей`);
       await updateSignalStatus(signal.id, 'failed');
       return null;
     }
@@ -271,7 +280,6 @@ async function executeTrade(signal) {
     log.info(`📤 Рыночный ордер: ${JSON.stringify(marketOrder, null, 2)}`);
     const result = await exchangeClient.placeOrder(marketOrder);
     
-    // 🔥 ЕДИНСТВЕННОЕ ИЗМЕНЕНИЕ — ПРОВЕРКА result
     if (!result) {
       log.error(`❌ Ордер не создан: ${symbol} ${signal.side}`);
       await updateSignalStatus(signal.id, 'failed');
