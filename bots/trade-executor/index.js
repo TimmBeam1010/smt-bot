@@ -271,7 +271,7 @@ async function executeTrade(signal) {
     log.info(`📤 Рыночный ордер: ${JSON.stringify(marketOrder, null, 2)}`);
     const result = await exchangeClient.placeOrder(marketOrder);
     
-    // 🔥 ПРОВЕРЯЕМ, ЧТО ОРДЕР СОЗДАН
+    // 🔥 ЕДИНСТВЕННОЕ ИЗМЕНЕНИЕ — ПРОВЕРКА result
     if (!result) {
       log.error(`❌ Ордер не создан: ${symbol} ${signal.side}`);
       await updateSignalStatus(signal.id, 'failed');
