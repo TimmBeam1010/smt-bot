@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT - ПОСЛЕДНЯЯ ВЕРСИЯ
+//  BINGX EXCHANGE CLIENT - ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ============================================
 
 const crypto = require('crypto');
@@ -28,19 +28,39 @@ class BingXExchange {
   async _request(method, endpoint, params = {}, body = null) {
     const timestamp = Date.now();
     
-    // 3. ВСЕ ПАРАМЕТРЫ (ВКЛЮЧАЯ ТЕЛО) УЧАСТВУЮТ В ПОДПИСИ
-    const allParams = { ...body, ...params, timestamp };
-    const signature = this._sign(allParams);
+    // 3. ФОРМИРУЕМ ТЕЛО ЗАПРОСА (ВСЕГДА С TIMESTAMP)
+    const requestBody = { 
+      ...body, 
+      timestamp: timestamp 
+    };
     
-    // 4. URL: ТОЛЬКО timestamp И signature
-    const queryString = `timestamp=${timestamp}&signature=${signature}`;
-    const url = `${this.baseUrl}${endpoint}?${queryString}`;
+    // 4. УДАЛЯЕМ undefined/null ПОЛЯ
+    const cleanBody = {};
+    for (const key of Object.keys(requestBody)) {
+      if (requestBody[key] !== undefined && requestBody[key] !== null) {
+        cleanBody[key] = requestBody[key];
+      }
+    }
     
-    // 5. ТЕЛО: ПАРАМЕТРЫ ОРДЕРА
-    const requestBody = body ? { ...body } : {};
+    // 5. ПОДПИСЬ ОТ СОРТИРОВАННЫХ КЛЮЧЕЙ ТЕЛА
+    const sortedKeys = Object.keys(cleanBody).sort();
+    const queryString = sortedKeys
+      .map(key => `${key}=${cleanBody[key]}`)
+      .join('&');
+    
+    const signature = crypto
+      .createHmac('sha256', this.secretKey)
+      .update(queryString)
+      .digest('hex');
+    
+    // 6. ДОБАВЛЯЕМ ПОДПИСЬ В ТЕЛО
+    cleanBody.signature = signature;
+    
+    // 7. URL: ТОЛЬКО ЭНДПОИНТ (БЕЗ ПАРАМЕТРОВ)
+    const url = `${this.baseUrl}${endpoint}`;
     
     console.log(`📤 ${method} URL: ${url}`);
-    console.log(`📤 BODY:`, JSON.stringify(requestBody, null, 2));
+    console.log(`📤 BODY:`, JSON.stringify(cleanBody, null, 2));
     
     const options = {
       method: method,
@@ -50,14 +70,20 @@ class BingXExchange {
       },
     };
     
-    if (method === 'POST' && Object.keys(requestBody).length > 0) {
-      options.body = JSON.stringify(requestBody);
+    // 8. ДЛЯ POST ВСЕГДА ДОБАВЛЯЕМ BODY
+    if (method === 'POST') {
+      options.body = JSON.stringify(cleanBody);
     }
     
-    const response = await fetch(url, options);
-    const data = await response.json();
-    console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
-    return data;
+    try {
+      const response = await fetch(url, options);
+      const data = await response.json();
+      console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
+      return data;
+    } catch (error) {
+      console.error(`❌ Request error:`, error.message);
+      throw error;
+    }
   }
 
   async getBalance() {
@@ -122,15 +148,24 @@ class BingXExchange {
 
   async placeOrder(params) {
     try {
-      const { symbol, side, type = 'MARKET', quantity, price = null } = params;
+      const { symbol, side, type = 'MARKET', quantity, price = null, positionSide = null } = params;
+      
+      // НОРМАЛИЗУЕМ SYMBOL
+      const normalizedSymbol = symbol.replace(/_/g, '-');
       
       const orderData = {
-        symbol: symbol.replace('_', '-'),
-        side: side,
-        type: type,
+        symbol: normalizedSymbol,
+        side: side.toUpperCase(),
+        type: type.toUpperCase(),
         quantity: quantity.toString(),
       };
       
+      // ДОБАВЛЯЕМ POSITIONSIDE ДЛЯ ЗАКРЫТИЯ ПОЗИЦИЙ
+      if (positionSide) {
+        orderData.positionSide = positionSide;
+      }
+      
+      // ДОБАВЛЯЕМ PRICE ДЛЯ ЛИМИТНЫХ ОРДЕРОВ
       if (price && type !== 'MARKET') {
         orderData.price = price.toString();
       }
@@ -154,13 +189,21 @@ class BingXExchange {
 
   async closePosition(symbol, positionSide) {
     try {
+      const normalizedSymbol = symbol.replace(/_/g, '-');
+      
       const response = await this._request('POST', '/openApi/swap/v2/trade/close', {}, {
-        symbol: symbol.replace('_', '-'),
+        symbol: normalizedSymbol,
         positionSide: positionSide,
         type: 'MARKET',
         quantity: '0',
       });
-      if (response?.code === 0) return response.data;
+      
+      if (response?.code === 0) {
+        console.log(`✅ Позиция закрыта: ${normalizedSymbol} ${positionSide}`);
+        return response.data;
+      }
+      
+      console.error(`❌ Ошибка закрытия:`, response);
       return null;
     } catch (error) {
       console.error('❌ closePosition error:', error.message);
@@ -168,9 +211,113 @@ class BingXExchange {
     }
   }
 
+  async cancelOrder(symbol, orderId) {
+    try {
+      const normalizedSymbol = symbol.replace(/_/g, '-');
+      
+      const response = await this._request('POST', '/openApi/swap/v2/trade/cancel', {}, {
+        symbol: normalizedSymbol,
+        orderId: orderId,
+      });
+      
+      if (response?.code === 0) {
+        console.log(`✅ Ордер отменён: ${orderId}`);
+        return response.data;
+      }
+      
+      console.error(`❌ Ошибка отмены:`, response);
+      return null;
+    } catch (error) {
+      console.error('❌ cancelOrder error:', error.message);
+      return null;
+    }
+  }
+
+  async getOpenOrders(symbol = null) {
+    try {
+      const params = {};
+      if (symbol) {
+        params.symbol = symbol.replace(/_/g, '-');
+      }
+      
+      const response = await this._request('GET', '/openApi/swap/v2/trade/openOrders', params);
+      
+      if (response?.code === 0) {
+        return response.data || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('❌ getOpenOrders error:', error.message);
+      return [];
+    }
+  }
+
+  async getOrderHistory(symbol, limit = 50) {
+    try {
+      const response = await this._request('GET', '/openApi/swap/v2/trade/history', {
+        symbol: symbol.replace(/_/g, '-'),
+        limit: limit,
+      });
+      
+      if (response?.code === 0) {
+        return response.data || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('❌ getOrderHistory error:', error.message);
+      return [];
+    }
+  }
+
+  async getMarketPrice(symbol) {
+    try {
+      const response = await this._request('GET', '/openApi/swap/v2/quote/price', {
+        symbol: symbol.replace(/_/g, '-'),
+      });
+      
+      if (response?.code === 0 && response?.data?.price) {
+        return parseFloat(response.data.price);
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ getMarketPrice error:', error.message);
+      return null;
+    }
+  }
+
+  async getKlines(symbol, interval = '5m', limit = 100) {
+    return this.getCandles(symbol, interval, limit);
+  }
+
   async testCredentials() {
-    const balance = await this.getBalance();
-    return balance !== null && balance !== undefined;
+    try {
+      const balance = await this.getBalance();
+      return balance !== null && balance !== undefined;
+    } catch (error) {
+      console.error('❌ testCredentials error:', error.message);
+      return false;
+    }
+  }
+
+  // ДОПОЛНИТЕЛЬНЫЙ МЕТОД ДЛЯ ЛЕВЕРИДЖА
+  async setLeverage(symbol, leverage) {
+    try {
+      const response = await this._request('POST', '/openApi/swap/v2/trade/leverage', {}, {
+        symbol: symbol.replace(/_/g, '-'),
+        leverage: leverage.toString(),
+      });
+      
+      if (response?.code === 0) {
+        console.log(`✅ Леверидж установлен: ${symbol} x${leverage}`);
+        return true;
+      }
+      
+      console.error(`❌ Ошибка установки левериджа:`, response);
+      return false;
+    } catch (error) {
+      console.error('❌ setLeverage error:', error.message);
+      return false;
+    }
   }
 }
 
