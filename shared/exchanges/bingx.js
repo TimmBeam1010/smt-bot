@@ -163,6 +163,7 @@ class BingXExchange {
       }
 
       console.log(`📤 РЫНОЧНЫЙ ОРДЕР:`, JSON.stringify(orderParams, null, 2));
+
       const response = await this._signedPost('/openApi/swap/v2/trade/order', orderParams);
       if (response?.code === 0 && response?.data?.order) {
         console.log(`✅ Ордер создан: ${response.data.order.orderId || response.data.order.orderID}`);
