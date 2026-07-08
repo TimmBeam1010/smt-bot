@@ -1,6 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (ПРОВЕРЕННАЯ ВЕРСИЯ)
-//  Основано на официальной документации
+//  BINGX EXCHANGE CLIENT (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 // ============================================
 
 const crypto = require('crypto');
@@ -12,9 +11,6 @@ class BingXExchange {
     this.baseUrl = baseUrl;
   }
 
-  // ============================================
-  //  ПОДПИСЬ (ТОЧНО ПО ДОКУМЕНТАЦИИ)
-  // ============================================
   _sign(params) {
     const sortedKeys = Object.keys(params).sort();
     let queryString = '';
@@ -27,14 +23,10 @@ class BingXExchange {
     return crypto.createHmac('sha256', this.secretKey).update(queryString).digest('hex');
   }
 
-  // ============================================
-  //  ЗАПРОС (УНИВЕРСАЛЬНЫЙ)
-  // ============================================
   async _request(method, endpoint, params = {}, body = null) {
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
     
-    // Сортируем параметры и формируем строку запроса
     const sortedKeys = Object.keys(allParams).sort();
     let queryString = '';
     for (const key of sortedKeys) {
@@ -43,36 +35,28 @@ class BingXExchange {
         queryString += `${key}=${allParams[key]}`;
       }
     }
-    
     const signature = this._sign(allParams);
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
-    console.log(`📤 ${method} URL: ${url}`);
-    if (body) console.log(`📤 BODY:`, JSON.stringify(body, null, 2));
+    // 🔥 ТЕЛО должно содержать timestamp
+    const requestBody = body ? { ...body, timestamp } : { timestamp };
     
-    const options = {
+    console.log(`📤 ${method} URL: ${url}`);
+    console.log(`📤 BODY:`, JSON.stringify(requestBody, null, 2));
+    
+    const response = await fetch(url, {
       method: method,
       headers: {
         'X-BX-APIKEY': this.apiKey,
         'Content-Type': 'application/json',
       },
-    };
+      body: JSON.stringify(requestBody),
+    });
     
-    if (body) {
-      options.body = JSON.stringify(body);
-    }
-    
-    const response = await fetch(url, options);
     const data = await response.json();
-    
     console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
-    
     return data;
   }
-
-  // ============================================
-  //  API МЕТОДЫ
-  // ============================================
 
   async getBalance() {
     try {
@@ -134,9 +118,6 @@ class BingXExchange {
     }
   }
 
-  // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА (ГЛАВНОЕ)
-  // ============================================
   async placeOrder(params) {
     try {
       const { symbol, side, type = 'MARKET', quantity, price = null } = params;
@@ -154,7 +135,6 @@ class BingXExchange {
       
       console.log(`📤 РЫНОЧНЫЙ ОРДЕР:`, JSON.stringify(orderData, null, 2));
       
-      // Для POST запросов параметры передаются в теле
       const response = await this._request('POST', '/openApi/swap/v2/trade/order', {}, orderData);
       
       if (response?.code === 0 && response?.data?.order) {
