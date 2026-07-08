@@ -1,15 +1,24 @@
-// shared/exchanges/index.js
+// ============================================
+//  EXCHANGE FACTORY
+//  Точка входа для всех бирж
+// ============================================
+
 const BingXExchange = require('./bingx');
 
+/**
+ * Фабрика для создания клиентов бирж
+ * @param {string} exchange - Название биржи ('bingx')
+ * @param {string} apiKey - API ключ
+ * @param {string} secretKey - Секретный ключ
+ * @returns {object} - Экземпляр клиента биржи
+ */
 function getExchange(exchange, apiKey, secretKey) {
-    switch (exchange) {
-        case 'bingx':
-            return new BingXExchange(apiKey, secretKey);
-        // case 'binance':
-        //     return new BinanceExchange(apiKey, secretKey);
-        default:
-            throw new Error(`Биржа ${exchange} не поддерживается`);
-    }
+  switch (exchange.toLowerCase()) {
+    case 'bingx':
+      return new BingXExchange(apiKey, secretKey);
+    default:
+      throw new Error(`Unsupported exchange: ${exchange}`);
+  }
 }
 
 module.exports = { getExchange };
