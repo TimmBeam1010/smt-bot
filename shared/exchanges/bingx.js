@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT
-//  Поддержка: MARKET, LIMIT, STOP_MARKET, TAKE_PROFIT_MARKET
+//  Поддержка: MARKET, LIMIT, STOP, TAKE_PROFIT
 // ============================================
 
 const crypto = require('crypto');
@@ -12,9 +12,6 @@ class BingXExchange {
     this.baseUrl = baseUrl;
   }
 
-  // ============================================
-  //  ПОДПИСЬ ЗАПРОСОВ
-  // ============================================
   _sign(params) {
     const sortedKeys = Object.keys(params).sort();
     let queryString = '';
@@ -64,14 +61,10 @@ class BingXExchange {
     return data;
   }
 
-  // ============================================
-  //  ПОЛУЧЕНИЕ БАЛАНСА (ИСПРАВЛЕНО)
-  // ============================================
   async getBalance() {
     try {
       const response = await this._signedGet('/openApi/swap/v3/user/balance');
       if (response?.code === 0 && Array.isArray(response?.data)) {
-        // Ищем USDT в массиве
         const usdtAsset = response.data.find(item => item.asset === 'USDT');
         if (usdtAsset) {
           const balance = parseFloat(usdtAsset.balance) || 0;
@@ -89,9 +82,6 @@ class BingXExchange {
     }
   }
 
-  // ============================================
-  //  ПОЛУЧЕНИЕ ПОЗИЦИЙ
-  // ============================================
   async getPositions() {
     try {
       const response = await this._signedGet('/openApi/swap/v2/user/positions');
@@ -106,9 +96,6 @@ class BingXExchange {
     }
   }
 
-  // ============================================
-  //  ПОЛУЧЕНИЕ КОНТРАКТОВ
-  // ============================================
   async getContracts() {
     try {
       const response = await this._signedGet('/openApi/swap/v2/quote/contracts');
@@ -123,9 +110,6 @@ class BingXExchange {
     }
   }
 
-  // ============================================
-  //  ПОЛУЧЕНИЕ СВЕЧЕЙ
-  // ============================================
   async getCandles(symbol, interval = '5m', limit = 100) {
     try {
       const params = { symbol, interval, limit };
@@ -148,9 +132,6 @@ class BingXExchange {
     }
   }
 
-  // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА
-  // ============================================
   async placeOrder(params) {
     try {
       const {
@@ -161,8 +142,6 @@ class BingXExchange {
         price = null,
         leverage = 10,
         positionSide = side === 'BUY' ? 'LONG' : 'SHORT',
-        stopLoss = null,
-        takeProfit = null,
       } = params;
 
       const symbolFormatted = symbol.replace('_', '-');
@@ -177,12 +156,6 @@ class BingXExchange {
 
       if (price && type !== 'MARKET') {
         orderParams.price = price.toString();
-      }
-
-      // Если это MARKET ордер, добавляем TP/SL если они переданы
-      if (type === 'MARKET') {
-        if (stopLoss) orderParams.stopLoss = stopLoss.toString();
-        if (takeProfit) orderParams.takeProfit = takeProfit.toString();
       }
 
       console.log(`📤 РЫНОЧНЫЙ ОРДЕР:`, JSON.stringify(orderParams, null, 2));
@@ -201,27 +174,26 @@ class BingXExchange {
   }
 
   // ============================================
-  //  УСТАНОВКА TP/SL
+  //  УСТАНОВКА TP/SL (ИСПРАВЛЕННЫЙ ФОРМАТ)
   // ============================================
   async setTPSL(orderId, symbol, side, quantity, stopLoss, takeProfit) {
     try {
       const symbolFormatted = symbol.replace('_', '-');
       const results = [];
 
-      // side — это сторона ОТКРЫТИЯ позиции (BUY или SELL)
-      // Для закрытия используем противоположную сторону
       const positionSide = side === 'BUY' ? 'LONG' : 'SHORT';
-      const closeSide = side === 'BUY' ? 'SELL' : 'BUY';
+      const closeSide = positionSide === 'LONG' ? 'SELL' : 'BUY';
 
       if (stopLoss && stopLoss > 0) {
         const slParams = {
           symbol: symbolFormatted,
           side: closeSide,
-          type: 'STOP_MARKET',
           positionSide: positionSide,
+          type: 'STOP',
           quantity: quantity.toString(),
           stopPrice: stopLoss.toString(),
           price: stopLoss.toString(),
+          workingType: 'MARK_PRICE'
         };
         console.log('📤 Установка SL:', JSON.stringify(slParams, null, 2));
         const slResponse = await this._signedPost('/openApi/swap/v2/trade/order', slParams);
@@ -238,11 +210,12 @@ class BingXExchange {
         const tpParams = {
           symbol: symbolFormatted,
           side: closeSide,
-          type: 'TAKE_PROFIT_MARKET',
           positionSide: positionSide,
+          type: 'TAKE_PROFIT',
           quantity: quantity.toString(),
           stopPrice: takeProfit.toString(),
           price: takeProfit.toString(),
+          workingType: 'MARK_PRICE'
         };
         console.log('📤 Установка TP:', JSON.stringify(tpParams, null, 2));
         const tpResponse = await this._signedPost('/openApi/swap/v2/trade/order', tpParams);
@@ -262,9 +235,6 @@ class BingXExchange {
     }
   }
 
-  // ============================================
-  //  ЗАКРЫТИЕ ПОЗИЦИИ
-  // ============================================
   async closePosition(symbol, positionSide) {
     try {
       const response = await this._signedPost('/openApi/swap/v2/trade/close', { 
@@ -282,9 +252,6 @@ class BingXExchange {
     }
   }
 
-  // ============================================
-  //  ПРОВЕРКА КЛЮЧЕЙ
-  // ============================================
   async testCredentials() {
     const balance = await this.getBalance();
     return balance !== null && balance !== undefined;
