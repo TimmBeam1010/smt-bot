@@ -11,25 +11,19 @@ class BingXExchange {
     this.baseUrl = baseUrl;
   }
 
-  // ============================================
-  //  ПОДПИСЬ (ТОЛЬКО ИЗ QUERY STRING)
-  // ============================================
   _sign(queryString) {
     return crypto.createHmac('sha256', this.secretKey).update(queryString).digest('hex');
   }
 
   // ============================================
-  //  POST ЗАПРОСЫ (ПАРАМЕТРЫ В ТЕЛЕ)
+  //  POST ЗАПРОСЫ (ПОДПИСЬ ТОЛЬКО ИЗ URL)
   // ============================================
   async _signedPost(endpoint, params = {}) {
     const timestamp = Date.now();
-    
-    // 1. Подпись ТОЛЬКО из timestamp
     const queryString = `timestamp=${timestamp}`;
     const signature = this._sign(queryString);
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
-    // 2. Тело: параметры ордера (БЕЗ timestamp)
     const body = { ...params };
     
     console.log(`📤 POST URL: ${url}`);
@@ -50,7 +44,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  GET ЗАПРОСЫ (ПАРАМЕТРЫ В URL)
+  //  GET ЗАПРОСЫ (ПОДПИСЬ ИЗ ВСЕХ ПАРАМЕТРОВ)
   // ============================================
   async _signedGet(endpoint, params = {}) {
     const timestamp = Date.now();
@@ -79,10 +73,6 @@ class BingXExchange {
     console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
     return data;
   }
-
-  // ============================================
-  //  API МЕТОДЫ
-  // ============================================
 
   async getBalance() {
     try {
@@ -144,9 +134,6 @@ class BingXExchange {
     }
   }
 
-  // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА (ГЛАВНОЕ)
-  // ============================================
   async placeOrder(params) {
     try {
       const { symbol, side, type = 'MARKET', quantity, price = null } = params;
