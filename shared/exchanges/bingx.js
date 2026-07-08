@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (ФИНАЛЬНАЯ ВЕРСИЯ)
+//  BINGX EXCHANGE CLIENT (ПО ДОКУМЕНТАЦИИ)
 // ============================================
 
 const crypto = require('crypto');
@@ -30,13 +30,20 @@ class BingXExchange {
     const { queryString, signature } = this._sign(allParams);
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
+    // Параметры ордера в теле запроса (кроме timestamp и signature)
+    const bodyParams = { ...params };
+    delete bodyParams.timestamp;
+    
     console.log(`📤 POST URL: ${url}`);
+    console.log(`📤 BODY:`, JSON.stringify(bodyParams, null, 2));
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'X-BX-APIKEY': this.apiKey,
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(bodyParams),
     });
     const data = await response.json();
     
@@ -141,7 +148,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА (С quoteOrderQty)
+  //  РАЗМЕЩЕНИЕ ОРДЕРА (ПО ДОКУМЕНТАЦИИ)
   // ============================================
   async placeOrder(params) {
     try {
@@ -155,12 +162,11 @@ class BingXExchange {
 
       const symbolFormatted = symbol.replace('_', '-');
       
-      // Для MARKET-ордеров используем quoteOrderQty
       const orderParams = {
         symbol: symbolFormatted,
         side: side,
         type: type,
-        quoteOrderQty: quantity.toString(),
+        quantity: quantity.toString(),
       };
 
       if (price && type !== 'MARKET') {
