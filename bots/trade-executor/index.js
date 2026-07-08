@@ -31,9 +31,6 @@ let minOrderSizes = {};
 let initialBalance = 0;
 let trailingManager = new TrailingStopManager();
 
-// ============================================
-//  SUPABASE
-// ============================================
 async function supabaseRequest(method, endpoint, data = null) {
   const url = `${supabaseUrl}/rest/v1/${endpoint}`;
   const headers = {
@@ -60,6 +57,7 @@ async function loadMinOrderSizes() {
     for (const c of contracts) {
       if (c.symbol) {
         minOrderSizes[c.symbol] = parseFloat(c.minQty) || 0;
+        minOrderSizes[`${c.symbol}_precision`] = parseInt(c.quantityPrecision) || 0;
       }
     }
     log.info(`📊 Загружены минимальные размеры для ${Object.keys(minOrderSizes).length} символов`);
@@ -108,9 +106,6 @@ async function getActivePositions() {
   }
 }
 
-// ============================================
-//  🔥 ПРОВЕРКА СИМВОЛА (С ФИЛЬТРАЦИЕЙ)
-// ============================================
 async function isValidSymbol(symbol) {
   if (!symbol) return false;
   const s = String(symbol).trim().toUpperCase();
@@ -150,15 +145,28 @@ async function updateSignalStatus(signalId, status, data = {}) {
   }
 }
 
+// ============================================
+//  🔥 РАСЧЁТ РАЗМЕРА ПОЗИЦИИ (С ОКРУГЛЕНИЕМ)
+// ============================================
 function calculatePositionSize(entryPrice, symbol) {
   const riskAmount = initialBalance * CONFIG.positionSizePercent;
   let quantity = riskAmount / entryPrice;
+  
   const minQty = minOrderSizes[symbol] || 0;
   if (minQty > 0 && quantity < minQty) {
     log.warn(`⚠️ Размер ${quantity} меньше минимального ${minQty} для ${symbol}, устанавливаем минимум`);
     quantity = minQty;
   }
-  quantity = Math.floor(quantity * 1e8) / 1e8;
+  
+  // Округление до нужной точности
+  const precision = minOrderSizes[`${symbol}_precision`] || 0;
+  if (precision === 0) {
+    quantity = Math.floor(quantity);
+  } else {
+    const factor = Math.pow(10, precision);
+    quantity = Math.floor(quantity * factor) / factor;
+  }
+  
   log.info(`💰 Расчёт: $${riskAmount.toFixed(2)} (5% от $${initialBalance.toFixed(2)}) → ${quantity} ${symbol}`);
   return quantity;
 }
@@ -226,9 +234,6 @@ function filterSignalsByRisk(signals, balance) {
   return [];
 }
 
-// ============================================
-//  ИСПОЛНЕНИЕ СДЕЛКИ (С ФИЛЬТРАЦИЕЙ СИМВОЛОВ)
-// ============================================
 async function executeTrade(signal) {
   try {
     const currentPositions = await getActivePositions();
@@ -239,8 +244,6 @@ async function executeTrade(signal) {
     }
 
     const symbol = String(signal.symbol).trim();
-    
-    // 🔥 ПРОВЕРЯЕМ, ПОДДЕРЖИВАЕТСЯ ЛИ СИМВОЛ
     if (!await isValidSymbol(symbol)) {
       log.warn(`⚠️ Символ ${symbol} НЕ ПОДДЕРЖИВАЕТСЯ биржей`);
       await updateSignalStatus(signal.id, 'failed');
@@ -267,7 +270,6 @@ async function executeTrade(signal) {
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
     const positionSide = signal.side;
 
-    // ШАГ 1: РЫНОЧНЫЙ ОРДЕР
     const marketOrder = {
       symbol: symbol,
       side: side,
@@ -288,7 +290,6 @@ async function executeTrade(signal) {
     
     log.info(`✅ Сделка открыта: ${symbol} ${signal.side} | Размер: ${quantity}`);
 
-    // ШАГ 2: TP И SL — ВРЕМЕННО ОТКЛЮЧЕНЫ
     log.info(`🔧 TP/SL временно ОТКЛЮЧЕНЫ для диагностики`);
 
     await updateSignalStatus(signal.id, 'executed', { 
@@ -309,9 +310,6 @@ async function executeTrade(signal) {
   }
 }
 
-// ============================================
-//  ГЛАВНЫЙ ЦИКЛ
-// ============================================
 async function mainLoop() {
   if (isProcessing) {
     log.debug('⏳ Уже обрабатывается...');
@@ -379,9 +377,6 @@ async function mainLoop() {
   }
 }
 
-// ============================================
-//  ЗАПУСК
-// ============================================
 async function start() {
   log.info('🚀 Trade Executor Bot запущен (FULL VERSION)');
   log.info(`📋 Максимум позиций: ${CONFIG.maxPositions}`);
