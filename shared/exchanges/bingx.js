@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT
-//  Поддержка: MARKET, LIMIT, STOP, TAKE_PROFIT
+//  Поддержка: MARKET, LIMIT, STOP_LOSS, TAKE_PROFIT_LIMIT
 // ============================================
 
 const crypto = require('crypto');
@@ -174,7 +174,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  УСТАНОВКА TP/SL (БЕЗ stopPrice)
+  //  УСТАНОВКА TP/SL (STOP_LOSS + TAKE_PROFIT_LIMIT)
   // ============================================
   async setTPSL(orderId, symbol, side, quantity, stopLoss, takeProfit) {
     try {
@@ -189,7 +189,7 @@ class BingXExchange {
           symbol: symbolFormatted,
           side: closeSide,
           positionSide: positionSide,
-          type: 'STOP',
+          type: 'STOP_LOSS',
           quantity: quantity.toString(),
           price: stopLoss.toString(),
         };
@@ -209,7 +209,7 @@ class BingXExchange {
           symbol: symbolFormatted,
           side: closeSide,
           positionSide: positionSide,
-          type: 'TAKE_PROFIT',
+          type: 'TAKE_PROFIT_LIMIT',
           quantity: quantity.toString(),
           price: takeProfit.toString(),
         };
