@@ -158,7 +158,6 @@ function calculatePositionSize(entryPrice, symbol) {
     quantity = minQty;
   }
   
-  // Округление до нужной точности
   const precision = minOrderSizes[`${symbol}_precision`] || 0;
   if (precision === 0) {
     quantity = Math.floor(quantity);
@@ -236,7 +235,7 @@ function filterSignalsByRisk(signals, balance) {
 
 // ============================================
 //  🔥 ИСПРАВЛЕННАЯ ФУНКЦИЯ executeTrade
-//  УБРАН positionSide из MARKET ордера
+//  positionSide ПЕРЕДАЁТСЯ В ОРДЕР
 // ============================================
 async function executeTrade(signal) {
   try {
@@ -274,10 +273,11 @@ async function executeTrade(signal) {
     // ✅ ПРАВИЛЬНО: side = BUY для LONG, SELL для SHORT
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
 
-    // ✅ marketOrder БЕЗ positionSide!
+    // ✅ marketOrder С positionSide!
     const marketOrder = {
       symbol: symbol,
-      side: side,          // BUY или SELL (определяет направление)
+      side: side,                    // BUY или SELL
+      positionSide: signal.side,     // LONG или SHORT ✅
       type: 'MARKET',
       quantity: quantity,
       leverage: leverage,
