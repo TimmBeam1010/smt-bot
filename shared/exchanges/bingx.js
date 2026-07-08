@@ -132,6 +132,9 @@ class BingXExchange {
     }
   }
 
+  // ============================================
+  //  РАЗМЕЩЕНИЕ ОРДЕРА (ИСПРАВЛЕНО)
+  // ============================================
   async placeOrder(params) {
     try {
       const {
@@ -154,6 +157,7 @@ class BingXExchange {
         leverage: leverage.toString(),
       };
 
+      // Для MARKET ордеров цена не нужна
       if (price && type !== 'MARKET') {
         orderParams.price = price.toString();
       }
@@ -174,7 +178,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  УСТАНОВКА TP/SL (БЕЗ reduceOnly)
+  //  УСТАНОВКА TP/SL (ИСПРАВЛЕНО)
   // ============================================
   async setTPSL(orderId, symbol, side, quantity, stopLoss, takeProfit) {
     try {
@@ -191,8 +195,7 @@ class BingXExchange {
           positionSide: positionSide,
           type: 'STOP',
           quantity: quantity.toString(),
-          stopPrice: stopLoss.toString(),
-          price: stopLoss.toString(),
+          price: stopLoss.toString(), // ✅ ТОЛЬКО price (без stopPrice)
         };
         console.log('📤 Установка SL:', JSON.stringify(slParams, null, 2));
         const slResponse = await this._signedPost('/openApi/swap/v2/trade/order', slParams);
@@ -212,8 +215,7 @@ class BingXExchange {
           positionSide: positionSide,
           type: 'TAKE_PROFIT',
           quantity: quantity.toString(),
-          stopPrice: takeProfit.toString(),
-          price: takeProfit.toString(),
+          price: takeProfit.toString(), // ✅ ТОЛЬКО price (без stopPrice)
         };
         console.log('📤 Установка TP:', JSON.stringify(tpParams, null, 2));
         const tpResponse = await this._signedPost('/openApi/swap/v2/trade/order', tpParams);
