@@ -2,6 +2,7 @@
 
 const { getExchange } = require("../../shared/exchanges");
 const { TrailingStopManager } = require("../../shared/trailing-manager");
+const { calculateDynamicTPSL } = require("../../shared/dynamic-levels");
 
 // ============================================
 //  ЛОГГЕР
@@ -25,8 +26,6 @@ const CONFIG = {
   highOnlyThreshold: 0.50,           
   trailingStopPercent: 0.02,         
   positionSizePercent: 0.05,         
-  riskPercent: 0.02,                 
-  rewardRatio: 2,                    
   defaultLeverage: 30,               
 };
 
@@ -189,33 +188,63 @@ function calculatePositionSize(entryPrice, symbol) {
 }
 
 // ============================================
-//  РАСЧЁТ TP/SL
+//  🔥 РАСЧЁТ TP/SL (ДИНАМИЧЕСКИЙ)
 // ============================================
-function calculateTPSL(entryPrice, side, leverage) {
-  const riskPercent = CONFIG.riskPercent;
-  const rewardRatio = CONFIG.rewardRatio;
-  const slDistance = entryPrice * riskPercent;
-  const tpDistance = slDistance * rewardRatio;
-  let stopLoss, takeProfit;
-  if (side === 'LONG') {
-    stopLoss = entryPrice - slDistance;
-    takeProfit = entryPrice + tpDistance;
-  } else {
-    stopLoss = entryPrice + slDistance;
-    takeProfit = entryPrice - tpDistance;
+async function calculateTPSLWithModules(symbol, entryPrice, side, leverage, candles) {
+  try {
+    // Используем динамический расчёт из модуля
+    const result = calculateDynamicTPSL(
+      symbol,
+      entryPrice,
+      side,
+      candles || [],
+      leverage,
+      {
+        atrMultiplierSL: 1.5,
+        atrMultiplierTP: 2.5,
+        useSMC: true,
+        useVolume: true,
+        minRiskPercent: 0.01,
+        maxRiskPercent: 0.05,
+        defaultRiskPercent: 0.02,
+      }
+    );
+    
+    log.info(`📊 Метод: ${result.methods} | Уверенность: ${result.confidence}%`);
+    log.info(`📊 Риск: ${result.riskPercent}% | Профит: ${result.rewardPercent}%`);
+    
+    return result;
+  } catch (error) {
+    log.warn(`⚠️ Ошибка динамического расчёта, использую фиксированный: ${error.message}`);
+    // Fallback на фиксированный расчёт
+    const riskPercent = 0.02;
+    const rewardRatio = 2;
+    const slDistance = entryPrice * riskPercent;
+    const tpDistance = slDistance * rewardRatio;
+    
+    let stopLoss, takeProfit;
+    if (side === 'LONG') {
+      stopLoss = entryPrice - slDistance;
+      takeProfit = entryPrice + tpDistance;
+    } else {
+      stopLoss = entryPrice + slDistance;
+      takeProfit = entryPrice - tpDistance;
+    }
+    
+    const liqPrice = side === 'LONG' 
+      ? entryPrice * (1 - 1/leverage) 
+      : entryPrice * (1 + 1/leverage);
+    
+    return {
+      stopLoss,
+      takeProfit,
+      liqPrice,
+      methods: 'FIXED (fallback)',
+      confidence: 50,
+      riskPercent: riskPercent * 100,
+      rewardPercent: (riskPercent * rewardRatio) * 100,
+    };
   }
-  const liqPrice = side === 'LONG' 
-    ? entryPrice * (1 - 1/leverage) 
-    : entryPrice * (1 + 1/leverage);
-  if (side === 'LONG' && stopLoss <= liqPrice) {
-    log.warn(`⚠️ SL ${stopLoss.toFixed(4)} за точкой ликвидации ${liqPrice.toFixed(4)}, корректируем`);
-    stopLoss = liqPrice * 1.02;
-  }
-  if (side === 'SHORT' && stopLoss >= liqPrice) {
-    log.warn(`⚠️ SL ${stopLoss.toFixed(4)} за точкой ликвидации ${liqPrice.toFixed(4)}, корректируем`);
-    stopLoss = liqPrice * 0.98;
-  }
-  return { stopLoss, takeProfit, liqPrice, riskPercent };
 }
 
 // ============================================
@@ -263,7 +292,7 @@ function filterSignalsByRisk(signals, balance) {
 }
 
 // ============================================
-//  🔥 ИСПОЛНЕНИЕ СДЕЛКИ (С ОТДЕЛЬНЫМИ TP/SL)
+//  🔥 ИСПОЛНЕНИЕ СДЕЛКИ (С ДИНАМИЧЕСКИМИ TP/SL)
 // ============================================
 async function executeTrade(signal) {
   try {
@@ -289,11 +318,20 @@ async function executeTrade(signal) {
 
     const quantity = calculatePositionSize(signal.entry_price, symbol);
     const leverage = CONFIG.defaultLeverage;
-    const { stopLoss, takeProfit, liqPrice, riskPercent } = calculateTPSL(
-      signal.entry_price, 
-      signal.side, 
-      leverage
-    );
+
+    // 🔥 ПОЛУЧАЕМ ДИНАМИЧЕСКИЕ TP/SL
+    const candles = await getCandles(symbol, '5m', 50);
+    const { stopLoss, takeProfit, liqPrice, methods, confidence, riskPercent, rewardPercent } = 
+      await calculateTPSLWithModules(
+        symbol,
+        signal.entry_price,
+        signal.side,
+        leverage,
+        candles
+      );
+
+    log.info(`📊 Уровни рассчитаны методом: ${methods} (уверенность ${confidence}%)`);
+    log.info(`📊 Риск: ${riskPercent}% | Профит: ${rewardPercent}%`);
 
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
     const positionSide = signal.side;
@@ -457,7 +495,7 @@ async function start() {
   log.info(`📋 Интервал: ${CONFIG.checkInterval / 1000}с`);
   log.info(`💰 Размер сделки: ${CONFIG.positionSizePercent * 100}% от фиксированного депозита`);
   log.info(`📊 Приоритет сигналов: HIGH → MEDIUM`);
-  log.info(`🛡️ Риск на сделку: ${CONFIG.riskPercent * 100}% | Соотношение: 1:${CONFIG.rewardRatio}`);
+  log.info(`🛡️ TP/SL: ДИНАМИЧЕСКИЙ (ATR + SMC + Volume Profile)`);
   log.info(`⚡ Плечо: ${CONFIG.defaultLeverage}x`);
   
   exchangeClient = getExchange("bingx",
