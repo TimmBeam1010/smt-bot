@@ -40,6 +40,7 @@ class BingXExchange {
     });
     const data = await response.json();
     
+    // 🔥 ЛОГИРУЕМ ОТВЕТ БИРЖИ
     console.log(`📥 ОТВЕТ БИРЖИ:`, JSON.stringify(data, null, 2));
     
     if (data.code !== 0) {
@@ -62,7 +63,10 @@ class BingXExchange {
       },
     });
     const data = await response.json();
+    
+    // 🔥 ЛОГИРУЕМ ОТВЕТ БИРЖИ
     console.log(`📥 ОТВЕТ БИРЖИ:`, JSON.stringify(data, null, 2));
+    
     if (data.code !== 0) {
       console.error(`❌ Ошибка:`, JSON.stringify(data, null, 2));
     }
@@ -140,6 +144,9 @@ class BingXExchange {
     }
   }
 
+  // ============================================
+  //  РАЗМЕЩЕНИЕ ОРДЕРА (С ЛОГИРОВАНИЕМ)
+  // ============================================
   async placeOrder(params) {
     try {
       const {
@@ -168,6 +175,7 @@ class BingXExchange {
 
       const response = await this._signedPost('/openApi/swap/v2/trade/order', orderParams);
       
+      // ПРОВЕРЯЕМ КОД ОТВЕТА
       if (response?.code === 0 && response?.data?.order) {
         console.log(`✅ Ордер создан: ${response.data.order.orderId || response.data.order.orderID}`);
         return response.data.order;
