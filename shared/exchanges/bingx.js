@@ -155,7 +155,6 @@ class BingXExchange {
 
       const symbolFormatted = symbol.replace('_', '-');
       
-      // БЕЗ positionSide
       const orderParams = {
         symbol: symbolFormatted,
         side: side,
