@@ -39,6 +39,9 @@ class BingXExchange {
       },
     });
     const data = await response.json();
+    
+    console.log(`📥 ОТВЕТ БИРЖИ:`, JSON.stringify(data, null, 2));
+    
     if (data.code !== 0) {
       console.error(`❌ Ошибка:`, JSON.stringify(data, null, 2));
     }
@@ -59,6 +62,7 @@ class BingXExchange {
       },
     });
     const data = await response.json();
+    console.log(`📥 ОТВЕТ БИРЖИ:`, JSON.stringify(data, null, 2));
     if (data.code !== 0) {
       console.error(`❌ Ошибка:`, JSON.stringify(data, null, 2));
     }
@@ -156,7 +160,6 @@ class BingXExchange {
         quantity: quantity.toString(),
       };
 
-      // ✅ Только для лимитных ордеров добавляем price
       if (price && type !== 'MARKET') {
         orderParams.price = price.toString();
       }
@@ -164,10 +167,12 @@ class BingXExchange {
       console.log(`📤 РЫНОЧНЫЙ ОРДЕР:`, JSON.stringify(orderParams, null, 2));
 
       const response = await this._signedPost('/openApi/swap/v2/trade/order', orderParams);
+      
       if (response?.code === 0 && response?.data?.order) {
         console.log(`✅ Ордер создан: ${response.data.order.orderId || response.data.order.orderID}`);
         return response.data.order;
       }
+      
       console.error(`❌ Ошибка ордера:`, response);
       return null;
     } catch (error) {
