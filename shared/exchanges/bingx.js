@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT - ИСПРАВЛЕННАЯ ВЕРСИЯ
-//  FIX: GET - signature в URL, POST - signature в теле
+//  FIX: Убран positionSide из MARKET ордеров
 // ============================================
 
 const crypto = require('crypto');
@@ -13,7 +13,6 @@ class BingXExchange {
   }
 
   _sign(params) {
-    // Сортируем ключи по алфавиту
     const sortedKeys = Object.keys(params).sort();
     let queryString = '';
     for (const key of sortedKeys) {
@@ -22,28 +21,22 @@ class BingXExchange {
         queryString += `${key}=${params[key]}`;
       }
     }
-    // Возвращаем подпись в HEX
     return crypto.createHmac('sha256', this.secretKey).update(queryString).digest('hex');
   }
 
   async _request(method, endpoint, params = {}, body = null) {
     const timestamp = Date.now();
 
-    // =============================================
-    //  GET ЗАПРОСЫ: timestamp и signature в URL
-    // =============================================
+    // ============ GET ЗАПРОСЫ ============
     if (method === 'GET') {
-      // Все параметры для подписи (params + timestamp)
       const allParams = { ...params, timestamp };
       const signature = this._sign(allParams);
       
-      // Формируем query string с сортировкой
       const queryString = Object.keys(allParams)
         .sort()
         .map(key => `${key}=${allParams[key]}`)
         .join('&');
       
-      // URL с параметрами и подписью
       const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
       
       console.log(`📤 GET ${url}`);
@@ -62,14 +55,10 @@ class BingXExchange {
       return data;
     }
 
-    // =============================================
-    //  POST ЗАПРОСЫ: timestamp и signature в ТЕЛЕ
-    // =============================================
+    // ============ POST ЗАПРОСЫ ============
     if (method === 'POST') {
-      // Формируем тело с timestamp
       const requestBody = { ...body, timestamp };
       
-      // Удаляем undefined/null поля
       const cleanBody = {};
       for (const key of Object.keys(requestBody)) {
         if (requestBody[key] !== undefined && requestBody[key] !== null) {
@@ -77,7 +66,6 @@ class BingXExchange {
         }
       }
       
-      // Подпись от тела (с сортировкой)
       const signature = this._sign(cleanBody);
       cleanBody.signature = signature;
       
@@ -101,10 +89,6 @@ class BingXExchange {
       return data;
     }
   }
-
-  // =============================================
-  //  МЕТОДЫ ДЛЯ РАБОТЫ С API
-  // =============================================
 
   async getBalance() {
     try {
@@ -222,23 +206,24 @@ class BingXExchange {
     }
   }
 
+  // =============================================
+  //  ИСПРАВЛЕННЫЙ placeOrder - БЕЗ positionSide
+  // =============================================
   async placeOrder(params) {
     try {
-      const { symbol, side, type = 'MARKET', quantity, price = null, positionSide = null } = params;
+      const { symbol, side, type = 'MARKET', quantity, price = null } = params;
       
       const normalizedSymbol = symbol.replace(/_/g, '-');
       
+      // Базовые параметры ордера
       const orderData = {
         symbol: normalizedSymbol,
-        side: side.toUpperCase(),
-        type: type.toUpperCase(),
+        side: side.toUpperCase(),  // BUY или SELL
+        type: type.toUpperCase(),  // MARKET или LIMIT
         quantity: quantity.toString(),
       };
       
-      if (positionSide) {
-        orderData.positionSide = positionSide;
-      }
-      
+      // Только для LIMIT ордеров добавляем цену
       if (price && type !== 'MARKET') {
         orderData.price = price.toString();
       }
@@ -260,13 +245,16 @@ class BingXExchange {
     }
   }
 
+  // =============================================
+  //  closePosition - ОСТАЁТСЯ С positionSide
+  // =============================================
   async closePosition(symbol, positionSide) {
     try {
       const normalizedSymbol = symbol.replace(/_/g, '-');
       
       const response = await this._request('POST', '/openApi/swap/v2/trade/close', {}, {
         symbol: normalizedSymbol,
-        positionSide: positionSide,
+        positionSide: positionSide,  // ✅ ДЛЯ /close ЭТО НУЖНО
         type: 'MARKET',
         quantity: '0',
       });
