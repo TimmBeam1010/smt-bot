@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+//  BINGX EXCHANGE CLIENT (ФИНАЛЬНАЯ ВЕРСИЯ)
 // ============================================
 
 const crypto = require('crypto');
@@ -38,21 +38,26 @@ class BingXExchange {
     const signature = this._sign(allParams);
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
-    // 🔥 ТЕЛО должно содержать timestamp
-    const requestBody = body ? { ...body, timestamp } : { timestamp };
-    
     console.log(`📤 ${method} URL: ${url}`);
-    console.log(`📤 BODY:`, JSON.stringify(requestBody, null, 2));
     
-    const response = await fetch(url, {
+    const options = {
       method: method,
       headers: {
         'X-BX-APIKEY': this.apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
-    });
+    };
     
+    // 🔥 ТОЛЬКО ДЛЯ POST: добавляем тело с timestamp
+    if (method === 'POST') {
+      const requestBody = body ? { ...body, timestamp } : { timestamp };
+      options.body = JSON.stringify(requestBody);
+      console.log(`📤 BODY:`, JSON.stringify(requestBody, null, 2));
+    } else {
+      console.log(`📤 (GET, без тела)`);
+    }
+    
+    const response = await fetch(url, options);
     const data = await response.json();
     console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
     return data;
