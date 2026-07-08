@@ -20,7 +20,7 @@ const log = {
 };
 
 // ============================================
-//  КОНФИГУРАЦИЯ
+//  КОНФИГУРАЦИЯ (С УВЕЛИЧЕННЫМИ ИНТЕРВАЛАМИ)
 // ============================================
 const CONFIG = {
   symbols: [
@@ -56,10 +56,10 @@ const CONFIG = {
   ],
   interval: '5m',
   limit: 100,
-  checkInterval: 60000,          // 🔥 60 секунд (было 30)
-  requestDelay: 300,             // 🔥 Задержка между запросами 300 мс
-  maxRetries: 3,                 // 🔥 Максимум повторных попыток
-  retryDelay: 5000,              // 🔥 Задержка между повторами
+  checkInterval: 120000,          // 🔥 120 секунд (было 30)
+  requestDelay: 500,              // 🔥 500 мс между запросами (было 300)
+  maxRetries: 3,                  // 🔥 Максимум повторных попыток
+  retryDelay: 10000,              // 🔥 10 секунд между повторами
 };
 
 const supabaseUrl = "https://sbpyuigmrqycqlrjlqqv.supabase.co";
@@ -293,7 +293,7 @@ async function analyzeAndGenerateSignal(symbol) {
 }
 
 // ============================================
-//  🔥 ГЛАВНЫЙ ЦИКЛ (С ЗАДЕРЖКОЙ МЕЖДУ ЗАПРОСАМИ)
+//  🔥 ГЛАВНЫЙ ЦИКЛ (С УВЕЛИЧЕННОЙ ЗАДЕРЖКОЙ)
 // ============================================
 async function mainLoop() {
   try {
@@ -309,7 +309,7 @@ async function mainLoop() {
     
     for (const symbol of CONFIG.symbols) {
       await analyzeAndGenerateSignal(symbol);
-      // 🔥 ЗАДЕРЖКА МЕЖДУ ЗАПРОСАМИ
+      // 🔥 ЗАДЕРЖКА МЕЖДУ ЗАПРОСАМИ (500 мс)
       await new Promise(resolve => setTimeout(resolve, CONFIG.requestDelay));
     }
     
@@ -326,7 +326,7 @@ async function start() {
   log.info("🚀 Signal Generator Bot запущен (FULL версия)");
   log.info(`📋 Таймфрейм: ${CONFIG.interval}`);
   log.info(`📋 Символы: ${CONFIG.symbols.length}`);
-  log.info(`⏱️ Интервал: ${CONFIG.checkInterval / 1000}с`);
+  log.info(`⏱️ Интервал: ${CONFIG.checkInterval / 1000}с (увеличен для снижения нагрузки)`);
   log.info(`⏱️ Задержка между запросами: ${CONFIG.requestDelay}мс`);
   log.info(`🔄 Повторы: ${CONFIG.maxRetries} раз`);
   log.info("🧠 Модули: Volume Profile, Sentiment, AI, Market Maker, News");
