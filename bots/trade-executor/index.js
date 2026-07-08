@@ -234,6 +234,10 @@ function filterSignalsByRisk(signals, balance) {
   return [];
 }
 
+// ============================================
+//  🔥 ИСПРАВЛЕННАЯ ФУНКЦИЯ executeTrade
+//  УБРАН positionSide из MARKET ордера
+// ============================================
 async function executeTrade(signal) {
   try {
     const currentPositions = await getActivePositions();
@@ -267,13 +271,13 @@ async function executeTrade(signal) {
 
     log.info(`🎯 Расчетные TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)} (НЕ УСТАНАВЛИВАЮТСЯ)`);
 
+    // ✅ ПРАВИЛЬНО: side = BUY для LONG, SELL для SHORT
     const side = signal.side === 'LONG' ? 'BUY' : 'SELL';
-    const positionSide = signal.side;
 
+    // ✅ marketOrder БЕЗ positionSide!
     const marketOrder = {
       symbol: symbol,
-      side: side,
-      positionSide: positionSide,
+      side: side,          // BUY или SELL (определяет направление)
       type: 'MARKET',
       quantity: quantity,
       leverage: leverage,
