@@ -1,5 +1,6 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (ИСПРАВЛЕННАЯ ПОДПИСЬ)
+//  BINGX EXCHANGE CLIENT (ФИНАЛЬНАЯ ВЕРСИЯ)
+//  Основано на документации BingX
 // ============================================
 
 const crypto = require('crypto');
@@ -11,33 +12,53 @@ class BingXExchange {
     this.baseUrl = baseUrl;
   }
 
+  // ============================================
+  //  ПОДПИСЬ ЗАПРОСА (HEX, СОРТИРОВКА ПО АЛФАВИТУ)
+  // ============================================
   _sign(params) {
+    // 1. Сортируем ключи по алфавиту
     const sortedKeys = Object.keys(params).sort();
+    
+    // 2. Формируем строку параметров
     let queryString = '';
     for (const key of sortedKeys) {
-      if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+      const value = params[key];
+      if (value !== undefined && value !== null && value !== '') {
         if (queryString) queryString += '&';
-        queryString += `${key}=${params[key]}`;
+        queryString += `${key}=${value}`;
       }
     }
-    const signature = crypto.createHmac('sha256', this.secretKey).update(queryString).digest('hex');
+    
+    // 3. Подпись в HEX (не Base64!)
+    const signature = crypto
+      .createHmac('sha256', this.secretKey)
+      .update(queryString)
+      .digest('hex');
+    
     return { queryString, signature };
   }
 
+  // ============================================
+  //  POST ЗАПРОСЫ (ПАРАМЕТРЫ В ТЕЛЕ)
+  // ============================================
   async _signedPost(endpoint, params = {}) {
-    // ВСЕ параметры участвуют в подписи
     const timestamp = Date.now();
+    
+    // 1. Все параметры (включая timestamp) участвуют в подписи
     const allParams = { ...params, timestamp };
     const { queryString, signature } = this._sign(allParams);
+    
+    // 2. URL: параметры подписи в query string
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
-    // В теле отправляем ТОЛЬКО параметры ордера (без timestamp)
+    // 3. Тело: ТОЛЬКО параметры ордера (timestamp НЕ отправляем в теле)
     const bodyParams = { ...params };
     delete bodyParams.timestamp;
     
     console.log(`📤 POST URL: ${url}`);
     console.log(`📤 BODY:`, JSON.stringify(bodyParams, null, 2));
     
+    // 4. Отправка запроса
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -46,16 +67,16 @@ class BingXExchange {
       },
       body: JSON.stringify(bodyParams),
     });
-    const data = await response.json();
     
+    const data = await response.json();
     console.log(`📥 ОТВЕТ БИРЖИ:`, JSON.stringify(data, null, 2));
     
-    if (data.code !== 0) {
-      console.error(`❌ Ошибка:`, JSON.stringify(data, null, 2));
-    }
     return data;
   }
 
+  // ============================================
+  //  GET ЗАПРОСЫ
+  // ============================================
   async _signedGet(endpoint, params = {}) {
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
@@ -63,20 +84,23 @@ class BingXExchange {
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
     console.log(`📤 GET URL: ${url}`);
+    
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'X-BX-APIKEY': this.apiKey,
       },
     });
+    
     const data = await response.json();
     console.log(`📥 ОТВЕТ БИРЖИ:`, JSON.stringify(data, null, 2));
-    if (data.code !== 0) {
-      console.error(`❌ Ошибка:`, JSON.stringify(data, null, 2));
-    }
+    
     return data;
   }
 
+  // ============================================
+  //  ПОЛУЧЕНИЕ БАЛАНСА
+  // ============================================
   async getBalance() {
     try {
       const response = await this._signedGet('/openApi/swap/v3/user/balance');
@@ -98,6 +122,9 @@ class BingXExchange {
     }
   }
 
+  // ============================================
+  //  ПОЛУЧЕНИЕ ПОЗИЦИЙ
+  // ============================================
   async getPositions() {
     try {
       const response = await this._signedGet('/openApi/swap/v2/user/positions');
@@ -112,6 +139,9 @@ class BingXExchange {
     }
   }
 
+  // ============================================
+  //  ПОЛУЧЕНИЕ КОНТРАКТОВ
+  // ============================================
   async getContracts() {
     try {
       const response = await this._signedGet('/openApi/swap/v2/quote/contracts');
@@ -126,6 +156,9 @@ class BingXExchange {
     }
   }
 
+  // ============================================
+  //  ПОЛУЧЕНИЕ СВЕЧЕЙ
+  // ============================================
   async getCandles(symbol, interval = '5m', limit = 100) {
     try {
       const params = { symbol, interval, limit };
@@ -149,7 +182,7 @@ class BingXExchange {
   }
 
   // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА
+  //  РАЗМЕЩЕНИЕ ОРДЕРА (ПО ДОКУМЕНТАЦИИ)
   // ============================================
   async placeOrder(params) {
     try {
@@ -163,6 +196,7 @@ class BingXExchange {
 
       const symbolFormatted = symbol.replace('_', '-');
       
+      // Параметры ордера (только то, что требует документация)
       const orderParams = {
         symbol: symbolFormatted,
         side: side,
@@ -170,6 +204,7 @@ class BingXExchange {
         quantity: quantity.toString(),
       };
 
+      // Для LIMIT ордеров добавляем price
       if (price && type !== 'MARKET') {
         orderParams.price = price.toString();
       }
@@ -191,6 +226,9 @@ class BingXExchange {
     }
   }
 
+  // ============================================
+  //  ЗАКРЫТИЕ ПОЗИЦИИ
+  // ============================================
   async closePosition(symbol, positionSide) {
     try {
       const response = await this._signedPost('/openApi/swap/v2/trade/close', { 
@@ -208,6 +246,9 @@ class BingXExchange {
     }
   }
 
+  // ============================================
+  //  ПРОВЕРКА КЛЮЧЕЙ
+  // ============================================
   async testCredentials() {
     const balance = await this.getBalance();
     return balance !== null && balance !== undefined;
