@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+//  BINGX EXCHANGE CLIENT (ФИНАЛЬНАЯ ВЕРСИЯ)
 // ============================================
 
 const crypto = require('crypto');
@@ -11,26 +11,50 @@ class BingXExchange {
     this.baseUrl = baseUrl;
   }
 
-  _sign(params) {
-    const sortedKeys = Object.keys(params).sort();
-    let queryString = '';
-    for (const key of sortedKeys) {
-      if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
-        if (queryString) queryString += '&';
-        queryString += `${key}=${params[key]}`;
-      }
-    }
+  // ============================================
+  //  ПОДПИСЬ (ТОЛЬКО ИЗ QUERY STRING)
+  // ============================================
+  _sign(queryString) {
     return crypto.createHmac('sha256', this.secretKey).update(queryString).digest('hex');
   }
 
-  async _request(method, endpoint, params = {}, body = null) {
+  // ============================================
+  //  POST ЗАПРОСЫ (ПАРАМЕТРЫ В ТЕЛЕ)
+  // ============================================
+  async _signedPost(endpoint, params = {}) {
     const timestamp = Date.now();
     
-    // Все параметры (включая body) участвуют в подписи
-    const allParams = { ...params, ...body, timestamp };
-    const signature = this._sign(allParams);
+    // 1. Подпись ТОЛЬКО из timestamp
+    const queryString = `timestamp=${timestamp}`;
+    const signature = this._sign(queryString);
+    const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
-    // Формируем URL с параметрами подписи
+    // 2. Тело: параметры ордера (БЕЗ timestamp)
+    const body = { ...params };
+    
+    console.log(`📤 POST URL: ${url}`);
+    console.log(`📤 BODY:`, JSON.stringify(body, null, 2));
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-BX-APIKEY': this.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    
+    const data = await response.json();
+    console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
+    return data;
+  }
+
+  // ============================================
+  //  GET ЗАПРОСЫ (ПАРАМЕТРЫ В URL)
+  // ============================================
+  async _signedGet(endpoint, params = {}) {
+    const timestamp = Date.now();
+    const allParams = { ...params, timestamp };
     const sortedKeys = Object.keys(allParams).sort();
     let queryString = '';
     for (const key of sortedKeys) {
@@ -39,38 +63,30 @@ class BingXExchange {
         queryString += `${key}=${allParams[key]}`;
       }
     }
+    const signature = this._sign(queryString);
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
     
-    // Тело: параметры ордера (без timestamp)
-    const requestBody = body ? { ...body } : {};
+    console.log(`📤 GET URL: ${url}`);
     
-    console.log(`📤 ${method} URL: ${url}`);
-    
-    const options = {
-      method: method,
+    const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'X-BX-APIKEY': this.apiKey,
-        'Content-Type': 'application/json',
       },
-    };
+    });
     
-    // 🔥 ТОЛЬКО ДЛЯ POST: добавляем тело
-    if (method === 'POST') {
-      options.body = JSON.stringify(requestBody);
-      console.log(`📤 BODY:`, JSON.stringify(requestBody, null, 2));
-    } else {
-      console.log(`📤 (GET, без тела)`);
-    }
-    
-    const response = await fetch(url, options);
     const data = await response.json();
     console.log(`📥 ОТВЕТ:`, JSON.stringify(data, null, 2));
     return data;
   }
 
+  // ============================================
+  //  API МЕТОДЫ
+  // ============================================
+
   async getBalance() {
     try {
-      const response = await this._request('GET', '/openApi/swap/v3/user/balance');
+      const response = await this._signedGet('/openApi/swap/v3/user/balance');
       if (response?.code === 0 && Array.isArray(response?.data)) {
         const usdt = response.data.find(a => a.asset === 'USDT');
         return parseFloat(usdt?.balance || 0);
@@ -84,7 +100,7 @@ class BingXExchange {
 
   async getPositions() {
     try {
-      const response = await this._request('GET', '/openApi/swap/v2/user/positions');
+      const response = await this._signedGet('/openApi/swap/v2/user/positions');
       if (response?.code === 0 && response?.data) {
         return response.data;
       }
@@ -97,7 +113,7 @@ class BingXExchange {
 
   async getContracts() {
     try {
-      const response = await this._request('GET', '/openApi/swap/v2/quote/contracts');
+      const response = await this._signedGet('/openApi/swap/v2/quote/contracts');
       if (response?.code === 0 && response?.data) {
         return response.data;
       }
@@ -110,7 +126,7 @@ class BingXExchange {
 
   async getCandles(symbol, interval = '5m', limit = 100) {
     try {
-      const response = await this._request('GET', '/openApi/swap/v3/quote/klines', { symbol, interval, limit });
+      const response = await this._signedGet('/openApi/swap/v3/quote/klines', { symbol, interval, limit });
       if (response?.code === 0 && response?.data) {
         return response.data.map(c => ({
           open: parseFloat(c.open),
@@ -128,6 +144,9 @@ class BingXExchange {
     }
   }
 
+  // ============================================
+  //  РАЗМЕЩЕНИЕ ОРДЕРА (ГЛАВНОЕ)
+  // ============================================
   async placeOrder(params) {
     try {
       const { symbol, side, type = 'MARKET', quantity, price = null } = params;
@@ -145,7 +164,7 @@ class BingXExchange {
       
       console.log(`📤 РЫНОЧНЫЙ ОРДЕР:`, JSON.stringify(orderData, null, 2));
       
-      const response = await this._request('POST', '/openApi/swap/v2/trade/order', {}, orderData);
+      const response = await this._signedPost('/openApi/swap/v2/trade/order', orderData);
       
       if (response?.code === 0 && response?.data?.order) {
         console.log(`✅ Ордер создан: ${response.data.order.orderId || response.data.order.orderID}`);
@@ -162,7 +181,7 @@ class BingXExchange {
 
   async closePosition(symbol, positionSide) {
     try {
-      const response = await this._request('POST', '/openApi/swap/v2/trade/close', {}, {
+      const response = await this._signedPost('/openApi/swap/v2/trade/close', {
         symbol: symbol.replace('_', '-'),
         positionSide: positionSide,
         type: 'MARKET',
