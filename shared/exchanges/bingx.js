@@ -1,5 +1,5 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT - ПОЛНОСТЬЮ ИСПРАВЛЕН
+//  BINGX EXCHANGE CLIENT - ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ============================================
 
 const crypto = require('crypto');
@@ -26,7 +26,6 @@ class BingXExchange {
   async _request(method, endpoint, params = {}, body = null) {
     const timestamp = Date.now();
 
-    // ============ GET ЗАПРОСЫ ============
     if (method === 'GET') {
       const allParams = { ...params, timestamp };
       const signature = this._sign(allParams);
@@ -54,7 +53,6 @@ class BingXExchange {
       return data;
     }
 
-    // ============ POST ЗАПРОСЫ ============
     if (method === 'POST') {
       const requestBody = { ...body, timestamp };
       
@@ -206,11 +204,11 @@ class BingXExchange {
   }
 
   // =============================================
-  //  placeOrder - ИГНОРИРУЕТ positionSide
+  //  placeOrder - С positionSide для открытия
   // =============================================
   async placeOrder(params) {
     try {
-      const { symbol, side, type = 'MARKET', quantity, price = null } = params;
+      const { symbol, side, type = 'MARKET', quantity, price = null, positionSide = null } = params;
       
       const normalizedSymbol = symbol.replace(/_/g, '-');
       
@@ -220,6 +218,11 @@ class BingXExchange {
         type: type.toUpperCase(),
         quantity: quantity.toString(),
       };
+      
+      // ✅ positionSide НУЖЕН для открытия позиций
+      if (positionSide) {
+        orderData.positionSide = positionSide.toUpperCase();
+      }
       
       if (price && type !== 'MARKET') {
         orderData.price = price.toString();
