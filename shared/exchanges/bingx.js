@@ -136,9 +136,6 @@ class BingXExchange {
     }
   }
 
-  // ============================================
-  //  РАЗМЕЩЕНИЕ ОРДЕРА (БЕЗ TP/SL)
-  // ============================================
   async placeOrder(params) {
     try {
       const {
@@ -147,7 +144,6 @@ class BingXExchange {
         type = 'MARKET',
         quantity,
         price = null,
-        leverage = 10,
         positionSide = side === 'BUY' ? 'LONG' : 'SHORT',
       } = params;
 
@@ -158,9 +154,9 @@ class BingXExchange {
         positionSide: positionSide,
         type: type,
         quantity: quantity.toString(),
-        leverage: leverage.toString(),
       };
 
+      // ✅ Только для лимитных ордеров добавляем price
       if (price && type !== 'MARKET') {
         orderParams.price = price.toString();
       }
