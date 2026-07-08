@@ -187,7 +187,7 @@ function calculatePositionSize(entryPrice, symbol) {
 }
 
 // ============================================
-//  🔥 РАСЧЁТ TP/SL (ФИКСИРОВАННЫЙ, СТАБИЛЬНЫЙ)
+//  🔥 РАСЧЁТ TP/SL (ФИКСИРОВАННЫЙ, ИСПРАВЛЕННЫЙ)
 // ============================================
 function calculateTPSL(entryPrice, side, leverage) {
   const riskPercent = 0.02;   // 2% риск
@@ -197,11 +197,15 @@ function calculateTPSL(entryPrice, side, leverage) {
   
   let stopLoss, takeProfit;
   if (side === 'LONG') {
+    // Для LONG: SL ниже, TP выше
     stopLoss = entryPrice - slDistance;
     takeProfit = entryPrice + tpDistance;
-  } else {
+  } else if (side === 'SHORT') {
+    // Для SHORT: SL выше, TP ниже
     stopLoss = entryPrice + slDistance;
     takeProfit = entryPrice - tpDistance;
+  } else {
+    throw new Error(`Неизвестный side: ${side}`);
   }
   
   // Проверка на ликвидацию
@@ -289,7 +293,7 @@ async function executeTrade(signal) {
     const quantity = calculatePositionSize(signal.entry_price, symbol);
     const leverage = CONFIG.defaultLeverage;
 
-    // 🔥 РАСЧЁТ TP/SL (ФИКСИРОВАННЫЙ)
+    // 🔥 РАСЧЁТ TP/SL (ИСПРАВЛЕННЫЙ)
     const { stopLoss, takeProfit, liqPrice } = calculateTPSL(
       signal.entry_price, 
       signal.side, 
