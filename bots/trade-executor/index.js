@@ -263,7 +263,7 @@ function filterSignalsByRisk(signals, balance) {
 }
 
 // ============================================
-//  ИСПОЛНЕНИЕ СДЕЛКИ (С ЗАДЕРЖКОЙ ДЛЯ TP/SL)
+//  ИСПОЛНЕНИЕ СДЕЛКИ (С setTPSL)
 // ============================================
 async function executeTrade(signal) {
   try {
@@ -324,48 +324,25 @@ async function executeTrade(signal) {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // ============================================
-    //  ШАГ 3: ВЫСТАВЛЯЕМ TP И SL
+    //  ШАГ 3: ВЫСТАВЛЯЕМ TP И SL (ЧЕРЕЗ setTPSL)
     // ============================================
     log.info(`🎯 Установка TP: $${takeProfit.toFixed(4)} | SL: $${stopLoss.toFixed(4)}`);
 
-    // Ордер на тейк-профит (LIMIT)
-    const tpOrder = {
-      symbol: symbol,
-      side: side === 'BUY' ? 'SELL' : 'BUY',
-      positionSide: positionSide,
-      type: 'LIMIT',
-      quantity: quantity,
-      price: takeProfit,
-      leverage: leverage,
-    };
-
-    // Ордер на стоп-лосс (STOP_MARKET)
-    const slOrder = {
-      symbol: symbol,
-      side: side === 'BUY' ? 'SELL' : 'BUY',
-      positionSide: positionSide,
-      type: 'STOP_MARKET',
-      quantity: quantity,
-      stopPrice: stopLoss,
-      leverage: leverage,
-    };
-
-    // Выставляем TP
     try {
-      await exchangeClient.placeOrder(tpOrder);
-      log.info(`✅ TP установлен: $${takeProfit.toFixed(4)}`);
-    } catch (tpError) {
-      log.warn(`⚠️ Ошибка установки TP: ${tpError.message}`);
+      const tpslResult = await exchangeClient.setTPSL(
+        result?.orderId || 'N/A',
+        symbol,
+        side === 'BUY' ? 'BUY' : 'SELL',
+        quantity,
+        stopLoss,
+        takeProfit
+      );
+      log.info(`✅ TP/SL установлены: TP $${takeProfit.toFixed(4)} | SL $${stopLoss.toFixed(4)}`);
+    } catch (error) {
+      log.warn(`⚠️ Ошибка установки TP/SL: ${error.message}`);
     }
 
-    // Выставляем SL
-    try {
-      await exchangeClient.placeOrder(slOrder);
-      log.info(`✅ SL установлен: $${stopLoss.toFixed(4)}`);
-    } catch (slError) {
-      log.warn(`⚠️ Ошибка установки SL: ${slError.message}`);
-    }
-
+    // Обновляем статус сигнала
     await updateSignalStatus(signal.id, 'executed', { 
       executed_price: signal.entry_price,
       quantity: quantity,
@@ -374,6 +351,7 @@ async function executeTrade(signal) {
       stop_loss: stopLoss,
     });
 
+    // Инициализируем трейлинг-стоп
     trailingManager.update(symbol, signal.entry_price, signal.side, signal.entry_price, CONFIG.trailingStopPercent);
 
     return result;
@@ -463,7 +441,7 @@ async function start() {
   log.info(`📋 Интервал: ${CONFIG.checkInterval / 1000}с`);
   log.info(`💰 Размер сделки: ${CONFIG.positionSizePercent * 100}% от фиксированного депозита`);
   log.info(`📊 Приоритет сигналов: HIGH → MEDIUM`);
-  log.info(`🛡️ TP/SL: ФИКСИРОВАННЫЙ (2% риск, 1:2)`);
+  log.info(`🛡️ TP/SL: ЧЕРЕЗ setTPSL (2% риск, 1:2)`);
   log.info(`⚡ Плечо: ${CONFIG.defaultLeverage}x`);
   
   exchangeClient = getExchange("bingx",
