@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Trade Executor Bot (ФИНАЛЬНАЯ ВЕРСИЯ БЕЗ SUPABASE)
- * Получает сигналы через REST API, обновляет статус через API
+ * Trade Executor Bot (С ПРЯМЫМ ДОСТУПОМ К SUPABASE)
+ * Получает сигналы напрямую из Supabase
  */
 
 const { getExchange } = require('../../shared/exchanges');
 const { calculatePositionSize, calculatePositionLevels } = require('../../shared/position-calculator');
+const { createClient } = require('@supabase/supabase-js');
 
 // ===== ПРОСТОЙ ЛОГГЕР =====
 const log = {
@@ -18,7 +19,6 @@ const log = {
 
 // ===== КОНФИГУРАЦИЯ =====
 const CONFIG = {
-  userId: 11,
   maxPositions: 1,
   riskPercent: 0.3,
   leverage: 10,
@@ -26,69 +26,63 @@ const CONFIG = {
   maxSignalsPerRun: 5,
 };
 
+// ===== SUPABASE КЛИЕНТ =====
+const supabase = createClient(
+  process.env.SUPABASE_URL || 'https://sbpyuigmrqycqlrjlqqv.supabase.co',
+  process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNicHl1aWdtcnF5Y3FscmpscXF2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDU2Nzg5MCwiZXhwIjoyMDYwMTQzODkwfQ.ВАШ_SERVICE_ROLE_КЛЮЧ' // ЗАМЕНИТЕ НА РЕАЛЬНЫЙ!
+);
+
 let exchangeClient = null;
 let isProcessing = false;
 
-// ===== ПОЛУЧЕНИЕ СИГНАЛОВ =====
+// ===== ПОЛУЧЕНИЕ СИГНАЛОВ ИЗ SUPABASE =====
 async function getPendingSignals() {
   try {
-    log.info(`📡 Запрос сигналов...`);
+    log.info(`📡 Запрос сигналов из Supabase...`);
     
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    
-    const response = await fetch('https://smtbot.com/api/signals/user/trnabiev@gmail.com', {
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`API статус ${response.status}`);
+    const { data, error } = await supabase
+      .from('signals')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(CONFIG.maxSignalsPerRun);
+
+    if (error) {
+      log.error(`❌ Ошибка Supabase: ${error.message}`);
+      return [];
     }
-    
-    const data = await response.json();
-    
-    if (!Array.isArray(data)) {
-      throw new Error('Не массив');
-    }
-    
-    const pending = data.filter(s => s.status === 'pending');
-    log.info(`✅ Найдено ${pending.length} ожидающих сигналов`);
-    
-    pending.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    return pending.slice(0, CONFIG.maxSignalsPerRun);
+
+    log.info(`✅ Получено ${data?.length || 0} сигналов из Supabase`);
+    return data || [];
     
   } catch (error) {
-    log.error(`❌ Ошибка получения сигналов: ${error.message}`);
+    log.error(`❌ Исключение при запросе к Supabase: ${error.message}`);
     return [];
   }
 }
 
-// ===== ОБНОВЛЕНИЕ СТАТУСА СИГНАЛА =====
+// ===== ОБНОВЛЕНИЕ СТАТУСА В SUPABASE =====
 async function updateSignalStatus(signalId, status, data = {}) {
   try {
-    const response = await fetch(`https://smtbot.com/api/signals/${signalId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+    const { error } = await supabase
+      .from('signals')
+      .update({
         status: status,
         executed_at: new Date().toISOString(),
         ...data
       })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Статус ${response.status}`);
+      .eq('id', signalId);
+
+    if (error) {
+      log.error(`❌ Ошибка обновления: ${error.message}`);
+      return false;
     }
-    
+
     log.info(`✅ Сигнал ${signalId} обновлен: ${status}`);
     return true;
     
   } catch (error) {
-    log.error(`❌ Ошибка обновления сигнала: ${error.message}`);
+    log.error(`❌ Ошибка обновления статуса: ${error.message}`);
     return false;
   }
 }
@@ -213,7 +207,7 @@ async function executeTrade(signal) {
     
     log.info(`✅ Сделка открыта: ${order.orderId || 'OK'}`);
     
-    // Обновляем статус через REST API
+    // Обновляем статус в Supabase
     await updateSignalStatus(signal.id, 'executed', {
       order_id: order.orderId || null,
       stop_loss: levels.stopLoss,
@@ -292,7 +286,7 @@ async function mainLoop() {
 
 // ===== ЗАПУСК =====
 async function start() {
-  log.info('🚀 Trade Executor Bot запущен (ФИНАЛЬНАЯ ВЕРСИЯ)');
+  log.info('🚀 Trade Executor Bot запущен (ПРЯМОЙ ДОСТУП К SUPABASE)');
   log.info(`📋 Интервал: ${CONFIG.checkInterval / 1000}с`);
   
   await mainLoop();
