@@ -9,17 +9,11 @@ class BingX {
 
   async _signedRequest(endpoint, params = {}, method = 'GET', body = null) {
     const timestamp = Date.now();
-    // Для подписи: если есть body, используем его параметры
-    let signatureParams = { ...params, timestamp };
-    
-    // Для POST с body: подпись строится на основе body-параметров
-    if (body && method === 'POST') {
-      signatureParams = { ...body, timestamp };
-    }
+    const allParams = { ...params, timestamp };
 
-    const sortedKeys = Object.keys(signatureParams).sort();
+    const sortedKeys = Object.keys(allParams).sort();
     const queryString = sortedKeys
-      .map(key => `${key}=${signatureParams[key]}`)
+      .map(key => `${key}=${allParams[key]}`)
       .join('&');
 
     const signature = crypto
@@ -27,8 +21,7 @@ class BingX {
       .update(queryString)
       .digest('hex');
 
-    // URL: только timestamp + signature
-    const url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
+    const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
 
     const options = {
       method,
@@ -98,7 +91,7 @@ class BingX {
     }
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V3 - POST) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (V2 - POST) ---
   async placeOrder(params) {
     try {
       const {
@@ -112,7 +105,7 @@ class BingX {
         takeProfit = null,
       } = params;
 
-      // Все параметры в body
+      // V2: все параметры в body
       const body = {
         symbol: symbol.replace('_', '-'),
         side: side.toUpperCase(),
@@ -126,8 +119,8 @@ class BingX {
       if (takeProfit) body.takeProfit = takeProfit.toString();
 
       const response = await this._signedRequest(
-        '/openApi/swap/v3/trade/order',
-        {},  // ← пустые параметры в URL
+        '/openApi/swap/v2/trade/order',  // ← V2
+        {},  // пустые параметры в URL
         'POST',
         body
       );
@@ -145,7 +138,7 @@ class BingX {
     }
   }
 
-  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V3 - POST) ---
+  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V2 - POST) ---
   async closePosition(symbol, positionSide) {
     try {
       const body = {
@@ -154,8 +147,8 @@ class BingX {
       };
 
       const response = await this._signedRequest(
-        '/openApi/swap/v3/trade/closePosition',
-        {},  // ← пустые параметры в URL
+        '/openApi/swap/v2/trade/closePosition',  // ← V2
+        {},  // пустые параметры в URL
         'POST',
         body
       );
@@ -173,7 +166,7 @@ class BingX {
     }
   }
 
-  // --- СВЕЧИ (V3 - GET) ---
+  // --- СВЕЧИ (V2 - GET) ---
   async getCandles({ symbol, interval = '5m', limit = 100 }) {
     try {
       const params = {
@@ -182,31 +175,14 @@ class BingX {
         limit: limit.toString(),
       };
 
-      const timestamp = Date.now();
-      const allParams = { ...params, timestamp };
-      const sortedKeys = Object.keys(allParams).sort();
-      const queryString = sortedKeys
-        .map(key => `${key}=${allParams[key]}`)
-        .join('&');
+      const response = await this._signedRequest(
+        '/openApi/swap/v2/quote/klines',  // ← V2
+        params,
+        'GET'
+      );
 
-      const signature = crypto
-        .createHmac('sha256', this.secretKey)
-        .update(queryString)
-        .digest('hex');
-
-      const url = `${this.baseUrl}/openApi/swap/v3/quote/klines?${queryString}&signature=${signature}`;
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'X-BX-APIKEY': this.apiKey,
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.code === 0 && data.data) {
-        return data.data.map(candle => ({
+      if (response.code === 0 && response.data) {
+        return response.data.map(candle => ({
           time: candle[0],
           open: parseFloat(candle[1]),
           high: parseFloat(candle[2]),
@@ -216,7 +192,7 @@ class BingX {
         }));
       }
 
-      console.error(`❌ Ошибка getCandles (${data.code}): ${data.msg}`);
+      console.error(`❌ Ошибка getCandles (${response.code}): ${response.msg}`);
       return [];
     } catch (error) {
       console.error(`❌ Исключение getCandles: ${error.message}`);
