@@ -3,7 +3,7 @@
 //  Централизованное управление характеристиками монет
 // ============================================
 
-const { getExchange } = require('./exchanges');
+const exchanges = require('./exchanges');
 const cache = require('./cache');
 const { logger } = require('./logger');
 const log = logger('symbol-manager');
@@ -31,7 +31,7 @@ class SymbolManager {
         return this.contracts;
       }
 
-      const client = getExchange(exchange, apiKey, secretKey);
+      const client = exchanges.getExchange(exchange, apiKey, secretKey);
       if (!client) {
         log.error('Биржа не поддерживается', { exchange });
         return {};
@@ -92,7 +92,6 @@ class SymbolManager {
     if (contract && contract.quantityPrecision !== undefined) {
       return contract.quantityPrecision;
     }
-    // По умолчанию — 3 знака
     return 3;
   }
 
@@ -137,7 +136,6 @@ class SymbolManager {
     const factor = Math.pow(10, precision);
     let rounded = Math.round(quantity * factor) / factor;
 
-    // Проверяем минимальный лот
     const minQty = this.getMinQuantity(symbol);
     if (minQty > 0 && rounded < minQty) {
       log.warn(`⚠️ Количество ${rounded} меньше минимального ${minQty} для ${symbol}, устанавливаем минимум`);
