@@ -1,14 +1,13 @@
 const crypto = require('crypto');
+const { symbolManager } = require('../symbol-manager');
 
 class BingX {
   constructor(apiKey, secretKey) {
     this.apiKey = apiKey;
     this.secretKey = secretKey;
     this.baseUrl = 'https://open-api.bingx.com';
-    this.contractsCache = {};
   }
 
-  // Универсальный метод для подписанных запросов (V2)
   async _signedRequest(endpoint, params = {}, method = 'GET') {
     delete params.stopLoss;
     delete params.takeProfit;
@@ -48,75 +47,11 @@ class BingX {
     return data;
   }
 
-  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ (V2) ---
+  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ (через symbolManager) ---
   async getContracts() {
-    try {
-      const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts`, {
-        headers: {
-          'X-BX-APIKEY': this.apiKey,
-        },
-      });
-      const data = await response.json();
-      if (data.code === 0 && data.data) {
-        for (const contract of data.data) {
-          this.contractsCache[contract.symbol] = contract;
-        }
-        return data.data;
-      }
-      console.error('❌ Ошибка getContracts:', data);
-      return [];
-    } catch (error) {
-      console.error('❌ Исключение getContracts:', error.message);
-      return [];
-    }
-  }
-
-  // --- ПОЛУЧЕНИЕ ИНФОРМАЦИИ О КОНТРАКТЕ ---
-  async getContractInfo(symbol) {
-    try {
-      if (this.contractsCache[symbol]) {
-        return this.contractsCache[symbol];
-      }
-
-      const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts?symbol=${symbol}`, {
-        headers: {
-          'X-BX-APIKEY': this.apiKey,
-        },
-      });
-      const data = await response.json();
-      if (data.code === 0 && data.data && data.data.length > 0) {
-        this.contractsCache[symbol] = data.data[0];
-        return data.data[0];
-      }
-      console.error('❌ Ошибка getContractInfo:', data);
-      return null;
-    } catch (error) {
-      console.error('❌ Исключение getContractInfo:', error.message);
-      return null;
-    }
-  }
-
-  // --- ОКРУГЛЕНИЕ КОЛИЧЕСТВА (С УЧЁТОМ ТОЧНОСТИ И МИНИМАЛЬНОГО ЛОТА) ---
-  async roundQuantity(symbol, quantity) {
-    try {
-      const contract = await this.getContractInfo(symbol);
-      if (contract && contract.quantityPrecision !== undefined) {
-        const precision = contract.quantityPrecision;
-        const factor = Math.pow(10, precision);
-        let rounded = Math.round(quantity * factor) / factor;
-        
-        if (contract.tradeMinQuantity && rounded < contract.tradeMinQuantity) {
-          console.warn(`⚠️ Количество ${rounded} меньше минимального ${contract.tradeMinQuantity} для ${symbol}, устанавливаем минимум`);
-          rounded = contract.tradeMinQuantity;
-        }
-        
-        return rounded;
-      }
-      return Math.round(quantity);
-    } catch (error) {
-      console.error('❌ Ошибка roundQuantity:', error.message);
-      return Math.round(quantity);
-    }
+    // Загружаем контракты через symbolManager
+    await symbolManager.loadContracts('bingx', this.apiKey, this.secretKey);
+    return Object.values(symbolManager.contracts);
   }
 
   // --- БАЛАНС (V2 - GET) ---
@@ -174,14 +109,20 @@ class BingX {
         quantity,
       } = params;
 
-      const roundedQuantity = await this.roundQuantity(symbol, quantity);
+      // Используем symbolManager для округления
+      const roundedQuantity = symbolManager.roundQuantity(symbol, quantity);
 
       if (roundedQuantity <= 0) {
         console.warn('⚠️ Quantity = 0, пропускаем ордер');
         return null;
       }
 
-      // Для V2 MARKET-ордеров используем LONG/SHORT для side и positionSide
+      // Проверяем, что символ активен
+      if (!symbolManager.isSymbolOnline(symbol)) {
+        console.warn(`⚠️ Символ ${symbol} неактивен, пропускаем`);
+        return null;
+      }
+
       const orderParams = {
         symbol: symbol.replace(/_/g, '-'),
         side: side === 'LONG' ? 'LONG' : 'SHORT',
