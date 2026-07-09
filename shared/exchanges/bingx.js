@@ -9,10 +9,9 @@ class BingX {
 
   // Универсальный метод для подписанных запросов (V2)
   async _signedRequest(endpoint, params = {}, method = 'GET') {
-    // Принудительно удаляем всё лишнее
     delete params.stopLoss;
     delete params.takeProfit;
-    delete params.leverage; // если вдруг попадёт
+    delete params.leverage;
 
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
@@ -103,16 +102,17 @@ class BingX {
         quantity,
       } = params;
 
-      // Формируем параметры для V2
+      // Правильный формат: BONK_USDT → BONK-USDT
+      const formattedSymbol = symbol.replace(/_/g, '-');
+
       const orderParams = {
-        symbol: symbol.replace(/_/g, '').replace(/-/g, ''),
+        symbol: formattedSymbol,
         side: side === 'LONG' ? 'BUY' : 'SELL',
         positionSide: (side === 'LONG' ? 'LONG' : 'SHORT').toUpperCase(),
         type: type.toUpperCase(),
         quantity: quantity.toString(),
       };
 
-      // Если quantity = 0 или меньше минимального лота — не отправляем
       if (parseFloat(orderParams.quantity) <= 0) {
         console.warn('⚠️ Quantity = 0, пропускаем ордер');
         return null;
@@ -143,7 +143,7 @@ class BingX {
   async closePosition(symbol, positionSide) {
     try {
       const params = {
-        symbol: symbol.replace(/_/g, '').replace(/-/g, ''),
+        symbol: symbol.replace(/_/g, '-'),
         positionSide: positionSide.toUpperCase(),
       };
 
@@ -170,7 +170,7 @@ class BingX {
   async getCandles({ symbol, interval = '5m', limit = 100 }) {
     try {
       const params = {
-        symbol: symbol.replace(/_/g, '').replace(/-/g, ''),
+        symbol: symbol.replace(/_/g, '-'),
         interval,
         limit: limit.toString(),
       };
