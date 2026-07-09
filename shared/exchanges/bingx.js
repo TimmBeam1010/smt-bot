@@ -7,7 +7,9 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
+  // Универсальный метод для подписанных запросов (V2)
   async _signedRequest(endpoint, params = {}, method = 'GET') {
+    // Принудительно удаляем stopLoss и takeProfit
     delete params.stopLoss;
     delete params.takeProfit;
 
@@ -57,7 +59,7 @@ class BingX {
       if (response.code === 0 && response.data && response.data.balance) {
         const balanceObj = response.data.balance;
         const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
-        console.log(`💰 Баланс USDT: ${balance}`);
+        console.log(`💰 Баланс USDT: ${balance} (available: ${balanceObj.availableMargin}, total: ${balanceObj.balance})`);
         return balance;
       }
 
@@ -90,7 +92,7 @@ class BingX {
     }
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V2 - MARKET, БЕЗ LEVERAGE) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (V2 - MARKET) ---
   async placeOrder(params) {
     try {
       const {
@@ -100,8 +102,10 @@ class BingX {
         quantity,
       } = params;
 
+      // Формируем параметры для V2 MARKET-ордера
+      // symbol: убираем все разделители (SOL-USDT → SOLUSDT)
       const orderParams = {
-        symbol: symbol.replace('_', '-'),
+        symbol: symbol.replace(/_/g, '').replace(/-/g, ''),
         side: side === 'LONG' ? 'BUY' : 'SELL',
         positionSide: (side === 'LONG' ? 'LONG' : 'SHORT').toUpperCase(),
         type: type.toUpperCase(),
@@ -133,7 +137,7 @@ class BingX {
   async closePosition(symbol, positionSide) {
     try {
       const params = {
-        symbol: symbol.replace('_', '-'),
+        symbol: symbol.replace(/_/g, '').replace(/-/g, ''),
         positionSide: positionSide.toUpperCase(),
       };
 
@@ -160,7 +164,7 @@ class BingX {
   async getCandles({ symbol, interval = '5m', limit = 100 }) {
     try {
       const params = {
-        symbol: symbol.replace('_', '-'),
+        symbol: symbol.replace(/_/g, '').replace(/-/g, ''),
         interval,
         limit: limit.toString(),
       };
