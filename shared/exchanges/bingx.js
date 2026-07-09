@@ -7,9 +7,7 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
-  // Универсальный метод для подписанных запросов (V2)
   async _signedRequest(endpoint, params = {}, method = 'GET') {
-    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: удаляем stopLoss и takeProfit для MARKET-ордеров V2
     delete params.stopLoss;
     delete params.takeProfit;
 
@@ -59,7 +57,7 @@ class BingX {
       if (response.code === 0 && response.data && response.data.balance) {
         const balanceObj = response.data.balance;
         const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
-        console.log(`💰 Баланс USDT: ${balance} (available: ${balanceObj.availableMargin}, total: ${balanceObj.balance})`);
+        console.log(`💰 Баланс USDT: ${balance}`);
         return balance;
       }
 
@@ -92,7 +90,7 @@ class BingX {
     }
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V2 - POST) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (V2 - MARKET, БЕЗ LEVERAGE) ---
   async placeOrder(params) {
     try {
       const {
@@ -100,18 +98,14 @@ class BingX {
         side,
         type = 'MARKET',
         quantity,
-        leverage = 10,
-        positionSide = side === 'BUY' ? 'LONG' : 'SHORT',
       } = params;
 
-      // V2 параметры: side = BUY/SELL, positionSide = LONG/SHORT
       const orderParams = {
         symbol: symbol.replace('_', '-'),
         side: side === 'LONG' ? 'BUY' : 'SELL',
-        positionSide: positionSide.toUpperCase(),
+        positionSide: (side === 'LONG' ? 'LONG' : 'SHORT').toUpperCase(),
         type: type.toUpperCase(),
         quantity: quantity.toString(),
-        leverage: leverage.toString(),
       };
 
       console.log('📤 Отправка ордера:', JSON.stringify(orderParams, null, 2));
