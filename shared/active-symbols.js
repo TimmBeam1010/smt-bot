@@ -7,17 +7,9 @@ const cache = require('./cache');
 const { logger } = require('./logger');
 const log = logger('active-symbols');
 
-// Кеш активных символов на 5 минут
 const CACHE_TTL = 5 * 60 * 1000;
 const CACHE_KEY = 'active_symbols';
 
-/**
- * Получить список активных символов с биржи
- * @param {string} exchange - Название биржи
- * @param {string} apiKey - API ключ
- * @param {string} secretKey - Секретный ключ
- * @returns {Promise<Array>} Список активных символов
- */
 async function getActiveSymbols(exchange, apiKey, secretKey) {
     try {
         const cacheKey = `${CACHE_KEY}:${exchange}`;
@@ -33,22 +25,17 @@ async function getActiveSymbols(exchange, apiKey, secretKey) {
             return [];
         }
 
-        // Получаем список контрактов
         const contracts = await exchangeClient.getContracts();
         if (!contracts || !Array.isArray(contracts)) {
             log.error('Не удалось получить список контрактов', { exchange });
             return [];
         }
 
-        // Фильтруем активные USDT-M фьючерсы и добавляем дефис, если его нет
+        // Фильтруем активные USDT-контракты (BingX V2)
         const activeSymbols = contracts
-            .filter(c => c.status === 'ONLINE' && c.quoteAsset === 'USDT')
-            .map(c => {
-                // Добавляем дефис, если его нет (BONKUSDT → BONK-USDT)
-                return c.symbol.includes('-') ? c.symbol : c.symbol.replace('USDT', '-USDT');
-            });
+            .filter(c => c.status === 1 && c.currency === 'USDT')
+            .map(c => c.symbol);
 
-        // Сохраняем в кеш
         cache.set(cacheKey, activeSymbols, CACHE_TTL);
         log.info(`Получено ${activeSymbols.length} активных символов`);
 
@@ -59,12 +46,6 @@ async function getActiveSymbols(exchange, apiKey, secretKey) {
     }
 }
 
-/**
- * Очистить неактивные символы из списка бота
- * @param {Object} bot - Бот
- * @param {Array} activeSymbols - Список активных символов
- * @returns {Object} Бот с обновлённым списком символов
- */
 function filterActiveSymbols(bot, activeSymbols) {
     if (!bot.symbols || !Array.isArray(bot.symbols)) {
         return bot;
@@ -86,15 +67,6 @@ function filterActiveSymbols(bot, activeSymbols) {
     };
 }
 
-/**
- * Обновить список символов у всех ботов пользователя
- * @param {string} email - Email пользователя
- * @param {string} exchange - Биржа
- * @param {string} apiKey - API ключ
- * @param {string} secretKey - Секретный ключ
- * @param {Object} supabase - Клиент Supabase
- * @returns {Promise<Object>} Результат обновления
- */
 async function updateBotSymbols(email, exchange, apiKey, secretKey, supabase) {
     try {
         const activeSymbols = await getActiveSymbols(exchange, apiKey, secretKey);
