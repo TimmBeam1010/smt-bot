@@ -12,9 +12,6 @@ class BingX {
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
 
-    console.log('🔍 _signedRequest ПОЛУЧИЛ params:', JSON.stringify(params, null, 2));
-    console.log('🔍 _signedRequest allParams (с timestamp):', JSON.stringify(allParams, null, 2));
-
     const sortedKeys = Object.keys(allParams).sort();
     const queryString = sortedKeys
       .map(key => `${key}=${allParams[key]}`)
@@ -26,8 +23,6 @@ class BingX {
       .digest('hex');
 
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
-
-    console.log('📡 ИТОГОВЫЙ URL:', url);
 
     const options = {
       method,
@@ -103,13 +98,10 @@ class BingX {
         quantity,
         leverage = 10,
         positionSide = side === 'BUY' ? 'LONG' : 'SHORT',
-        stopLoss = null,
-        takeProfit = null,
       } = params;
 
-      console.log('📥 placeOrder ПОЛУЧИЛ params:', JSON.stringify(params, null, 2));
-
-      // Формируем параметры ордера для V2
+      // V2 параметры: side = BUY/SELL, positionSide = LONG/SHORT
+      // БЕЗ stopLoss и takeProfit (они не поддерживаются в MARKET-ордерах V2)
       const orderParams = {
         symbol: symbol.replace('_', '-'),
         side: side === 'LONG' ? 'BUY' : 'SELL',
@@ -119,10 +111,7 @@ class BingX {
         leverage: leverage.toString(),
       };
 
-      if (stopLoss) orderParams.stopLoss = stopLoss.toString();
-      if (takeProfit) orderParams.takeProfit = takeProfit.toString();
-
-      console.log('📤 ОТПРАВКА В _signedRequest (orderParams):', JSON.stringify(orderParams, null, 2));
+      console.log('📤 Отправка ордера:', JSON.stringify(orderParams, null, 2));
 
       const response = await this._signedRequest(
         '/openApi/swap/v2/trade/order',
