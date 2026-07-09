@@ -105,7 +105,6 @@ class BingX {
         const factor = Math.pow(10, precision);
         let rounded = Math.round(quantity * factor) / factor;
         
-        // Проверяем минимальное количество
         if (contract.tradeMinQuantity && rounded < contract.tradeMinQuantity) {
           console.warn(`⚠️ Количество ${rounded} меньше минимального ${contract.tradeMinQuantity} для ${symbol}, устанавливаем минимум`);
           rounded = contract.tradeMinQuantity;
@@ -113,7 +112,6 @@ class BingX {
         
         return rounded;
       }
-      // Если не удалось получить точность — округляем до целого
       return Math.round(quantity);
     } catch (error) {
       console.error('❌ Ошибка roundQuantity:', error.message);
@@ -176,7 +174,6 @@ class BingX {
         quantity,
       } = params;
 
-      // Округляем количество с учётом точности символа
       const roundedQuantity = await this.roundQuantity(symbol, quantity);
 
       if (roundedQuantity <= 0) {
@@ -184,9 +181,11 @@ class BingX {
         return null;
       }
 
+      // Для V2 MARKET-ордеров обязательно указываем positionSide
       const orderParams = {
         symbol: symbol.replace(/_/g, '-'),
         side: side === 'LONG' ? 'BUY' : 'SELL',
+        positionSide: side === 'LONG' ? 'LONG' : 'SHORT',
         type: type.toUpperCase(),
         quantity: roundedQuantity.toString(),
       };
