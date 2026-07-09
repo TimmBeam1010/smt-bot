@@ -31,9 +31,16 @@ async function getActiveSymbols(exchange, apiKey, secretKey) {
             return [];
         }
 
-        // Фильтруем активные USDT-контракты (BingX V2)
+        // Фильтруем только популярные крипто-символы (без NCSK, NCCO, NCFX)
         const activeSymbols = contracts
-            .filter(c => c.status === 1 && c.currency === 'USDT')
+            .filter(c => 
+                c.status === 1 && 
+                c.currency === 'USDT' && 
+                c.symbol.includes('-USDT') &&
+                !c.symbol.startsWith('NCSK') &&
+                !c.symbol.startsWith('NCCO') &&
+                !c.symbol.startsWith('NCFX')
+            )
             .map(c => c.symbol);
 
         cache.set(cacheKey, activeSymbols, CACHE_TTL);
