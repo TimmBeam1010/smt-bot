@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const { symbolManager } = require('../symbol-manager');
 
 class BingX {
   constructor(apiKey, secretKey) {
@@ -47,11 +46,24 @@ class BingX {
     return data;
   }
 
-  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ (через symbolManager) ---
+  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ (ПРЯМОЙ ЗАПРОС) ---
   async getContracts() {
-    // Загружаем контракты через symbolManager
-    await symbolManager.loadContracts('bingx', this.apiKey, this.secretKey);
-    return Object.values(symbolManager.contracts);
+    try {
+      const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts`, {
+        headers: {
+          'X-BX-APIKEY': this.apiKey,
+        },
+      });
+      const data = await response.json();
+      if (data.code === 0 && data.data) {
+        return data.data;
+      }
+      console.error('❌ Ошибка getContracts:', data);
+      return [];
+    } catch (error) {
+      console.error('❌ Исключение getContracts:', error.message);
+      return [];
+    }
   }
 
   // --- БАЛАНС (V2 - GET) ---
@@ -109,17 +121,12 @@ class BingX {
         quantity,
       } = params;
 
-      // Используем symbolManager для округления
+      // Используем roundQuantity из symbolManager
+      const { symbolManager } = require('../symbol-manager');
       const roundedQuantity = symbolManager.roundQuantity(symbol, quantity);
 
       if (roundedQuantity <= 0) {
         console.warn('⚠️ Quantity = 0, пропускаем ордер');
-        return null;
-      }
-
-      // Проверяем, что символ активен
-      if (!symbolManager.isSymbolOnline(symbol)) {
-        console.warn(`⚠️ Символ ${symbol} неактивен, пропускаем`);
         return null;
       }
 
