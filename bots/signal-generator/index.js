@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { getExchange } = require("../../shared/exchanges");
-const { getActiveSymbols } = require("../../shared/active-symbols");
+const { symbolManager } = require("../../shared/symbol-manager");
 const trading = require("../../shared/trading");
 const volumeAnalyzer = require("../../shared/volume-analyzer");
 const sentimentAnalyzer = require("../../shared/sentiment-analyzer");
@@ -21,7 +21,7 @@ const log = {
 };
 
 // ============================================
-//  КОНФИГУРАЦИЯ (ДИНАМИЧЕСКИЙ СПИСОК СИМВОЛОВ)
+//  КОНФИГУРАЦИЯ
 // ============================================
 const CONFIG = {
   symbols: [],
@@ -34,14 +34,15 @@ const CONFIG = {
 };
 
 // ============================================
-//  ДИНАМИЧЕСКАЯ ЗАГРУЗКА СИМВОЛОВ
+//  ДИНАМИЧЕСКАЯ ЗАГРУЗКА СИМВОЛОВ ЧЕРЕЗ symbolManager
 // ============================================
 async function loadSymbols() {
     try {
-        const symbols = await getActiveSymbols('bingx', 
+        await symbolManager.loadContracts('bingx', 
             process.env.BINGX_API_KEY, 
             process.env.BINGX_SECRET_KEY
         );
+        const symbols = symbolManager.getActiveSymbols();
         if (symbols && symbols.length > 0) {
             CONFIG.symbols = symbols;
             log.info(`✅ Загружено ${CONFIG.symbols.length} активных символов с BingX`);
@@ -101,7 +102,7 @@ function calculateTPSL(entryPrice, side, atr) {
 }
 
 // ============================================
-//  АНАЛИЗ С МОДУЛЯМИ (ИСПРАВЛЕННЫЙ)
+//  АНАЛИЗ С МОДУЛЯМИ
 // ============================================
 async function analyzeWithModules(symbol, candles, prices, highs, lows, volumes) {
   const lastPrice = prices[prices.length - 1];
@@ -113,13 +114,11 @@ async function analyzeWithModules(symbol, candles, prices, highs, lows, volumes)
     news: null
   };
 
-  // 1. Volume Analyzer
   try {
     const volData = volumeAnalyzer.getVolumeWeight(symbol, lastPrice, candles);
     modulesResult.volume = volData;
   } catch(e) { log.debug(`Volume ошибка: ${e.message}`); }
 
-  // 2. Sentiment Analyzer
   try {
     if (!sentimentData) {
       const sent = new sentimentAnalyzer.SentimentAnalyzer();
@@ -128,13 +127,11 @@ async function analyzeWithModules(symbol, candles, prices, highs, lows, volumes)
     modulesResult.sentiment = sentimentData;
   } catch(e) { log.debug(`Sentiment ошибка: ${e.message}`); }
 
-  // 3. Market Maker Detector (ИСПРАВЛЕНО — используем analyzeMarketMaker вместо класса)
   try {
     const detection = marketMaker.analyzeMarketMaker(candles);
     modulesResult.marketMaker = detection;
   } catch(e) { log.debug(`Market Maker ошибка: ${e.message}`); }
 
-  // 4. AI Predictor
   try {
     const marketData = {
       volume: volumes[volumes.length - 1] || 0,
@@ -147,7 +144,6 @@ async function analyzeWithModules(symbol, candles, prices, highs, lows, volumes)
     modulesResult.ai = prediction;
   } catch(e) { log.debug(`AI ошибка: ${e.message}`); }
 
-  // 5. News Monitor (отключён из-за 403 ошибки)
   try {
     if (news.news.length === 0) {
       await news.fetchNews();
