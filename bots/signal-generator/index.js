@@ -36,12 +36,9 @@ const CONFIG = {
 // ============================================
 //  ДИНАМИЧЕСКАЯ ЗАГРУЗКА СИМВОЛОВ ЧЕРЕЗ symbolManager
 // ============================================
-async function loadSymbols() {
+async function loadSymbols(client) {
     try {
-        await symbolManager.loadContracts('bingx', 
-            process.env.BINGX_API_KEY, 
-            process.env.BINGX_SECRET_KEY
-        );
+        await symbolManager.loadContracts(client);
         const symbols = symbolManager.getActiveSymbols();
         if (symbols && symbols.length > 0) {
             CONFIG.symbols = symbols;
@@ -327,7 +324,14 @@ async function start() {
   log.info(`🔄 Повторы: ${CONFIG.maxRetries} раз`);
   log.info("🧠 Модули: Volume, Sentiment, Market Maker, AI");
   
-  await loadSymbols();
+  // Инициализируем клиент и загружаем символы
+  const client = getExchange("bingx",
+    process.env.BINGX_API_KEY || "BOe6nx3Hlo8puQvg2wPIjNCWW4ISUY7SdYNlvi2jDApQr50hDvbv6At4vBoSDVN9o9LcEgEI4dcOkgY52A",
+    process.env.BINGX_SECRET_KEY || "jxHUWSOdzIT0K82tq5EUCjU6U36TRUocXAzjHEl9Jro2Z550amZqsTbNHJqj3gs8m7cXL3ANMRYDhivqZvWMA"
+  );
+  exchangeClient = client;
+  
+  await loadSymbols(client);
   await mainLoop();
   setInterval(mainLoop, CONFIG.checkInterval);
 }
