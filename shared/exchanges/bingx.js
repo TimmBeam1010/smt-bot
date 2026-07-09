@@ -11,7 +11,6 @@ class BingX {
     const timestamp = Date.now();
     const paramsWithTime = { ...params, timestamp };
     
-    // Сортировка ключей для подписи
     const sortedKeys = Object.keys(paramsWithTime).sort();
     const queryString = sortedKeys
       .map(key => `${key}=${paramsWithTime[key]}`)
