@@ -122,7 +122,6 @@ class BingX {
         quantity,
       } = params;
 
-      // Для MARKET-ордеров V2: только symbol, side, type, quantity
       const orderParams = {
         symbol: symbol.replace(/_/g, '-'),
         side: side === 'LONG' ? 'BUY' : 'SELL',
@@ -199,13 +198,14 @@ class BingX {
       );
 
       if (response.code === 0 && response.data) {
+        // BingX V2 возвращает массив объектов
         return response.data.map(candle => ({
-          time: candle[0],
-          open: parseFloat(candle[1]),
-          high: parseFloat(candle[2]),
-          low: parseFloat(candle[3]),
-          close: parseFloat(candle[4]),
-          volume: parseFloat(candle[5]),
+          time: candle.time,
+          open: parseFloat(candle.open),
+          high: parseFloat(candle.high),
+          low: parseFloat(candle.low),
+          close: parseFloat(candle.close),
+          volume: parseFloat(candle.volume),
         }));
       }
 
