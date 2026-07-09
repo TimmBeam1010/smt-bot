@@ -40,11 +40,13 @@ async function getActiveSymbols(exchange, apiKey, secretKey) {
             return [];
         }
 
-        // Фильтруем только активные USDT-M фьючерсы
-        // Убрано условие .endsWith('-USDT') для поддержки символов без дефиса (например, 1000PEPEUSDT)
+        // Фильтруем активные USDT-M фьючерсы и добавляем дефис, если его нет
         const activeSymbols = contracts
             .filter(c => c.status === 'ONLINE' && c.quoteAsset === 'USDT')
-            .map(c => c.symbol);
+            .map(c => {
+                // Добавляем дефис, если его нет (BONKUSDT → BONK-USDT)
+                return c.symbol.includes('-') ? c.symbol : c.symbol.replace('USDT', '-USDT');
+            });
 
         // Сохраняем в кеш
         cache.set(cacheKey, activeSymbols, CACHE_TTL);
@@ -95,14 +97,12 @@ function filterActiveSymbols(bot, activeSymbols) {
  */
 async function updateBotSymbols(email, exchange, apiKey, secretKey, supabase) {
     try {
-        // 1. Получаем активные символы
         const activeSymbols = await getActiveSymbols(exchange, apiKey, secretKey);
         if (activeSymbols.length === 0) {
             log.warn('Не удалось получить активные символы, пропускаем обновление');
             return { success: false, reason: 'Нет активных символов' };
         }
 
-        // 2. Получаем пользователя
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('bots')
@@ -117,7 +117,6 @@ async function updateBotSymbols(email, exchange, apiKey, secretKey, supabase) {
         const bots = user.bots || [];
         let updated = 0;
 
-        // 3. Обновляем каждого бота
         const updatedBots = bots.map(bot => {
             const filtered = filterActiveSymbols(bot, activeSymbols);
             if (filtered.symbols.length !== bot.symbols?.length) {
@@ -126,7 +125,6 @@ async function updateBotSymbols(email, exchange, apiKey, secretKey, supabase) {
             return filtered;
         });
 
-        // 4. Сохраняем изменения
         if (updated > 0) {
             const { error: updateError } = await supabase
                 .from('users')
