@@ -3,7 +3,7 @@
 //  Точка входа для всех бирж
 // ============================================
 
-const BingXExchange = require('./bingx');
+const BingX = require('./bingx');
 
 /**
  * Фабрика для создания клиентов бирж
@@ -15,7 +15,7 @@ const BingXExchange = require('./bingx');
 function getExchange(exchange, apiKey, secretKey) {
   switch (exchange.toLowerCase()) {
     case 'bingx':
-      return new BingXExchange(apiKey, secretKey);
+      return new BingX(apiKey, secretKey);
     default:
       throw new Error(`Unsupported exchange: ${exchange}`);
   }
