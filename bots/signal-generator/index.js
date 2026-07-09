@@ -34,12 +34,19 @@ const CONFIG = {
 };
 
 // ============================================
-//  ДИНАМИЧЕСКАЯ ЗАГРУЗКА СИМВОЛОВ ЧЕРЕЗ symbolManager
+//  ДИНАМИЧЕСКАЯ ЗАГРУЗКА СИМВОЛОВ
 // ============================================
 async function loadSymbols(client) {
     try {
+        log.info('📡 Загрузка контрактов через symbolManager...');
         await symbolManager.loadContracts(client);
+        
+        const contractsCount = Object.keys(symbolManager.contracts).length;
+        log.info(`🔍 Загружено контрактов: ${contractsCount}`);
+        
         const symbols = symbolManager.getActiveSymbols();
+        log.info(`🔍 Активных символов: ${symbols.length}`);
+        
         if (symbols && symbols.length > 0) {
             CONFIG.symbols = symbols;
             log.info(`✅ Загружено ${CONFIG.symbols.length} активных символов с BingX`);
