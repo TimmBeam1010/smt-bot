@@ -7,7 +7,7 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
-  // Универсальный метод для подписанных POST-запросов (BingX V3)
+  // Универсальный метод для подписанных запросов (поддерживает GET и POST)
   async _signedRequest(endpoint, params = {}, method = 'POST') {
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
@@ -24,14 +24,16 @@ class BingX {
 
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
 
-    const response = await fetch(url, {
+    const options = {
       method,
       headers: {
         'X-BX-APIKEY': this.apiKey,
         'Content-Type': 'application/json',
       },
-    });
+    };
 
+    // Для POST-запросов тело пустое (BingX требует все параметры в URL)
+    const response = await fetch(url, options);
     const data = await response.json();
 
     if (data.code !== undefined && data.code !== 0) {
@@ -42,7 +44,7 @@ class BingX {
     return data;
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V3) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (POST) ---
   async placeOrder(params) {
     try {
       const {
@@ -68,7 +70,11 @@ class BingX {
       if (stopLoss) orderParams.stopLoss = stopLoss.toString();
       if (takeProfit) orderParams.takeProfit = takeProfit.toString();
 
-      const response = await this._signedRequest('/openApi/swap/v3/trade/order', orderParams, 'POST');
+      const response = await this._signedRequest(
+        '/openApi/swap/v3/trade/order',
+        orderParams,
+        'POST'
+      );
 
       if (response.code === 0) {
         console.log(`✅ Ордер открыт: ${response.data?.orderId || 'OK'}`);
@@ -83,7 +89,7 @@ class BingX {
     }
   }
 
-  // --- ЗАКРЫТИЕ ПОЗИЦИИ ---
+  // --- ЗАКРЫТИЕ ПОЗИЦИИ (POST) ---
   async closePosition(symbol, positionSide) {
     try {
       const response = await this._signedRequest(
@@ -108,16 +114,18 @@ class BingX {
     }
   }
 
-  // --- БАЛАНС (ИСПРАВЛЕННЫЙ) ---
+  // --- БАЛАНС (GET — ИСПРАВЛЕНО) ---
   async getBalance() {
     try {
-      const response = await this._signedRequest('/openApi/swap/v3/user/balance', {}, 'POST');
+      const response = await this._signedRequest(
+        '/openApi/swap/v3/user/balance',
+        {},
+        'GET'   // ← БЫЛО POST, СТАЛО GET
+      );
 
       if (response.code === 0 && Array.isArray(response.data)) {
-        // Ищем USDT в массиве
         const usdtAsset = response.data.find(item => item.asset === 'USDT');
         if (usdtAsset) {
-          // Используем availableMargin (свободные средства) или balance (общий баланс)
           const balance = parseFloat(usdtAsset.availableMargin || usdtAsset.balance || 0);
           console.log(`💰 Баланс USDT: ${balance} (available: ${usdtAsset.availableMargin}, total: ${usdtAsset.balance})`);
           return balance;
@@ -134,10 +142,14 @@ class BingX {
     }
   }
 
-  // --- ПОЗИЦИИ ---
+  // --- ПОЗИЦИИ (GET — ИСПРАВЛЕНО) ---
   async getPositions() {
     try {
-      const response = await this._signedRequest('/openApi/swap/v3/user/positions', {}, 'POST');
+      const response = await this._signedRequest(
+        '/openApi/swap/v3/user/positions',
+        {},
+        'GET'   // ← БЫЛО POST, СТАЛО GET
+      );
 
       if (response.code === 0 && response.data) {
         return response.data;
@@ -151,7 +163,7 @@ class BingX {
     }
   }
 
-  // --- СВЕЧИ (V3) ---
+  // --- СВЕЧИ (GET) ---
   async getCandles({ symbol, interval = '5m', limit = 100 }) {
     try {
       const params = {
@@ -175,6 +187,7 @@ class BingX {
       const url = `${this.baseUrl}/openApi/swap/v3/quote/klines?${queryString}&signature=${signature}`;
 
       const response = await fetch(url, {
+        method: 'GET',
         headers: {
           'X-BX-APIKEY': this.apiKey,
         },
