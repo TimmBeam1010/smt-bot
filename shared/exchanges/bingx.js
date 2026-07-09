@@ -31,6 +31,7 @@ class BingX {
       },
     };
 
+    // Только для POST-запросов, если есть body (но для BingX body обычно пустой)
     if (method === 'POST' && body) {
       options.body = JSON.stringify(body);
     }
@@ -55,7 +56,6 @@ class BingX {
         'GET'
       );
 
-      // V2 возвращает data.balance (объект)
       if (response.code === 0 && response.data && response.data.balance) {
         const balanceObj = response.data.balance;
         const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
@@ -92,7 +92,7 @@ class BingX {
     }
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V3 - POST с body) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (V3 - POST, параметры в URL) ---
   async placeOrder(params) {
     try {
       const {
@@ -106,7 +106,8 @@ class BingX {
         takeProfit = null,
       } = params;
 
-      const body = {
+      // Все параметры идут в URL (как требует BingX)
+      const orderParams = {
         symbol: symbol.replace('_', '-'),
         side: side.toUpperCase(),
         positionSide: positionSide.toUpperCase(),
@@ -115,14 +116,14 @@ class BingX {
         leverage: leverage.toString(),
       };
 
-      if (stopLoss) body.stopLoss = stopLoss.toString();
-      if (takeProfit) body.takeProfit = takeProfit.toString();
+      if (stopLoss) orderParams.stopLoss = stopLoss.toString();
+      if (takeProfit) orderParams.takeProfit = takeProfit.toString();
 
       const response = await this._signedRequest(
         '/openApi/swap/v3/trade/order',
-        {},
+        orderParams,  // ← параметры в URL
         'POST',
-        body
+        null  // ← тело пустое
       );
 
       if (response.code === 0) {
@@ -138,19 +139,19 @@ class BingX {
     }
   }
 
-  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V3 - POST с body) ---
+  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V3 - POST, параметры в URL) ---
   async closePosition(symbol, positionSide) {
     try {
-      const body = {
+      const params = {
         symbol: symbol.replace('_', '-'),
         positionSide: positionSide.toUpperCase(),
       };
 
       const response = await this._signedRequest(
         '/openApi/swap/v3/trade/closePosition',
-        {},
+        params,  // ← параметры в URL
         'POST',
-        body
+        null  // ← тело пустое
       );
 
       if (response.code === 0) {
