@@ -7,8 +7,7 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
-  // Универсальный метод для подписанных запросов (поддерживает GET и POST)
-  async _signedRequest(endpoint, params = {}, method = 'POST') {
+  async _signedRequest(endpoint, params = {}, method = 'GET') {
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
 
@@ -32,7 +31,6 @@ class BingX {
       },
     };
 
-    // Для POST-запросов тело пустое (BingX требует все параметры в URL)
     const response = await fetch(url, options);
     const data = await response.json();
 
@@ -44,7 +42,7 @@ class BingX {
     return data;
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (POST) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (V3 - POST) ---
   async placeOrder(params) {
     try {
       const {
@@ -89,7 +87,7 @@ class BingX {
     }
   }
 
-  // --- ЗАКРЫТИЕ ПОЗИЦИИ (POST) ---
+  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V3 - POST) ---
   async closePosition(symbol, positionSide) {
     try {
       const response = await this._signedRequest(
@@ -114,24 +112,20 @@ class BingX {
     }
   }
 
-  // --- БАЛАНС (GET — ИСПРАВЛЕНО) ---
+  // --- БАЛАНС (V2 - GET) ---
   async getBalance() {
     try {
       const response = await this._signedRequest(
-        '/openApi/swap/v3/user/balance',
+        '/openApi/swap/v2/user/balance',   // ← ИСПРАВЛЕНО: V2
         {},
-        'GET'   // ← БЫЛО POST, СТАЛО GET
+        'GET'
       );
 
-      if (response.code === 0 && Array.isArray(response.data)) {
-        const usdtAsset = response.data.find(item => item.asset === 'USDT');
-        if (usdtAsset) {
-          const balance = parseFloat(usdtAsset.availableMargin || usdtAsset.balance || 0);
-          console.log(`💰 Баланс USDT: ${balance} (available: ${usdtAsset.availableMargin}, total: ${usdtAsset.balance})`);
-          return balance;
-        }
-        console.warn('⚠️ USDT не найден в балансе');
-        return 0;
+      if (response.code === 0 && response.data?.balances) {
+        const usdtBalance = response.data.balances.find(b => b.asset === 'USDT');
+        const balance = parseFloat(usdtBalance?.balance || 0);
+        console.log(`💰 Баланс USDT: ${balance}`);
+        return balance;
       }
 
       console.error(`❌ Ошибка getBalance (${response.code}): ${response.msg}`);
@@ -142,13 +136,13 @@ class BingX {
     }
   }
 
-  // --- ПОЗИЦИИ (GET — ИСПРАВЛЕНО) ---
+  // --- ПОЗИЦИИ (V2 - GET) ---
   async getPositions() {
     try {
       const response = await this._signedRequest(
-        '/openApi/swap/v3/user/positions',
+        '/openApi/swap/v2/user/positions',   // ← ИСПРАВЛЕНО: V2
         {},
-        'GET'   // ← БЫЛО POST, СТАЛО GET
+        'GET'
       );
 
       if (response.code === 0 && response.data) {
@@ -163,7 +157,7 @@ class BingX {
     }
   }
 
-  // --- СВЕЧИ (GET) ---
+  // --- СВЕЧИ (V3 - GET) ---
   async getCandles({ symbol, interval = '5m', limit = 100 }) {
     try {
       const params = {
