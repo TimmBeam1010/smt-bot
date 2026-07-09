@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 const { getExchange } = require('../../shared/exchanges');
 const { calculatePositionSize, calculatePositionLevels } = require('../../shared/position-calculator');
 const { createClient } = require('@supabase/supabase-js');
