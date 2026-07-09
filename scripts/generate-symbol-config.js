@@ -11,7 +11,7 @@ require('dotenv').config();
 
 const { getExchange } = require('../shared/exchanges');
 
-// Список монет из signal-generator (скопируйте из CONFIG.symbols)
+// Список монет из signal-generator
 const NEEDED_SYMBOLS = [
   'BTC-USDT', 'ETH-USDT', 'BNB-USDT', 'SOL-USDT', 'XRP-USDT',
   'ADA-USDT', 'DOGE-USDT', 'DOT-USDT', 'LTC-USDT', 'LINK-USDT',
@@ -42,7 +42,8 @@ const NEEDED_SYMBOLS = [
   'RIF-USDT', 'POLYX-USDT', 'GAS-USDT', 'THETA-USDT',
   'NEO-USDT', 'IOST-USDT', 'WAVES-USDT', 'ONT-USDT',
   'ONE-USDT', 'CELO-USDT', 'CHR-USDT', 'ALICE-USDT',
-  'RVN-USDT', 'FLUX-USDT', 'SYN-USDT', 'WIF-USDT'
+  'RVN-USDT', 'FLUX-USDT', 'SYN-USDT', 'WIF-USDT',
+  'PI-USDT', 'FLOCK-USDT'
 ];
 
 async function generateConfig() {
@@ -62,13 +63,11 @@ async function generateConfig() {
 
   console.log(`✅ Получено ${contracts.length} контрактов`);
 
-  // Создаём индекс для быстрого поиска
   const contractIndex = {};
   for (const c of contracts) {
     contractIndex[c.symbol] = c;
   }
 
-  // Собираем параметры только для нужных символов
   const config = {};
   let found = 0;
   let notFound = [];
@@ -96,7 +95,6 @@ async function generateConfig() {
     console.warn(`⚠️ Не найдены: ${notFound.join(', ')}`);
   }
 
-  // Формируем содержимое файла
   const fileContent = `// ============================================
 //  АВТОМАТИЧЕСКИ СГЕНЕРИРОВАННЫЙ КОНФИГ СИМВОЛОВ
 //  Сгенерирован: ${new Date().toISOString()}
@@ -105,35 +103,15 @@ async function generateConfig() {
 
 const SYMBOL_CONFIG = ${JSON.stringify(config, null, 2)};
 
-/**
- * Получить параметры символа
- * @param {string} symbol - Символ (например, 'SOL-USDT')
- * @returns {Object} { precision, minQty, pricePrecision, size }
- */
-function getSymbolConfig(symbol) {
-  const normalized = symbol.replace(/_/g, '-');
-  const config = SYMBOL_CONFIG[normalized];
-  if (config) {
-    return config;
-  }
-  console.warn(\`⚠️ Символ \${symbol} не найден в конфиге, используем значения по умолчанию (precision: 3, minQty: 0.01)\`);
-  return { precision: 3, minQty: 0.01, pricePrecision: 4, size: 1 };
-}
-
-module.exports = {
-  SYMBOL_CONFIG,
-  getSymbolConfig,
-};
+module.exports = { SYMBOL_CONFIG };
 `;
 
-  // Сохраняем в файл
   const outputPath = path.join(__dirname, '../shared/symbol-config-generated.js');
   fs.writeFileSync(outputPath, fileContent, 'utf8');
   console.log(`✅ Конфиг сохранён в ${outputPath}`);
   console.log(`📊 Всего символов: ${found}`);
 }
 
-// Запускаем
 generateConfig().catch((error) => {
   console.error('❌ Ошибка:', error.message);
   process.exit(1);
