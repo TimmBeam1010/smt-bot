@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { getExchange } = require("../../shared/exchanges");
+const { getActiveSymbols } = require("../../shared/active-symbols"); // <-- НОВЫЙ ИМПОРТ
 const trading = require("../../shared/trading");
 const volumeAnalyzer = require("../../shared/volume-analyzer");
 const sentimentAnalyzer = require("../../shared/sentiment-analyzer");
@@ -20,61 +21,46 @@ const log = {
 };
 
 // ============================================
-//  КОНФИГУРАЦИЯ (ОБНОВЛЁННЫЙ СПИСОК СИМВОЛОВ)
+//  КОНФИГУРАЦИЯ (ДИНАМИЧЕСКИЙ СПИСОК СИМВОЛОВ)
 // ============================================
 const CONFIG = {
-  symbols: [
-    // Основные криптовалюты
-    'BTC-USDT', 'ETH-USDT', 'BNB-USDT', 'SOL-USDT', 'XRP-USDT',
-    'ADA-USDT', 'DOGE-USDT', 'DOT-USDT', 'LTC-USDT', 'LINK-USDT',
-    'BCH-USDT', 'AVAX-USDT', 'MATIC-USDT', 'UNI-USDT', 'ATOM-USDT',
-    'ETC-USDT', 'FIL-USDT', 'AAVE-USDT', 'NEAR-USDT', 'VET-USDT',
-    'ALGO-USDT', 'TRX-USDT', 'XLM-USDT', 'ICP-USDT', 'EGLD-USDT',
-    'HBAR-USDT', 'KAVA-USDT', 'KSM-USDT', 'MKR-USDT', 'ZEC-USDT',
-    'XMR-USDT', 'DASH-USDT', 'YFI-USDT', 'COMP-USDT', 'GRT-USDT',
-    'SNX-USDT', 'CRV-USDT', '1INCH-USDT', 'ENJ-USDT', 'MANA-USDT',
-    'SAND-USDT', 'CHZ-USDT', 'AXS-USDT', 'DYDX-USDT', 'GALA-USDT',
-    'APE-USDT', 'OP-USDT', 'ARB-USDT', 'INJ-USDT', 'SEI-USDT',
-    'SUI-USDT', 'APT-USDT', 'LDO-USDT', 'RUNE-USDT', 'FLOW-USDT',
-    'STX-USDT', 'AR-USDT', 'ENS-USDT', 'BAT-USDT', 'STORJ-USDT',
-    'IMX-USDT', 'ZRX-USDT', 'SKL-USDT', 'SUSHI-USDT', 'YGG-USDT',
-    'RSR-USDT', 'KNC-USDT', 'GMT-USDT', 'ROSE-USDT', 'MINA-USDT',
-    'CFX-USDT', 'API3-USDT', 'AGLD-USDT', 'SLP-USDT', 'JASMY-USDT',
-    'CTK-USDT', 'MTL-USDT', 'PEOPLE-USDT', 'ANKR-USDT', 'WOO-USDT',
-    'CRO-USDT', 'LUNC-USDT', 'LUNA-USDT', 'QNT-USDT', 'ARPA-USDT',
-    'SFP-USDT', 'MAGIC-USDT', 'FET-USDT', 'GMX-USDT', 'COTI-USDT',
-    'METIS-USDT', 'ASTR-USDT', 'DUSK-USDT', 'BLUR-USDT', 'ACH-USDT',
-    'TRB-USDT', 'FLOKI-USDT', 'ILV-USDT', 'ZEN-USDT', 'SCRT-USDT',
-    'RLC-USDT', 'LPT-USDT', 'CKB-USDT', 'QTUM-USDT', 'SUN-USDT',
-    'IOTA-USDT', 'SSV-USDT', 'BICO-USDT', 'TLM-USDT', 'XCN-USDT',
-    'TWT-USDT', 'LQTY-USDT', 'ID-USDT', 'EDU-USDT', 'TURBO-USDT',
-    'ORDI-USDT', 'UMA-USDT', 'OKB-USDT', 'NMR-USDT', 'MAV-USDT',
-    'WLD-USDT', 'PENDLE-USDT', 'ARKM-USDT', 'CYBER-USDT',
-    '1000PEPE-USDT', 'ARK-USDT', 'KAS-USDT', 'BIGTIME-USDT',
-    'RIF-USDT', 'POLYX-USDT', 'GAS-USDT', 'THETA-USDT',
-    'NEO-USDT', 'IOST-USDT', 'XMR-USDT', 'WAVES-USDT',
-    'ONT-USDT', 'ONE-USDT', 'CELO-USDT', 'CHR-USDT',
-    'ALICE-USDT', 'RVN-USDT'
-  ],
+  symbols: [], // ← будет заполнен динамически
   interval: '5m',
   limit: 100,
-  checkInterval: 120000,          // 120 секунд
-  requestDelay: 500,              // 500 мс между запросами
-  maxRetries: 3,                  // Максимум повторных попыток
-  retryDelay: 10000,              // 10 секунд между повторами
+  checkInterval: 120000,
+  requestDelay: 500,
+  maxRetries: 3,
+  retryDelay: 10000,
 };
 
-const supabaseUrl = "https://sbpyuigmrqycqlrjlqqv.supabase.co";
-const supabaseKey = "sb_publishable_TRnw7p3BXwp9_AbHiJR55A_yJBtEyGd";
-
-let exchangeClient = null;
-const ai = new aiPredictor.AIPredictor();
-const news = new newsMonitor.NewsMonitor();
-let sentimentData = null;
+// ============================================
+//  ДИНАМИЧЕСКАЯ ЗАГРУЗКА СИМВОЛОВ
+// ============================================
+async function loadSymbols() {
+    try {
+        const symbols = await getActiveSymbols('bingx', 
+            process.env.BINGX_API_KEY, 
+            process.env.BINGX_SECRET_KEY
+        );
+        if (symbols && symbols.length > 0) {
+            CONFIG.symbols = symbols;
+            log.info(`✅ Загружено ${CONFIG.symbols.length} активных символов с BingX`);
+        } else {
+            log.warn('⚠️ Не удалось загрузить символы, используем резервный список');
+            CONFIG.symbols = ['SOL-USDT', 'XRP-USDT'];
+        }
+    } catch (error) {
+        log.error('❌ Ошибка загрузки символов:', error.message);
+        CONFIG.symbols = ['SOL-USDT', 'XRP-USDT'];
+    }
+}
 
 // ============================================
 //  SUPABASE
 // ============================================
+const supabaseUrl = "https://sbpyuigmrqycqlrjlqqv.supabase.co";
+const supabaseKey = "sb_publishable_TRnw7p3BXwp9_AbHiJR55A_yJBtEyGd";
+
 async function supabaseRequest(method, endpoint, data = null) {
   const url = `${supabaseUrl}/rest/v1/${endpoint}`;
   const headers = {
@@ -232,7 +218,6 @@ async function saveSignalDirectly(signal, modules) {
     const result = await supabaseRequest("POST", "signals", signalData);
     log.info(`✅ СОХРАНЕН! ID: ${result?.[0]?.id || "OK"}`);
     
-    // Отправка в Telegram
     try {
       await notifier.notifySignal(signalData);
       log.info(`📨 Telegram: сигнал отправлен для ${signal.symbol}`);
@@ -248,7 +233,7 @@ async function saveSignalDirectly(signal, modules) {
 }
 
 // ============================================
-//  АНАЛИЗ СИГНАЛА (С ПОВТОРАМИ И ЗАДЕРЖКОЙ)
+//  АНАЛИЗ СИГНАЛА
 // ============================================
 async function analyzeAndGenerateSignal(symbol) {
   let retries = 0;
@@ -295,7 +280,7 @@ async function analyzeAndGenerateSignal(symbol) {
 }
 
 // ============================================
-//  ГЛАВНЫЙ ЦИКЛ (С ЗАДЕРЖКОЙ МЕЖДУ ЗАПРОСАМИ)
+//  ГЛАВНЫЙ ЦИКЛ
 // ============================================
 async function mainLoop() {
   try {
@@ -307,11 +292,17 @@ async function mainLoop() {
       );
       log.info("✅ Клиент инициализирован");
     }
+    
+    // Проверяем, что символы загружены
+    if (CONFIG.symbols.length === 0) {
+      log.warn("⏳ Символы не загружены, пропускаем цикл");
+      return;
+    }
+    
     log.info(`📊 Анализ ${CONFIG.symbols.length} символов...`);
     
     for (const symbol of CONFIG.symbols) {
       await analyzeAndGenerateSignal(symbol);
-      // Задержка между запросами
       await new Promise(resolve => setTimeout(resolve, CONFIG.requestDelay));
     }
     
@@ -327,14 +318,24 @@ async function mainLoop() {
 async function start() {
   log.info("🚀 Signal Generator Bot запущен (FULL версия)");
   log.info(`📋 Таймфрейм: ${CONFIG.interval}`);
-  log.info(`📋 Символы: ${CONFIG.symbols.length}`);
-  log.info(`⏱️ Интервал: ${CONFIG.checkInterval / 1000}с (увеличен для снижения нагрузки)`);
+  log.info(`⏱️ Интервал: ${CONFIG.checkInterval / 1000}с`);
   log.info(`⏱️ Задержка между запросами: ${CONFIG.requestDelay}мс`);
   log.info(`🔄 Повторы: ${CONFIG.maxRetries} раз`);
   log.info("🧠 Модули: Volume Profile, Sentiment, AI, Market Maker, News");
+  
+  // Загружаем символы перед запуском
+  await loadSymbols();
+  
+  // Запускаем основной цикл
   await mainLoop();
   setInterval(mainLoop, CONFIG.checkInterval);
 }
+
+// Переменные для модулей
+let exchangeClient = null;
+const ai = new aiPredictor.AIPredictor();
+const news = new newsMonitor.NewsMonitor();
+let sentimentData = null;
 
 if (require.main === module) {
   start().catch(error => {
@@ -342,5 +343,3 @@ if (require.main === module) {
     process.exit(1);
   });
 }
-
-module.exports = { start, analyzeAndGenerateSignal };
