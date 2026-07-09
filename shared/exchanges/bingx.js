@@ -181,10 +181,10 @@ class BingX {
         return null;
       }
 
-      // Для V2 MARKET-ордеров обязательно указываем positionSide
+      // Для V2 MARKET-ордеров используем LONG/SHORT для side и positionSide
       const orderParams = {
         symbol: symbol.replace(/_/g, '-'),
-        side: side === 'LONG' ? 'BUY' : 'SELL',
+        side: side === 'LONG' ? 'LONG' : 'SHORT',
         positionSide: side === 'LONG' ? 'LONG' : 'SHORT',
         type: type.toUpperCase(),
         quantity: roundedQuantity.toString(),
