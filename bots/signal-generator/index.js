@@ -101,7 +101,7 @@ function calculateTPSL(entryPrice, side, atr) {
 }
 
 // ============================================
-//  АНАЛИЗ С МОДУЛЯМИ
+//  АНАЛИЗ С МОДУЛЯМИ (ИСПРАВЛЕННЫЙ)
 // ============================================
 async function analyzeWithModules(symbol, candles, prices, highs, lows, volumes) {
   const lastPrice = prices[prices.length - 1];
@@ -113,11 +113,13 @@ async function analyzeWithModules(symbol, candles, prices, highs, lows, volumes)
     news: null
   };
 
+  // 1. Volume Analyzer
   try {
     const volData = volumeAnalyzer.getVolumeWeight(symbol, lastPrice, candles);
     modulesResult.volume = volData;
   } catch(e) { log.debug(`Volume ошибка: ${e.message}`); }
 
+  // 2. Sentiment Analyzer
   try {
     if (!sentimentData) {
       const sent = new sentimentAnalyzer.SentimentAnalyzer();
@@ -126,12 +128,13 @@ async function analyzeWithModules(symbol, candles, prices, highs, lows, volumes)
     modulesResult.sentiment = sentimentData;
   } catch(e) { log.debug(`Sentiment ошибка: ${e.message}`); }
 
+  // 3. Market Maker Detector (ИСПРАВЛЕНО — используем analyzeMarketMaker вместо класса)
   try {
-    const detector = new marketMaker.MarketMakerDetector();
-    const detection = detector.detect(candles);
+    const detection = marketMaker.analyzeMarketMaker(candles);
     modulesResult.marketMaker = detection;
   } catch(e) { log.debug(`Market Maker ошибка: ${e.message}`); }
 
+  // 4. AI Predictor
   try {
     const marketData = {
       volume: volumes[volumes.length - 1] || 0,
@@ -144,6 +147,7 @@ async function analyzeWithModules(symbol, candles, prices, highs, lows, volumes)
     modulesResult.ai = prediction;
   } catch(e) { log.debug(`AI ошибка: ${e.message}`); }
 
+  // 5. News Monitor (отключён из-за 403 ошибки)
   try {
     if (news.news.length === 0) {
       await news.fetchNews();
@@ -233,7 +237,7 @@ async function saveSignalDirectly(signal, modules) {
 }
 
 // ============================================
-//  АНАЛИЗ СИГНАЛА (ИСПРАВЛЕННЫЙ)
+//  АНАЛИЗ СИГНАЛА
 // ============================================
 async function analyzeAndGenerateSignal(symbol) {
   let retries = 0;
@@ -241,7 +245,6 @@ async function analyzeAndGenerateSignal(symbol) {
     try {
       if (!exchangeClient) return;
       
-      // ИСПРАВЛЕНО: передаём объект вместо трёх параметров
       const candles = await exchangeClient.getCandles({ 
         symbol, 
         interval: CONFIG.interval, 
@@ -326,7 +329,7 @@ async function start() {
   log.info(`⏱️ Интервал: ${CONFIG.checkInterval / 1000}с`);
   log.info(`⏱️ Задержка между запросами: ${CONFIG.requestDelay}мс`);
   log.info(`🔄 Повторы: ${CONFIG.maxRetries} раз`);
-  log.info("🧠 Модули: Volume Profile, Sentiment, AI, Market Maker, News");
+  log.info("🧠 Модули: Volume, Sentiment, Market Maker, AI");
   
   await loadSymbols();
   await mainLoop();
