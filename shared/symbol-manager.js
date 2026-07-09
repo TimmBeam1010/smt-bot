@@ -3,7 +3,6 @@
 //  Централизованное управление характеристиками монет
 // ============================================
 
-const exchanges = require('./exchanges');
 const cache = require('./cache');
 const { logger } = require('./logger');
 const log = logger('symbol-manager');
@@ -31,7 +30,9 @@ class SymbolManager {
         return this.contracts;
       }
 
-      const client = exchanges.getExchange(exchange, apiKey, secretKey);
+      // Импортируем getExchange ТОЛЬКО здесь (разрываем цикл)
+      const { getExchange } = require('./exchanges');
+      const client = getExchange(exchange, apiKey, secretKey);
       if (!client) {
         log.error('Биржа не поддерживается', { exchange });
         return {};
@@ -67,7 +68,6 @@ class SymbolManager {
    * Получить информацию о контракте
    */
   getContract(symbol) {
-    // Нормализуем символ (убираем -USDT, пробуем разные варианты)
     const variants = [
       symbol,
       symbol.replace(/-USDT$/, ''),
