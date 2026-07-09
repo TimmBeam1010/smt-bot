@@ -1,3 +1,8 @@
+// ============================================
+//  ПОЛНЫЙ ИСПРАВЛЕННЫЙ ФАЙЛ: shared/exchanges/bingx.js
+//  ДЛЯ УСТРАНЕНИЯ ОШИБКИ 109400 (INVALID PARAMETERS)
+// ============================================
+
 const crypto = require('crypto');
 
 class BingX {
@@ -8,9 +13,11 @@ class BingX {
   }
 
   async _signedRequest(endpoint, params = {}, method = 'GET') {
+    // Удаляем всё лишнее перед подписью
     delete params.stopLoss;
     delete params.takeProfit;
     delete params.leverage;
+    delete params.positionSide; // positionSide НЕ используется в MARKET-ордерах V2
 
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
@@ -46,13 +53,11 @@ class BingX {
     return data;
   }
 
-  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ (ПРЯМОЙ ЗАПРОС) ---
+  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ ---
   async getContracts() {
     try {
       const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts`, {
-        headers: {
-          'X-BX-APIKEY': this.apiKey,
-        },
+        headers: { 'X-BX-APIKEY': this.apiKey },
       });
       const data = await response.json();
       if (data.code === 0 && data.data) {
@@ -66,22 +71,16 @@ class BingX {
     }
   }
 
-  // --- БАЛАНС (V2 - GET) ---
+  // --- БАЛАНС ---
   async getBalance() {
     try {
-      const response = await this._signedRequest(
-        '/openApi/swap/v2/user/balance',
-        {},
-        'GET'
-      );
-
+      const response = await this._signedRequest('/openApi/swap/v2/user/balance', {}, 'GET');
       if (response.code === 0 && response.data && response.data.balance) {
         const balanceObj = response.data.balance;
         const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
         console.log(`💰 Баланс USDT: ${balance}`);
         return balance;
       }
-
       console.error(`❌ Ошибка getBalance (${response.code}): ${response.msg}`);
       return 0;
     } catch (error) {
@@ -90,19 +89,13 @@ class BingX {
     }
   }
 
-  // --- ПОЗИЦИИ (V2 - GET) ---
+  // --- ПОЗИЦИИ ---
   async getPositions() {
     try {
-      const response = await this._signedRequest(
-        '/openApi/swap/v2/user/positions',
-        {},
-        'GET'
-      );
-
+      const response = await this._signedRequest('/openApi/swap/v2/user/positions', {}, 'GET');
       if (response.code === 0 && response.data) {
         return response.data;
       }
-
       console.error(`❌ Ошибка getPositions (${response.code}): ${response.msg}`);
       return [];
     } catch (error) {
@@ -111,39 +104,31 @@ class BingX {
     }
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V2 - MARKET) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (V2 MARKET) ---
   async placeOrder(params) {
     try {
-      const {
-        symbol,
-        side,
-        type = 'MARKET',
-        quantity,
-      } = params;
+      const { symbol, side, type = 'MARKET', quantity } = params;
 
-      // Округляем до 3 знаков (временное решение)
-      const roundedQuantity = Math.round(quantity * 1000) / 1000;
-
+      // 1. Проверяем и округляем количество
+      let roundedQuantity = Math.round(quantity * 1000) / 1000;
       if (roundedQuantity <= 0) {
-        console.warn('⚠️ Quantity = 0, пропускаем ордер');
+        console.warn(`⚠️ Quantity = ${roundedQuantity}, пропускаем ордер для ${symbol}`);
         return null;
       }
 
+      // 2. Формируем параметры строго по документации V2 (без positionSide)
+      // side должен быть BUY или SELL
       const orderParams = {
         symbol: symbol.replace(/_/g, '-'),
-        side: side === 'LONG' ? 'LONG' : 'SHORT',
-        positionSide: side === 'LONG' ? 'LONG' : 'SHORT',
+        side: side.toUpperCase() === 'LONG' ? 'BUY' : 'SELL',
         type: type.toUpperCase(),
         quantity: roundedQuantity.toString(),
       };
 
-      console.log('📤 Отправка ордера:', JSON.stringify(orderParams, null, 2));
+      console.log('📤 Отправка ордера (V2):', JSON.stringify(orderParams, null, 2));
 
-      const response = await this._signedRequest(
-        '/openApi/swap/v2/trade/order',
-        orderParams,
-        'POST'
-      );
+      // 3. Отправляем запрос
+      const response = await this._signedRequest('/openApi/swap/v2/trade/order', orderParams, 'POST');
 
       if (response.code === 0) {
         console.log(`✅ Ордер открыт: ${response.data?.orderId || 'OK'}`);
@@ -158,25 +143,18 @@ class BingX {
     }
   }
 
-  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V2 - POST) ---
+  // --- ЗАКРЫТИЕ ПОЗИЦИИ ---
   async closePosition(symbol, positionSide) {
     try {
       const params = {
         symbol: symbol.replace(/_/g, '-'),
         positionSide: positionSide.toUpperCase(),
       };
-
-      const response = await this._signedRequest(
-        '/openApi/swap/v2/trade/closePosition',
-        params,
-        'POST'
-      );
-
+      const response = await this._signedRequest('/openApi/swap/v2/trade/closePosition', params, 'POST');
       if (response.code === 0) {
         console.log(`✅ Позиция закрыта: ${symbol} ${positionSide}`);
         return response.data;
       }
-
       console.error(`❌ Ошибка closePosition (${response.code}): ${response.msg}`);
       return null;
     } catch (error) {
@@ -185,7 +163,7 @@ class BingX {
     }
   }
 
-  // --- СВЕЧИ (V2 - GET) ---
+  // --- СВЕЧИ ---
   async getCandles({ symbol, interval = '5m', limit = 100 }) {
     try {
       const params = {
@@ -193,13 +171,7 @@ class BingX {
         interval,
         limit: limit.toString(),
       };
-
-      const response = await this._signedRequest(
-        '/openApi/swap/v2/quote/klines',
-        params,
-        'GET'
-      );
-
+      const response = await this._signedRequest('/openApi/swap/v2/quote/klines', params, 'GET');
       if (response.code === 0 && response.data) {
         return response.data.map(candle => ({
           time: candle.time,
@@ -210,7 +182,6 @@ class BingX {
           volume: parseFloat(candle.volume),
         }));
       }
-
       console.error(`❌ Ошибка getCandles (${response.code}): ${response.msg}`);
       return [];
     } catch (error) {
