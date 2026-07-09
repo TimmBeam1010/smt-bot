@@ -41,8 +41,9 @@ async function getActiveSymbols(exchange, apiKey, secretKey) {
         }
 
         // Фильтруем только активные USDT-M фьючерсы
+        // Убрано условие .endsWith('-USDT') для поддержки символов без дефиса (например, 1000PEPEUSDT)
         const activeSymbols = contracts
-            .filter(c => c.status === 'ONLINE' && c.quoteAsset === 'USDT' && c.symbol.endsWith('-USDT'))
+            .filter(c => c.status === 'ONLINE' && c.quoteAsset === 'USDT')
             .map(c => c.symbol);
 
         // Сохраняем в кеш
