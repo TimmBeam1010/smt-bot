@@ -7,6 +7,7 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
+  // Универсальный метод для подписанных запросов (V2)
   async _signedRequest(endpoint, params = {}, method = 'GET') {
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
@@ -87,7 +88,7 @@ class BingX {
     }
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V2 - POST, все параметры в URL) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (V2 - POST) ---
   async placeOrder(params) {
     try {
       const {
@@ -101,10 +102,10 @@ class BingX {
         takeProfit = null,
       } = params;
 
-      // Все параметры в URL
+      // V2 параметры: side = BUY/SELL, positionSide = LONG/SHORT
       const orderParams = {
         symbol: symbol.replace('_', '-'),
-        side: side.toUpperCase(),
+        side: side === 'LONG' ? 'BUY' : 'SELL',
         positionSide: positionSide.toUpperCase(),
         type: type.toUpperCase(),
         quantity: quantity.toString(),
@@ -114,6 +115,7 @@ class BingX {
       if (stopLoss) orderParams.stopLoss = stopLoss.toString();
       if (takeProfit) orderParams.takeProfit = takeProfit.toString();
 
+      console.log('📤 Отправка ордера:', orderParams);
       const response = await this._signedRequest(
         '/openApi/swap/v2/trade/order',
         orderParams,
@@ -133,7 +135,7 @@ class BingX {
     }
   }
 
-  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V2 - POST, все параметры в URL) ---
+  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V2 - POST) ---
   async closePosition(symbol, positionSide) {
     try {
       const params = {
