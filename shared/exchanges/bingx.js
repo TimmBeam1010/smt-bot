@@ -7,7 +7,6 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
-  // Универсальный метод с поддержкой body для POST
   async _signedRequest(endpoint, params = {}, method = 'GET', body = null) {
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
@@ -56,10 +55,11 @@ class BingX {
         'GET'
       );
 
-      if (response.code === 0 && response.data?.balances) {
-        const usdtBalance = response.data.balances.find(b => b.asset === 'USDT');
-        const balance = parseFloat(usdtBalance?.balance || 0);
-        console.log(`💰 Баланс USDT: ${balance}`);
+      // V2 возвращает data.balance (объект)
+      if (response.code === 0 && response.data && response.data.balance) {
+        const balanceObj = response.data.balance;
+        const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
+        console.log(`💰 Баланс USDT: ${balance} (available: ${balanceObj.availableMargin}, total: ${balanceObj.balance})`);
         return balance;
       }
 
@@ -106,7 +106,6 @@ class BingX {
         takeProfit = null,
       } = params;
 
-      // Тело запроса (BingX V3 требует body)
       const body = {
         symbol: symbol.replace('_', '-'),
         side: side.toUpperCase(),
@@ -119,10 +118,9 @@ class BingX {
       if (stopLoss) body.stopLoss = stopLoss.toString();
       if (takeProfit) body.takeProfit = takeProfit.toString();
 
-      // Для V3 trade/order параметры в body, подпись в URL
       const response = await this._signedRequest(
         '/openApi/swap/v3/trade/order',
-        {}, // пустые параметры в URL (только timestamp + signature)
+        {},
         'POST',
         body
       );
