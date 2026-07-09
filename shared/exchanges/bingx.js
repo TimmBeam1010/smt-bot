@@ -9,6 +9,10 @@ class BingX {
 
   // Универсальный метод для подписанных запросов (V2)
   async _signedRequest(endpoint, params = {}, method = 'GET') {
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: удаляем stopLoss и takeProfit для MARKET-ордеров V2
+    delete params.stopLoss;
+    delete params.takeProfit;
+
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
 
@@ -101,7 +105,6 @@ class BingX {
       } = params;
 
       // V2 параметры: side = BUY/SELL, positionSide = LONG/SHORT
-      // БЕЗ stopLoss и takeProfit (они не поддерживаются в MARKET-ордерах V2)
       const orderParams = {
         symbol: symbol.replace('_', '-'),
         side: side === 'LONG' ? 'BUY' : 'SELL',
