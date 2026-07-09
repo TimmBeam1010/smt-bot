@@ -122,10 +122,10 @@ class BingX {
         quantity,
       } = params;
 
+      // Для MARKET-ордеров V2: только symbol, side, type, quantity
       const orderParams = {
         symbol: symbol.replace(/_/g, '-'),
         side: side === 'LONG' ? 'BUY' : 'SELL',
-        positionSide: (side === 'LONG' ? 'LONG' : 'SHORT').toUpperCase(),
         type: type.toUpperCase(),
         quantity: quantity.toString(),
       };
