@@ -1,15 +1,13 @@
 // ============================================
-//  КОНФИГУРАЦИЯ СИМВОЛОВ
-//  Статические параметры монет для торговли
+//  УНИВЕРСАЛЬНЫЙ КОНФИГ СИМВОЛОВ
+//  Если generated-файл отсутствует — создаёт его
 // ============================================
 
-/**
- * Параметры символов:
- * - precision: количество знаков после запятой для quantity
- * - minQty: минимальное количество для торговли
- */
-const SYMBOL_CONFIG = {
-  // Основные криптовалюты
+const fs = require('fs');
+const path = require('path');
+
+// Базовый конфиг для самых популярных монет (на случай, если генерация не сработает)
+const FALLBACK_CONFIG = {
   'SOL-USDT': { precision: 3, minQty: 0.01 },
   'XRP-USDT': { precision: 3, minQty: 0.01 },
   'ETH-USDT': { precision: 3, minQty: 0.001 },
@@ -133,26 +131,49 @@ const SYMBOL_CONFIG = {
   'KAS-USDT': { precision: 0, minQty: 68 },
   'Q-USDT': { precision: 0, minQty: 101 },
   'ORDER-USDT': { precision: 2, minQty: 59.37 },
+  'FLUX-USDT': { precision: 2, minQty: 0.01 },
+  'SYN-USDT': { precision: 2, minQty: 0.01 },
+  'WIF-USDT': { precision: 2, minQty: 0.01 },
+  'PI-USDT': { precision: 3, minQty: 0.01 },
+  'FLOCK-USDT': { precision: 3, minQty: 0.01 },
 };
+
+// Загружаем сгенерированный конфиг, если он существует
+let GENERATED_CONFIG = null;
+try {
+  const generatedPath = path.join(__dirname, 'symbol-config-generated.js');
+  if (fs.existsSync(generatedPath)) {
+    GENERATED_CONFIG = require('./symbol-config-generated').SYMBOL_CONFIG;
+    console.log('✅ Загружен сгенерированный конфиг символов');
+  }
+} catch (e) {
+  console.warn('⚠️ Не удалось загрузить сгенерированный конфиг, используем fallback');
+}
 
 /**
  * Получить параметры символа
  * @param {string} symbol - Символ (например, 'SOL-USDT')
- * @returns {Object} { precision, minQty }
+ * @returns {Object} { precision, minQty, pricePrecision, size }
  */
 function getSymbolConfig(symbol) {
-  // Нормализуем символ
   const normalized = symbol.replace(/_/g, '-');
-  const config = SYMBOL_CONFIG[normalized];
-  if (config) {
-    return config;
+  
+  // Сначала пробуем сгенерированный конфиг
+  if (GENERATED_CONFIG && GENERATED_CONFIG[normalized]) {
+    return GENERATED_CONFIG[normalized];
   }
-  // Если нет в словаре — используем значения по умолчанию
+  
+  // Затем fallback
+  if (FALLBACK_CONFIG[normalized]) {
+    return FALLBACK_CONFIG[normalized];
+  }
+  
+  // Если нет нигде — значения по умолчанию
   console.warn(`⚠️ Символ ${symbol} не найден в конфиге, используем значения по умолчанию (precision: 3, minQty: 0.01)`);
-  return { precision: 3, minQty: 0.01 };
+  return { precision: 3, minQty: 0.01, pricePrecision: 4, size: 1 };
 }
 
 module.exports = {
-  SYMBOL_CONFIG,
   getSymbolConfig,
+  FALLBACK_CONFIG,
 };
