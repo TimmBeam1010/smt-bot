@@ -1,5 +1,10 @@
+// ============================================
+//  BINGX EXCHANGE CLIENT (V2)
+//  Использует автоматически сгенерированный конфиг символов
+// ============================================
+
 const crypto = require('crypto');
-const { getSymbolConfig } = require('../symbol-config');
+const { getSymbolConfig } = require('../symbol-config-generated');
 
 class BingX {
   constructor(apiKey, secretKey) {
@@ -8,7 +13,9 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
+  // --- ПОДПИСАННЫЙ ЗАПРОС (V2) ---
   async _signedRequest(endpoint, params = {}, method = 'GET') {
+    // Удаляем лишние параметры
     delete params.stopLoss;
     delete params.takeProfit;
     delete params.leverage;
@@ -48,7 +55,7 @@ class BingX {
     return data;
   }
 
-  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ ---
+  // --- ПОЛУЧЕНИЕ ВСЕХ КОНТРАКТОВ ---
   async getContracts() {
     try {
       const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts`, {
@@ -99,12 +106,12 @@ class BingX {
     }
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V2 MARKET) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (MARKET, V2) ---
   async placeOrder(params) {
     try {
       const { symbol, side, type = 'MARKET', quantity } = params;
 
-      // Используем статический конфиг
+      // Получаем параметры символа из сгенерированного конфига
       const config = getSymbolConfig(symbol);
       const precision = config.precision;
       const factor = Math.pow(10, precision);
@@ -165,7 +172,7 @@ class BingX {
     }
   }
 
-  // --- СВЕЧИ ---
+  // --- СВЕЧИ (KLINES) ---
   async getCandles({ symbol, interval = '5m', limit = 100 }) {
     try {
       const params = {
