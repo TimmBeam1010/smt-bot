@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+require('dotenv').config({ path: '/root/smt-bot/.env' });
 
 const { getExchange } = require('../../shared/exchanges');
 const { calculatePositionSize, calculatePositionLevels } = require('../../shared/position-calculator');
