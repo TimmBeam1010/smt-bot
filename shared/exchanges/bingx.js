@@ -121,9 +121,8 @@ class BingX {
         quantity,
       } = params;
 
-      // Используем roundQuantity из symbolManager
-      const { symbolManager } = require('../symbol-manager');
-      const roundedQuantity = symbolManager.roundQuantity(symbol, quantity);
+      // Округляем до 3 знаков (временное решение)
+      const roundedQuantity = Math.round(quantity * 1000) / 1000;
 
       if (roundedQuantity <= 0) {
         console.warn('⚠️ Quantity = 0, пропускаем ордер');
