@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { getExchange } = require("../../shared/exchanges");
-const { getActiveSymbols } = require("../../shared/active-symbols"); // <-- НОВЫЙ ИМПОРТ
+const { getActiveSymbols } = require("../../shared/active-symbols");
 const trading = require("../../shared/trading");
 const volumeAnalyzer = require("../../shared/volume-analyzer");
 const sentimentAnalyzer = require("../../shared/sentiment-analyzer");
@@ -24,7 +24,7 @@ const log = {
 //  КОНФИГУРАЦИЯ (ДИНАМИЧЕСКИЙ СПИСОК СИМВОЛОВ)
 // ============================================
 const CONFIG = {
-  symbols: [], // ← будет заполнен динамически
+  symbols: [],
   interval: '5m',
   limit: 100,
   checkInterval: 120000,
@@ -233,7 +233,7 @@ async function saveSignalDirectly(signal, modules) {
 }
 
 // ============================================
-//  АНАЛИЗ СИГНАЛА
+//  АНАЛИЗ СИГНАЛА (ИСПРАВЛЕННЫЙ)
 // ============================================
 async function analyzeAndGenerateSignal(symbol) {
   let retries = 0;
@@ -241,7 +241,13 @@ async function analyzeAndGenerateSignal(symbol) {
     try {
       if (!exchangeClient) return;
       
-      const candles = await exchangeClient.getCandles(symbol, CONFIG.interval, CONFIG.limit);
+      // ИСПРАВЛЕНО: передаём объект вместо трёх параметров
+      const candles = await exchangeClient.getCandles({ 
+        symbol, 
+        interval: CONFIG.interval, 
+        limit: CONFIG.limit 
+      });
+      
       if (!candles || candles.length < 30) {
         log.debug(`❌ Недостаточно свечей для ${symbol}`);
         return;
@@ -293,7 +299,6 @@ async function mainLoop() {
       log.info("✅ Клиент инициализирован");
     }
     
-    // Проверяем, что символы загружены
     if (CONFIG.symbols.length === 0) {
       log.warn("⏳ Символы не загружены, пропускаем цикл");
       return;
@@ -323,15 +328,11 @@ async function start() {
   log.info(`🔄 Повторы: ${CONFIG.maxRetries} раз`);
   log.info("🧠 Модули: Volume Profile, Sentiment, AI, Market Maker, News");
   
-  // Загружаем символы перед запуском
   await loadSymbols();
-  
-  // Запускаем основной цикл
   await mainLoop();
   setInterval(mainLoop, CONFIG.checkInterval);
 }
 
-// Переменные для модулей
 let exchangeClient = null;
 const ai = new aiPredictor.AIPredictor();
 const news = new newsMonitor.NewsMonitor();
