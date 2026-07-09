@@ -9,7 +9,13 @@ class BingX {
 
   async _signedRequest(endpoint, params = {}, method = 'GET', body = null) {
     const timestamp = Date.now();
-    const allParams = { ...params, timestamp };
+    // Объединяем параметры из URL и body для подписи
+    let allParams = { ...params, timestamp };
+    
+    // Если есть body, добавляем его параметры в подпись
+    if (body && method === 'POST') {
+      allParams = { ...allParams, ...body };
+    }
 
     const sortedKeys = Object.keys(allParams).sort();
     const queryString = sortedKeys
@@ -21,7 +27,12 @@ class BingX {
       .update(queryString)
       .digest('hex');
 
-    const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
+    // URL: только параметры из params (без body)
+    const urlParams = { ...params, timestamp };
+    const urlQueryString = Object.keys(urlParams).sort()
+      .map(key => `${key}=${urlParams[key]}`)
+      .join('&');
+    const url = `${this.baseUrl}${endpoint}?${urlQueryString}&signature=${signature}`;
 
     const options = {
       method,
@@ -31,7 +42,6 @@ class BingX {
       },
     };
 
-    // Только для POST-запросов, если есть body (но для BingX body обычно пустой)
     if (method === 'POST' && body) {
       options.body = JSON.stringify(body);
     }
@@ -92,7 +102,7 @@ class BingX {
     }
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V3 - POST, параметры в URL) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (V3 - POST) ---
   async placeOrder(params) {
     try {
       const {
@@ -106,8 +116,11 @@ class BingX {
         takeProfit = null,
       } = params;
 
-      // Все параметры идут в URL (как требует BingX)
-      const orderParams = {
+      // Параметры для URL (без body)
+      const urlParams = {};
+
+      // Параметры для body (BingX V3 требует тело)
+      const body = {
         symbol: symbol.replace('_', '-'),
         side: side.toUpperCase(),
         positionSide: positionSide.toUpperCase(),
@@ -116,14 +129,14 @@ class BingX {
         leverage: leverage.toString(),
       };
 
-      if (stopLoss) orderParams.stopLoss = stopLoss.toString();
-      if (takeProfit) orderParams.takeProfit = takeProfit.toString();
+      if (stopLoss) body.stopLoss = stopLoss.toString();
+      if (takeProfit) body.takeProfit = takeProfit.toString();
 
       const response = await this._signedRequest(
         '/openApi/swap/v3/trade/order',
-        orderParams,  // ← параметры в URL
+        urlParams,
         'POST',
-        null  // ← тело пустое
+        body
       );
 
       if (response.code === 0) {
@@ -139,19 +152,19 @@ class BingX {
     }
   }
 
-  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V3 - POST, параметры в URL) ---
+  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V3 - POST) ---
   async closePosition(symbol, positionSide) {
     try {
-      const params = {
+      const body = {
         symbol: symbol.replace('_', '-'),
         positionSide: positionSide.toUpperCase(),
       };
 
       const response = await this._signedRequest(
         '/openApi/swap/v3/trade/closePosition',
-        params,  // ← параметры в URL
+        {},
         'POST',
-        null  // ← тело пустое
+        body
       );
 
       if (response.code === 0) {
