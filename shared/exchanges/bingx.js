@@ -9,17 +9,17 @@ class BingX {
 
   async _signedRequest(endpoint, params = {}, method = 'GET', body = null) {
     const timestamp = Date.now();
-    // Объединяем параметры из URL и body для подписи
-    let allParams = { ...params, timestamp };
+    // Для подписи: если есть body, используем его параметры
+    let signatureParams = { ...params, timestamp };
     
-    // Если есть body, добавляем его параметры в подпись
+    // Для POST с body: подпись строится на основе body-параметров
     if (body && method === 'POST') {
-      allParams = { ...allParams, ...body };
+      signatureParams = { ...body, timestamp };
     }
 
-    const sortedKeys = Object.keys(allParams).sort();
+    const sortedKeys = Object.keys(signatureParams).sort();
     const queryString = sortedKeys
-      .map(key => `${key}=${allParams[key]}`)
+      .map(key => `${key}=${signatureParams[key]}`)
       .join('&');
 
     const signature = crypto
@@ -27,12 +27,8 @@ class BingX {
       .update(queryString)
       .digest('hex');
 
-    // URL: только параметры из params (без body)
-    const urlParams = { ...params, timestamp };
-    const urlQueryString = Object.keys(urlParams).sort()
-      .map(key => `${key}=${urlParams[key]}`)
-      .join('&');
-    const url = `${this.baseUrl}${endpoint}?${urlQueryString}&signature=${signature}`;
+    // URL: только timestamp + signature
+    const url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
 
     const options = {
       method,
@@ -116,10 +112,7 @@ class BingX {
         takeProfit = null,
       } = params;
 
-      // Параметры для URL (без body)
-      const urlParams = {};
-
-      // Параметры для body (BingX V3 требует тело)
+      // Все параметры в body
       const body = {
         symbol: symbol.replace('_', '-'),
         side: side.toUpperCase(),
@@ -134,7 +127,7 @@ class BingX {
 
       const response = await this._signedRequest(
         '/openApi/swap/v3/trade/order',
-        urlParams,
+        {},  // ← пустые параметры в URL
         'POST',
         body
       );
@@ -162,7 +155,7 @@ class BingX {
 
       const response = await this._signedRequest(
         '/openApi/swap/v3/trade/closePosition',
-        {},
+        {},  // ← пустые параметры в URL
         'POST',
         body
       );
