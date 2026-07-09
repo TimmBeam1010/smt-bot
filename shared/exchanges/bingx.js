@@ -47,6 +47,26 @@ class BingX {
     return data;
   }
 
+  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ (V2) ---
+  async getContracts() {
+    try {
+      const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts`, {
+        headers: {
+          'X-BX-APIKEY': this.apiKey,
+        },
+      });
+      const data = await response.json();
+      if (data.code === 0 && data.data) {
+        return data.data;
+      }
+      console.error('❌ Ошибка getContracts:', data);
+      return [];
+    } catch (error) {
+      console.error('❌ Исключение getContracts:', error.message);
+      return [];
+    }
+  }
+
   // --- БАЛАНС (V2 - GET) ---
   async getBalance() {
     try {
@@ -102,11 +122,8 @@ class BingX {
         quantity,
       } = params;
 
-      // Правильный формат: BONK_USDT → BONK-USDT
-      const formattedSymbol = symbol.replace(/_/g, '-');
-
       const orderParams = {
-        symbol: formattedSymbol,
+        symbol: symbol.replace(/_/g, '-'),
         side: side === 'LONG' ? 'BUY' : 'SELL',
         positionSide: (side === 'LONG' ? 'LONG' : 'SHORT').toUpperCase(),
         type: type.toUpperCase(),
