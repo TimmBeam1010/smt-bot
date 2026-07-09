@@ -7,7 +7,8 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
-  async _signedRequest(endpoint, params = {}, method = 'GET') {
+  // Универсальный метод с поддержкой body для POST
+  async _signedRequest(endpoint, params = {}, method = 'GET', body = null) {
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
 
@@ -31,6 +32,10 @@ class BingX {
       },
     };
 
+    if (method === 'POST' && body) {
+      options.body = JSON.stringify(body);
+    }
+
     const response = await fetch(url, options);
     const data = await response.json();
 
@@ -42,81 +47,11 @@ class BingX {
     return data;
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V3 - POST) ---
-  async placeOrder(params) {
-    try {
-      const {
-        symbol,
-        side,
-        type = 'MARKET',
-        quantity,
-        leverage = 10,
-        positionSide = side === 'BUY' ? 'LONG' : 'SHORT',
-        stopLoss = null,
-        takeProfit = null,
-      } = params;
-
-      const orderParams = {
-        symbol: symbol.replace('_', '-'),
-        side: side.toUpperCase(),
-        positionSide: positionSide.toUpperCase(),
-        type: type.toUpperCase(),
-        quantity: quantity.toString(),
-        leverage: leverage.toString(),
-      };
-
-      if (stopLoss) orderParams.stopLoss = stopLoss.toString();
-      if (takeProfit) orderParams.takeProfit = takeProfit.toString();
-
-      const response = await this._signedRequest(
-        '/openApi/swap/v3/trade/order',
-        orderParams,
-        'POST'
-      );
-
-      if (response.code === 0) {
-        console.log(`✅ Ордер открыт: ${response.data?.orderId || 'OK'}`);
-        return response.data;
-      }
-
-      console.error(`❌ Ошибка placeOrder (${response.code}): ${response.msg}`);
-      return null;
-    } catch (error) {
-      console.error(`❌ Исключение placeOrder: ${error.message}`);
-      return null;
-    }
-  }
-
-  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V3 - POST) ---
-  async closePosition(symbol, positionSide) {
-    try {
-      const response = await this._signedRequest(
-        '/openApi/swap/v3/trade/closePosition',
-        {
-          symbol: symbol.replace('_', '-'),
-          positionSide: positionSide.toUpperCase(),
-        },
-        'POST'
-      );
-
-      if (response.code === 0) {
-        console.log(`✅ Позиция закрыта: ${symbol} ${positionSide}`);
-        return response.data;
-      }
-
-      console.error(`❌ Ошибка closePosition (${response.code}): ${response.msg}`);
-      return null;
-    } catch (error) {
-      console.error(`❌ Исключение closePosition: ${error.message}`);
-      return null;
-    }
-  }
-
   // --- БАЛАНС (V2 - GET) ---
   async getBalance() {
     try {
       const response = await this._signedRequest(
-        '/openApi/swap/v2/user/balance',   // ← ИСПРАВЛЕНО: V2
+        '/openApi/swap/v2/user/balance',
         {},
         'GET'
       );
@@ -140,7 +75,7 @@ class BingX {
   async getPositions() {
     try {
       const response = await this._signedRequest(
-        '/openApi/swap/v2/user/positions',   // ← ИСПРАВЛЕНО: V2
+        '/openApi/swap/v2/user/positions',
         {},
         'GET'
       );
@@ -154,6 +89,82 @@ class BingX {
     } catch (error) {
       console.error(`❌ Исключение getPositions: ${error.message}`);
       return [];
+    }
+  }
+
+  // --- ОТКРЫТИЕ ОРДЕРА (V3 - POST с body) ---
+  async placeOrder(params) {
+    try {
+      const {
+        symbol,
+        side,
+        type = 'MARKET',
+        quantity,
+        leverage = 10,
+        positionSide = side === 'BUY' ? 'LONG' : 'SHORT',
+        stopLoss = null,
+        takeProfit = null,
+      } = params;
+
+      // Тело запроса (BingX V3 требует body)
+      const body = {
+        symbol: symbol.replace('_', '-'),
+        side: side.toUpperCase(),
+        positionSide: positionSide.toUpperCase(),
+        type: type.toUpperCase(),
+        quantity: quantity.toString(),
+        leverage: leverage.toString(),
+      };
+
+      if (stopLoss) body.stopLoss = stopLoss.toString();
+      if (takeProfit) body.takeProfit = takeProfit.toString();
+
+      // Для V3 trade/order параметры в body, подпись в URL
+      const response = await this._signedRequest(
+        '/openApi/swap/v3/trade/order',
+        {}, // пустые параметры в URL (только timestamp + signature)
+        'POST',
+        body
+      );
+
+      if (response.code === 0) {
+        console.log(`✅ Ордер открыт: ${response.data?.orderId || 'OK'}`);
+        return response.data;
+      }
+
+      console.error(`❌ Ошибка placeOrder (${response.code}): ${response.msg}`);
+      return null;
+    } catch (error) {
+      console.error(`❌ Исключение placeOrder: ${error.message}`);
+      return null;
+    }
+  }
+
+  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V3 - POST с body) ---
+  async closePosition(symbol, positionSide) {
+    try {
+      const body = {
+        symbol: symbol.replace('_', '-'),
+        positionSide: positionSide.toUpperCase(),
+      };
+
+      const response = await this._signedRequest(
+        '/openApi/swap/v3/trade/closePosition',
+        {},
+        'POST',
+        body
+      );
+
+      if (response.code === 0) {
+        console.log(`✅ Позиция закрыта: ${symbol} ${positionSide}`);
+        return response.data;
+      }
+
+      console.error(`❌ Ошибка closePosition (${response.code}): ${response.msg}`);
+      return null;
+    } catch (error) {
+      console.error(`❌ Исключение closePosition: ${error.message}`);
+      return null;
     }
   }
 
