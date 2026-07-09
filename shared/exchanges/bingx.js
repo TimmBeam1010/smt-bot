@@ -58,7 +58,6 @@ class BingX {
       });
       const data = await response.json();
       if (data.code === 0 && data.data) {
-        // Сохраняем в кеш для быстрого доступа
         for (const contract of data.data) {
           this.contractsCache[contract.symbol] = contract;
         }
@@ -72,15 +71,13 @@ class BingX {
     }
   }
 
-  // --- ПОЛУЧЕНИЕ ИНФОРМАЦИИ О КОНТРАКТЕ (с точностью) ---
+  // --- ПОЛУЧЕНИЕ ИНФОРМАЦИИ О КОНТРАКТЕ ---
   async getContractInfo(symbol) {
     try {
-      // Проверяем кеш
       if (this.contractsCache[symbol]) {
         return this.contractsCache[symbol];
       }
 
-      // Если нет в кеше — запрашиваем
       const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts?symbol=${symbol}`, {
         headers: {
           'X-BX-APIKEY': this.apiKey,
@@ -99,20 +96,28 @@ class BingX {
     }
   }
 
-  // --- ОКРУГЛЕНИЕ КОЛИЧЕСТВА С УЧЁТОМ ТОЧНОСТИ ---
+  // --- ОКРУГЛЕНИЕ КОЛИЧЕСТВА (С УЧЁТОМ ТОЧНОСТИ И МИНИМАЛЬНОГО ЛОТА) ---
   async roundQuantity(symbol, quantity) {
     try {
       const contract = await this.getContractInfo(symbol);
       if (contract && contract.quantityPrecision !== undefined) {
         const precision = contract.quantityPrecision;
         const factor = Math.pow(10, precision);
-        return Math.round(quantity * factor) / factor;
+        let rounded = Math.round(quantity * factor) / factor;
+        
+        // Проверяем минимальное количество
+        if (contract.tradeMinQuantity && rounded < contract.tradeMinQuantity) {
+          console.warn(`⚠️ Количество ${rounded} меньше минимального ${contract.tradeMinQuantity} для ${symbol}, устанавливаем минимум`);
+          rounded = contract.tradeMinQuantity;
+        }
+        
+        return rounded;
       }
-      // Если не удалось получить точность — округляем до 3 знаков
-      return Math.round(quantity * 1000) / 1000;
+      // Если не удалось получить точность — округляем до целого
+      return Math.round(quantity);
     } catch (error) {
       console.error('❌ Ошибка roundQuantity:', error.message);
-      return Math.round(quantity * 1000) / 1000;
+      return Math.round(quantity);
     }
   }
 
@@ -250,7 +255,6 @@ class BingX {
       );
 
       if (response.code === 0 && response.data) {
-        // BingX V2 возвращает массив объектов
         return response.data.map(candle => ({
           time: candle.time,
           open: parseFloat(candle.open),
