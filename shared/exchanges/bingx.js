@@ -7,7 +7,7 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
-  async _signedRequest(endpoint, params = {}, method = 'GET', body = null) {
+  async _signedRequest(endpoint, params = {}, method = 'GET') {
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
 
@@ -30,10 +30,6 @@ class BingX {
         'Content-Type': 'application/json',
       },
     };
-
-    if (method === 'POST' && body) {
-      options.body = JSON.stringify(body);
-    }
 
     const response = await fetch(url, options);
     const data = await response.json();
@@ -91,7 +87,7 @@ class BingX {
     }
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА (V2 - POST) ---
+  // --- ОТКРЫТИЕ ОРДЕРА (V2 - POST, все параметры в URL) ---
   async placeOrder(params) {
     try {
       const {
@@ -105,8 +101,8 @@ class BingX {
         takeProfit = null,
       } = params;
 
-      // V2: все параметры в body
-      const body = {
+      // Все параметры в URL
+      const orderParams = {
         symbol: symbol.replace('_', '-'),
         side: side.toUpperCase(),
         positionSide: positionSide.toUpperCase(),
@@ -115,14 +111,13 @@ class BingX {
         leverage: leverage.toString(),
       };
 
-      if (stopLoss) body.stopLoss = stopLoss.toString();
-      if (takeProfit) body.takeProfit = takeProfit.toString();
+      if (stopLoss) orderParams.stopLoss = stopLoss.toString();
+      if (takeProfit) orderParams.takeProfit = takeProfit.toString();
 
       const response = await this._signedRequest(
-        '/openApi/swap/v2/trade/order',  // ← V2
-        {},  // пустые параметры в URL
-        'POST',
-        body
+        '/openApi/swap/v2/trade/order',
+        orderParams,
+        'POST'
       );
 
       if (response.code === 0) {
@@ -138,19 +133,18 @@ class BingX {
     }
   }
 
-  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V2 - POST) ---
+  // --- ЗАКРЫТИЕ ПОЗИЦИИ (V2 - POST, все параметры в URL) ---
   async closePosition(symbol, positionSide) {
     try {
-      const body = {
+      const params = {
         symbol: symbol.replace('_', '-'),
         positionSide: positionSide.toUpperCase(),
       };
 
       const response = await this._signedRequest(
-        '/openApi/swap/v2/trade/closePosition',  // ← V2
-        {},  // пустые параметры в URL
-        'POST',
-        body
+        '/openApi/swap/v2/trade/closePosition',
+        params,
+        'POST'
       );
 
       if (response.code === 0) {
@@ -176,7 +170,7 @@ class BingX {
       };
 
       const response = await this._signedRequest(
-        '/openApi/swap/v2/quote/klines',  // ← V2
+        '/openApi/swap/v2/quote/klines',
         params,
         'GET'
       );
