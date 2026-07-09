@@ -1,14 +1,13 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  САМОИСЦЕЛЯЮЩАЯСЯ ВЕРСИЯ
-//  Создаёт symbol-config-generated.js при первом запуске
+//  САМОИСЦЕЛЯЮЩАЯСЯ ВЕРСИЯ — ИСПРАВЛЕННАЯ
 // ============================================
 
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-// --- АВТО-ГЕНЕРАЦИЯ КОНФИГА, ЕСЛИ ОН ОТСУТСТВУЕТ ---
+// --- АВТО-ГЕНЕРАЦИЯ КОНФИГА, ЕСЛИ ОН ОТСУТСТВУЕТ (ДО require) ---
 const CONFIG_PATH = path.join(__dirname, 'symbol-config-generated.js');
 
 if (!fs.existsSync(CONFIG_PATH)) {
@@ -147,7 +146,18 @@ if (!fs.existsSync(CONFIG_PATH)) {
 
   const fileContent = `// Автоматически сгенерированный fallback-конфиг
 const SYMBOL_CONFIG = ${JSON.stringify(fallbackConfig, null, 2)};
-module.exports = { SYMBOL_CONFIG };`;
+
+function getSymbolConfig(symbol) {
+  const normalized = symbol.replace(/_/g, '-');
+  const config = SYMBOL_CONFIG[normalized];
+  if (config) {
+    return config;
+  }
+  console.warn(\`⚠️ Символ \${symbol} не найден в конфиге, используем значения по умолчанию\`);
+  return { precision: 3, minQty: 0.01 };
+}
+
+module.exports = { SYMBOL_CONFIG, getSymbolConfig };`;
 
   fs.writeFileSync(CONFIG_PATH, fileContent, 'utf8');
   console.log('✅ symbol-config-generated.js создан с fallback-параметрами');
