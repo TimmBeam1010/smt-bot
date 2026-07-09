@@ -182,6 +182,37 @@
         .rr-good { color: #00ff88; }
         .rr-bad { color: #ff4444; }
 
+        .btn-open {
+            background: #00ff88;
+            color: #0a0a0a;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .btn-open:hover {
+            background: #00cc66;
+            transform: scale(1.05);
+        }
+        .btn-open:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .reasons-cell {
+            font-size: 11px;
+            color: #888;
+            max-width: 200px;
+            white-space: normal;
+            word-break: break-word;
+        }
+
         @media (max-width: 480px) {
             body { padding: 8px; }
             .header h1 { font-size: 17px; }
@@ -271,6 +302,7 @@
         </div>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         const API_BASE = 'https://bot.smtbot.pro/api';
 
@@ -280,24 +312,17 @@
         //  🔥 РАСЧЁТ TP/SL НА ОСНОВЕ ATR + SMC
         // ============================================
         function calculateDynamicTPSL(entryPrice, side, atr, leverage) {
-            // Базовые параметры
             const atrValue = atr || entryPrice * 0.02;
-            
-            // 1. ATR: SL = ATR × 1.5, TP = ATR × 2.5
             const slDistance = atrValue * 1.5;
             const tpDistance = atrValue * 2.5;
-            
-            // 2. Проверка соотношения риск/прибыль (должно быть >= 1.5)
             const riskRewardRatio = tpDistance / slDistance;
             const isConfident = riskRewardRatio >= 1.5;
-            
-            // 3. Определяем уровень уверенности
+
             let confidence = 'medium';
             if (riskRewardRatio >= 2.0) confidence = 'high';
             else if (riskRewardRatio >= 1.5) confidence = 'medium';
             else confidence = 'low';
-            
-            // 4. Рассчитываем TP и SL
+
             let stopLoss, takeProfit;
             if (side === 'LONG') {
                 stopLoss = entryPrice - slDistance;
@@ -306,24 +331,22 @@
                 stopLoss = entryPrice + slDistance;
                 takeProfit = entryPrice - tpDistance;
             }
-            
-            // 5. Проверка на ликвидацию (с учётом плеча)
+
             const liqPrice = side === 'LONG' 
                 ? entryPrice * (1 - 1/leverage) 
                 : entryPrice * (1 + 1/leverage);
-            
+
             if (side === 'LONG' && stopLoss <= liqPrice) {
                 stopLoss = liqPrice * 1.02;
             }
             if (side === 'SHORT' && stopLoss >= liqPrice) {
                 stopLoss = liqPrice * 0.98;
             }
-            
-            // 6. Пересчитываем соотношение после коррекции
+
             const finalSlDistance = Math.abs(entryPrice - stopLoss);
             const finalTpDistance = Math.abs(entryPrice - takeProfit);
             const finalRatio = finalTpDistance / finalSlDistance;
-            
+
             return {
                 stopLoss,
                 takeProfit,
@@ -336,76 +359,11 @@
             };
         }
 
-        // ===== ЗАГРУЗКА =====
-        async function fetchData() {
-            try {
-                const [statusRes, signalsRes, balanceRes, positionsRes] = await Promise.all([
-                    fetch(`${API_BASE}/status`),
-                    fetch(`${API_BASE}/signals`),
-                    fetch(`${API_BASE}/balance`),
-                    fetch(`${API_BASE}/positions`),
-                ]);
-
-                const status = await statusRes.json();
-                const signals = await signalsRes.json();
-                const balance = await balanceRes.json();
-                const positionsData = await positionsRes.json();
-
-                // --- Статус ---
-                const statusBadge = document.getElementById('statusBadge');
-                if (status.status === 'online') {
-                    statusBadge.className = 'online';
-                    statusBadge.textContent = '● ONLINE';
-                } else {
-                    statusBadge.className = 'offline';
-                    statusBadge.textContent = '● OFFLINE';
-                }
-                document.getElementById('uptime').textContent = formatUptime(status.uptime || 0);
-
-                // --- Баланс и PnL ---
-                const totalBalance = balance?.balance || 0;
-                const positions = positionsData?.positions || [];
-                const totalPnl = positions.reduce((sum, p) => sum + (p.unrealizedPnl || 0), 0);
-                
-                document.getElementById('balance').textContent = `$${totalBalance.toFixed(2)}`;
-                
-                const pnlElement = document.getElementById('totalPnl');
-                let pnlDisplay = '';
-                if (totalPnl > 0) {
-                    pnlDisplay = `+$${totalPnl.toFixed(2)}`;
-                } else if (totalPnl < 0) {
-                    pnlDisplay = `-$${Math.abs(totalPnl).toFixed(2)}`;
-                } else {
-                    pnlDisplay = `$${totalPnl.toFixed(2)}`;
-                }
-                pnlElement.textContent = pnlDisplay;
-                pnlElement.className = `value ${totalPnl >= 0 ? 'high' : 'danger'}`;
-
-                // --- Позиции ---
-                renderPositions(positions);
-                document.getElementById('positionsCount').textContent = positions.length;
-                const longs = positions.filter(p => p.side === 'LONG').length;
-                const shorts = positions.filter(p => p.side === 'SHORT').length;
-                document.getElementById('longShort').textContent = `${longs} / ${shorts}`;
-                document.getElementById('lastUpdatePositions').textContent = new Date().toLocaleTimeString();
-
-                // --- Сигналы ---
-                renderSignals(signals || []);
-                document.getElementById('activeSignalsCount').textContent = (signals || []).length;
-                document.getElementById('lastUpdateSignals').textContent = new Date().toLocaleTimeString();
-
-            } catch (e) {
-                console.error('Ошибка загрузки:', e);
-                document.getElementById('signalsContainer').innerHTML = '<div class="empty">❌ Ошибка загрузки данных</div>';
-            }
-        }
-
         // ============================================
-        //  🔥 ПОЗИЦИИ С ДИНАМИЧЕСКИМИ TP/SL
+        //  ПОЗИЦИИ
         // ============================================
         function renderPositions(positions) {
             const container = document.getElementById('positionsContainer');
-            
             if (!positions || positions.length === 0) {
                 container.innerHTML = '<div class="empty">📭 Нет открытых позиций</div>';
                 return;
@@ -436,23 +394,14 @@
                 const sideClass = p.side === 'LONG' ? 'side-long' : 'side-short';
                 const entryPrice = parseFloat(p.entryPrice) || 0;
                 const leverage = p.leverage || 30;
-                
-                // 🔥 РАСЧЁТ TP/SL С УЧЁТОМ ПРИБЫЛИ ≥ 50% ОТ МАРЖИ
-                // Используем ATR (если нет — рассчитываем как 2% от цены)
-                const atr = entryPrice * 0.02; // Запасной вариант
+                const atr = entryPrice * 0.02;
                 const levels = calculateDynamicTPSL(entryPrice, p.side, atr, leverage);
                 
                 const tp = levels.takeProfit.toFixed(4);
                 const sl = levels.stopLoss.toFixed(4);
                 const rr = levels.riskRewardRatio.toFixed(2);
                 const confidence = levels.confidence;
-                const isConfident = levels.isConfident;
-                
-                // Цвет для соотношения риск/прибыль
-                const rrClass = isConfident ? 'rr-good' : 'rr-bad';
-                
-                // Бейдж уверенности
-                const confBadge = `<span class="confidence-badge ${confidence}">${confidence.toUpperCase()}</span>`;
+                const rrClass = levels.isConfident ? 'rr-good' : 'rr-bad';
 
                 let pnlDisplay = '';
                 if (pnl > 0) pnlDisplay = `+$${pnl.toFixed(2)}`;
@@ -470,7 +419,7 @@
                         <td class="tp-color">$${tp}</td>
                         <td class="sl-color">$${sl}</td>
                         <td class="${rrClass}">${rr}</td>
-                        <td>${confBadge}</td>
+                        <td><span class="confidence-badge ${confidence}">${confidence.toUpperCase()}</span></td>
                     </tr>
                 `;
             }
@@ -479,25 +428,31 @@
             container.innerHTML = html;
         }
 
-        // ===== СИГНАЛЫ =====
+        // ============================================
+        //  СИГНАЛЫ (С ПРИЧИНАМИ И КНОПКОЙ "ОТКРЫТЬ")
+        // ============================================
         function renderSignals(signals) {
             const container = document.getElementById('signalsContainer');
-
             if (!signals || signals.length === 0) {
                 container.innerHTML = '<div class="empty">📭 Нет сигналов</div>';
                 return;
             }
 
-            const recent = signals.slice(0, 10);
+            const priority = { high: 0, medium: 1, low: 2 };
+            const sorted = [...signals].sort((a, b) => (priority[a.confidence] || 3) - (priority[b.confidence] || 3));
+            const recent = sorted.slice(0, 15);
+
             let html = `
                 <table>
                     <thead>
                         <tr>
                             <th>Символ</th>
                             <th>Направление</th>
-                            <th>Цена</th>
+                            <th>Цена входа</th>
                             <th>Уверенность</th>
+                            <th>Причины</th>
                             <th>Статус</th>
+                            <th>Действие</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -505,17 +460,22 @@
 
             for (const s of recent) {
                 const sideClass = s.side === 'LONG' ? 'side-long' : 'side-short';
-                const confClass = s.confidence === 'high' ? 'confidence-high' : (s.confidence === 'medium' ? 'confidence-medium' : 'confidence-low');
                 const statusClass = s.status === 'pending' ? 'badge pending' : (s.status === 'executed' ? 'badge executed' : 'badge failed');
                 const statusLabel = s.status === 'pending' ? '⏳' : (s.status === 'executed' ? '✅' : '❌');
+                const reasons = s.reasons && Array.isArray(s.reasons) ? s.reasons.join(', ') : (s.reasons || '—');
+                const isPending = s.status === 'pending';
 
                 html += `
                     <tr>
                         <td><strong>${s.symbol}</strong></td>
                         <td class="${sideClass}">${s.side}</td>
-                        <td>${s.entry_price || '—'}</td>
-                        <td class="${confClass}">${s.confidence || '—'}</td>
+                        <td>$${s.entry_price || '—'}</td>
+                        <td><span class="confidence-badge ${s.confidence}">${s.confidence.toUpperCase()}</span></td>
+                        <td class="reasons-cell">${reasons}</td>
                         <td><span class="${statusClass}">${statusLabel} ${s.status}</span></td>
+                        <td>
+                            ${isPending ? `<button class="btn-open" onclick="openTrade('${s.id}')" data-id="${s.id}">Открыть</button>` : '—'}
+                        </td>
                     </tr>
                 `;
             }
@@ -524,7 +484,107 @@
             container.innerHTML = html;
         }
 
-        // ===== UPTIME =====
+        // ============================================
+        //  ФУНКЦИЯ ОТКРЫТИЯ СДЕЛКИ
+        // ============================================
+        async function openTrade(signalId) {
+            if (!confirm(`Открыть сделку по сигналу #${signalId}?`)) return;
+            
+            const btn = document.querySelector(`.btn-open[data-id="${signalId}"]`);
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '⏳...';
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/execute`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ signalId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('✅ Сделка открыта!');
+                    fetchData();
+                } else {
+                    alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            } catch (e) {
+                alert('❌ Ошибка: ' + e.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Открыть';
+                }
+            }
+        }
+
+        // ============================================
+        //  ЗАГРУЗКА ДАННЫХ
+        // ============================================
+        async function fetchData() {
+            try {
+                const [statusRes, signalsRes, balanceRes, positionsRes] = await Promise.all([
+                    fetch(`${API_BASE}/status`),
+                    fetch(`${API_BASE}/signals`),
+                    fetch(`${API_BASE}/balance`),
+                    fetch(`${API_BASE}/positions`),
+                ]);
+
+                const status = await statusRes.json();
+                const signals = await signalsRes.json();
+                const balance = await balanceRes.json();
+                const positionsData = await positionsRes.json();
+
+                // Статус
+                const statusBadge = document.getElementById('statusBadge');
+                if (status.status === 'online') {
+                    statusBadge.className = 'online';
+                    statusBadge.textContent = '● ONLINE';
+                } else {
+                    statusBadge.className = 'offline';
+                    statusBadge.textContent = '● OFFLINE';
+                }
+                document.getElementById('uptime').textContent = formatUptime(status.uptime || 0);
+
+                // Баланс и PnL
+                const totalBalance = balance?.balance || 0;
+                const positions = positionsData?.positions || [];
+                const totalPnl = positions.reduce((sum, p) => sum + (p.unrealizedPnl || 0), 0);
+
+                document.getElementById('balance').textContent = `$${totalBalance.toFixed(2)}`;
+                
+                const pnlElement = document.getElementById('totalPnl');
+                let pnlDisplay = '';
+                if (totalPnl > 0) pnlDisplay = `+$${totalPnl.toFixed(2)}`;
+                else if (totalPnl < 0) pnlDisplay = `-$${Math.abs(totalPnl).toFixed(2)}`;
+                else pnlDisplay = `$${totalPnl.toFixed(2)}`;
+                pnlElement.textContent = pnlDisplay;
+                pnlElement.className = `value ${totalPnl >= 0 ? 'high' : 'danger'}`;
+
+                // Позиции
+                renderPositions(positions);
+                document.getElementById('positionsCount').textContent = positions.length;
+                const longs = positions.filter(p => p.side === 'LONG').length;
+                const shorts = positions.filter(p => p.side === 'SHORT').length;
+                document.getElementById('longShort').textContent = `${longs} / ${shorts}`;
+                document.getElementById('lastUpdatePositions').textContent = new Date().toLocaleTimeString();
+
+                // Сигналы
+                const signalsList = signals?.signals || signals || [];
+                renderSignals(signalsList);
+                document.getElementById('activeSignalsCount').textContent = signalsList.length;
+                document.getElementById('lastUpdateSignals').textContent = new Date().toLocaleTimeString();
+
+            } catch (e) {
+                console.error('Ошибка загрузки:', e);
+                document.getElementById('signalsContainer').innerHTML = '<div class="empty">❌ Ошибка загрузки данных</div>';
+            }
+        }
+
+        // ============================================
+        //  UPTIME
+        // ============================================
         function formatUptime(seconds) {
             const h = Math.floor(seconds / 3600);
             const m = Math.floor((seconds % 3600) / 60);
@@ -532,7 +592,9 @@
             return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
         }
 
-        // ===== Toggle =====
+        // ============================================
+        //  TOGGLE
+        // ============================================
         function setupToggle(btnId, key) {
             const btn = document.getElementById(btnId);
             if (!btn) return;
@@ -547,7 +609,40 @@
         setupToggle('toggleArbitrage', 'arbitrage');
         setupToggle('toggleCopy', 'copy');
 
-        // ===== ЗАПУСК =====
+        // ============================================
+        //  WEBSOCKET
+        // ============================================
+        const socket = io();
+
+        socket.on('data', (data) => {
+            if (data.balance !== undefined) {
+                document.getElementById('balance').textContent = `$${data.balance.toFixed(2)}`;
+            }
+            if (data.positions) {
+                renderPositions(data.positions);
+                document.getElementById('positionsCount').textContent = data.positions.length;
+                const longs = data.positions.filter(p => p.side === 'LONG').length;
+                const shorts = data.positions.filter(p => p.side === 'SHORT').length;
+                document.getElementById('longShort').textContent = `${longs} / ${shorts}`;
+            }
+            if (data.signals) {
+                renderSignals(data.signals);
+                document.getElementById('activeSignalsCount').textContent = data.signals.length;
+            }
+            if (data.timestamp) {
+                const time = new Date(data.timestamp).toLocaleTimeString();
+                document.getElementById('lastUpdatePositions').textContent = time;
+                document.getElementById('lastUpdateSignals').textContent = time;
+            }
+        });
+
+        socket.on('connect', () => console.log('🔌 WebSocket подключен'));
+        socket.on('disconnect', () => console.log('🔌 WebSocket отключен'));
+        socket.on('error', (err) => console.error('❌ WebSocket ошибка:', err));
+
+        // ============================================
+        //  ЗАПУСК
+        // ============================================
         fetchData();
         setInterval(fetchData, 10000);
     </script>
