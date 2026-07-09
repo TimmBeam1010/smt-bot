@@ -19,10 +19,17 @@ class SymbolManager {
 
   /**
    * Загрузить все контракты с биржи
+   * @param {object} client - Клиент биржи (уже инициализированный)
    */
-  async loadContracts(exchange, apiKey, secretKey) {
+  async loadContracts(client) {
     try {
-      const cacheKey = `${CACHE_KEY}:${exchange}`;
+      if (!client || typeof client.getContracts !== 'function') {
+        log.error('Невалидный клиент биржи');
+        return {};
+      }
+
+      // Проверяем кеш
+      const cacheKey = `${CACHE_KEY}:${client.constructor.name}`;
       const cached = cache.get(cacheKey);
       if (cached) {
         log.debug('Контракты загружены из кеша');
@@ -30,17 +37,9 @@ class SymbolManager {
         return this.contracts;
       }
 
-      // Импортируем getExchange ТОЛЬКО здесь (разрываем цикл)
-      const { getExchange } = require('./exchanges');
-      const client = getExchange(exchange, apiKey, secretKey);
-      if (!client) {
-        log.error('Биржа не поддерживается', { exchange });
-        return {};
-      }
-
       const contracts = await client.getContracts();
       if (!contracts || !Array.isArray(contracts)) {
-        log.error('Не удалось получить список контрактов', { exchange });
+        log.error('Не удалось получить список контрактов');
         return {};
       }
 
