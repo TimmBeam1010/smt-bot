@@ -1,9 +1,12 @@
-// ============================================
-//  ПОЛНЫЙ ИСПРАВЛЕННЫЙ ФАЙЛ: shared/exchanges/bingx.js
-//  ДЛЯ УСТРАНЕНИЯ ОШИБКИ 109400 (INVALID PARAMETERS)
-// ============================================
-
 const crypto = require('crypto');
+
+let symbolManager = null;
+function getSymbolManager() {
+    if (!symbolManager) {
+        symbolManager = require('../symbol-manager').symbolManager;
+    }
+    return symbolManager;
+}
 
 class BingX {
   constructor(apiKey, secretKey) {
@@ -13,11 +16,10 @@ class BingX {
   }
 
   async _signedRequest(endpoint, params = {}, method = 'GET') {
-    // Удаляем всё лишнее перед подписью
     delete params.stopLoss;
     delete params.takeProfit;
     delete params.leverage;
-    delete params.positionSide; // positionSide НЕ используется в MARKET-ордерах V2
+    delete params.positionSide;
 
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
@@ -53,7 +55,7 @@ class BingX {
     return data;
   }
 
-  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ ---
+  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ (ПРЯМОЙ ЗАПРОС) ---
   async getContracts() {
     try {
       const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts`, {
@@ -109,15 +111,22 @@ class BingX {
     try {
       const { symbol, side, type = 'MARKET', quantity } = params;
 
-      // 1. Проверяем и округляем количество
-      let roundedQuantity = Math.round(quantity * 1000) / 1000;
+      const mgr = getSymbolManager();
+      const precision = mgr.getQuantityPrecision(symbol);
+      const factor = Math.pow(10, precision);
+      let roundedQuantity = Math.round(quantity * factor) / factor;
+
+      const minQty = mgr.getMinQuantity(symbol);
+      if (minQty > 0 && roundedQuantity < minQty) {
+        console.warn(`⚠️ Количество ${roundedQuantity} меньше минимального ${minQty} для ${symbol}, устанавливаем минимум`);
+        roundedQuantity = minQty;
+      }
+
       if (roundedQuantity <= 0) {
         console.warn(`⚠️ Quantity = ${roundedQuantity}, пропускаем ордер для ${symbol}`);
         return null;
       }
 
-      // 2. Формируем параметры строго по документации V2 (без positionSide)
-      // side должен быть BUY или SELL
       const orderParams = {
         symbol: symbol.replace(/_/g, '-'),
         side: side.toUpperCase() === 'LONG' ? 'BUY' : 'SELL',
@@ -127,7 +136,6 @@ class BingX {
 
       console.log('📤 Отправка ордера (V2):', JSON.stringify(orderParams, null, 2));
 
-      // 3. Отправляем запрос
       const response = await this._signedRequest('/openApi/swap/v2/trade/order', orderParams, 'POST');
 
       if (response.code === 0) {
