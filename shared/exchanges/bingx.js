@@ -12,13 +12,11 @@ class BingX {
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
 
-    // Сортируем ключи для подписи
     const sortedKeys = Object.keys(allParams).sort();
     const queryString = sortedKeys
       .map(key => `${key}=${allParams[key]}`)
       .join('&');
 
-    // Генерируем подпись
     const signature = crypto
       .createHmac('sha256', this.secretKey)
       .update(queryString)
@@ -26,7 +24,6 @@ class BingX {
 
     const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
 
-    // Для BingX V3 — тело должно быть пустым, все параметры в URL
     const response = await fetch(url, {
       method,
       headers: {
@@ -37,7 +34,6 @@ class BingX {
 
     const data = await response.json();
 
-    // Логируем ошибки биржи
     if (data.code !== undefined && data.code !== 0) {
       console.error(`❌ BingX API Error [${data.code}]: ${data.msg || 'Unknown error'}`);
       console.error(`📡 URL: ${url}`);
@@ -60,11 +56,8 @@ class BingX {
         takeProfit = null,
       } = params;
 
-      // Форматируем символ (BONK-USDT → BONK-USDT)
-      const symbolFormatted = symbol.replace('_', '-');
-
       const orderParams = {
-        symbol: symbolFormatted,
+        symbol: symbol.replace('_', '-'),
         side: side.toUpperCase(),
         positionSide: positionSide.toUpperCase(),
         type: type.toUpperCase(),
@@ -72,15 +65,10 @@ class BingX {
         leverage: leverage.toString(),
       };
 
-      // Добавляем SL/TP если указаны
       if (stopLoss) orderParams.stopLoss = stopLoss.toString();
       if (takeProfit) orderParams.takeProfit = takeProfit.toString();
 
-      const response = await this._signedRequest(
-        '/openApi/swap/v3/trade/order',
-        orderParams,
-        'POST'
-      );
+      const response = await this._signedRequest('/openApi/swap/v3/trade/order', orderParams, 'POST');
 
       if (response.code === 0) {
         console.log(`✅ Ордер открыт: ${response.data?.orderId || 'OK'}`);
@@ -120,18 +108,22 @@ class BingX {
     }
   }
 
-  // --- БАЛАНС ---
+  // --- БАЛАНС (ИСПРАВЛЕННЫЙ) ---
   async getBalance() {
     try {
-      const response = await this._signedRequest(
-        '/openApi/swap/v3/user/balance',
-        {},
-        'POST'
-      );
+      const response = await this._signedRequest('/openApi/swap/v3/user/balance', {}, 'POST');
 
-      if (response.code === 0 && response.data?.balances) {
-        const usdtBalance = response.data.balances.find(b => b.asset === 'USDT');
-        return parseFloat(usdtBalance?.balance || 0);
+      if (response.code === 0 && Array.isArray(response.data)) {
+        // Ищем USDT в массиве
+        const usdtAsset = response.data.find(item => item.asset === 'USDT');
+        if (usdtAsset) {
+          // Используем availableMargin (свободные средства) или balance (общий баланс)
+          const balance = parseFloat(usdtAsset.availableMargin || usdtAsset.balance || 0);
+          console.log(`💰 Баланс USDT: ${balance} (available: ${usdtAsset.availableMargin}, total: ${usdtAsset.balance})`);
+          return balance;
+        }
+        console.warn('⚠️ USDT не найден в балансе');
+        return 0;
       }
 
       console.error(`❌ Ошибка getBalance (${response.code}): ${response.msg}`);
@@ -145,14 +137,9 @@ class BingX {
   // --- ПОЗИЦИИ ---
   async getPositions() {
     try {
-      const response = await this._signedRequest(
-        '/openApi/swap/v3/user/positions',
-        {},
-        'POST'
-      );
+      const response = await this._signedRequest('/openApi/swap/v3/user/positions', {}, 'POST');
 
       if (response.code === 0 && response.data) {
-        // BingX возвращает массив позиций
         return response.data;
       }
 
@@ -173,7 +160,6 @@ class BingX {
         limit: limit.toString(),
       };
 
-      // Для GET-запросов используем отдельный метод
       const timestamp = Date.now();
       const allParams = { ...params, timestamp };
       const sortedKeys = Object.keys(allParams).sort();
