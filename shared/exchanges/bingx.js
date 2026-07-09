@@ -9,9 +9,10 @@ class BingX {
 
   // Универсальный метод для подписанных запросов (V2)
   async _signedRequest(endpoint, params = {}, method = 'GET') {
-    // Принудительно удаляем stopLoss и takeProfit
+    // Принудительно удаляем всё лишнее
     delete params.stopLoss;
     delete params.takeProfit;
+    delete params.leverage; // если вдруг попадёт
 
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
@@ -59,7 +60,7 @@ class BingX {
       if (response.code === 0 && response.data && response.data.balance) {
         const balanceObj = response.data.balance;
         const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
-        console.log(`💰 Баланс USDT: ${balance} (available: ${balanceObj.availableMargin}, total: ${balanceObj.balance})`);
+        console.log(`💰 Баланс USDT: ${balance}`);
         return balance;
       }
 
@@ -102,8 +103,7 @@ class BingX {
         quantity,
       } = params;
 
-      // Формируем параметры для V2 MARKET-ордера
-      // symbol: убираем все разделители (SOL-USDT → SOLUSDT)
+      // Формируем параметры для V2
       const orderParams = {
         symbol: symbol.replace(/_/g, '').replace(/-/g, ''),
         side: side === 'LONG' ? 'BUY' : 'SELL',
@@ -111,6 +111,12 @@ class BingX {
         type: type.toUpperCase(),
         quantity: quantity.toString(),
       };
+
+      // Если quantity = 0 или меньше минимального лота — не отправляем
+      if (parseFloat(orderParams.quantity) <= 0) {
+        console.warn('⚠️ Quantity = 0, пропускаем ордер');
+        return null;
+      }
 
       console.log('📤 Отправка ордера:', JSON.stringify(orderParams, null, 2));
 
