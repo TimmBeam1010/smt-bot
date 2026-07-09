@@ -23,9 +23,10 @@ const CONFIG = {
   maxSignalsPerRun: 5,
 };
 
+// ===== SUPABASE КЛИЕНТ (ТОЛЬКО ОДИН РАЗ!) =====
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  process.env.SUPABASE_URL || 'https://sbpyuigmrqycqlrjlqqv.supabase.co',
+  process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNicHl1aWdtcnF5Y3FscmpscXF2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzc4MCwiZXhwIjoyMDk3ODYzNzgwfQ.g3C8YdCKmo53tSYLFMAv1YXh2OFsm7DZvKeIMGpnkT0'
 );
 
 let exchangeClient = null;
