@@ -125,7 +125,7 @@ app.get('/api/positions', async (req, res) => {
 app.get('/api/signals', async (req, res) => {
   try {
     const supabaseUrl = 'https://sbpyuigmrqycqlrjlqqv.supabase.co';
-    const supabaseKey = 'sb_publishable_TRnw7p3BXwp9_AbHiJR55A_yJBtEyGd';
+    const supabaseKey = process.env.SUPABASE_KEY || 'sb_publishable_TRnw7p3BXwp9_AbHiJR55A_yJBtEyGd';
     const limit = parseInt(req.query.limit) || 10;
     const userId = req.query.user_id || 11;
     
