@@ -1,5 +1,20 @@
 const crypto = require('crypto');
 
+// В начале файла, после require('crypto')
+const { getSymbolConfig } = require('../symbol-config');
+
+// В методе placeOrder:
+const config = getSymbolConfig(symbol);
+const precision = config.precision;
+const factor = Math.pow(10, precision);
+let roundedQuantity = Math.round(quantity * factor) / factor;
+
+const minQty = config.minQty;
+if (minQty > 0 && roundedQuantity < minQty) {
+  console.warn(`⚠️ Количество ${roundedQuantity} меньше минимального ${minQty} для ${symbol}, устанавливаем минимум`);
+  roundedQuantity = minQty;
+}
+
 let symbolManager = null;
 function getSymbolManager() {
     if (!symbolManager) {
