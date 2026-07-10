@@ -34,18 +34,21 @@ const CONFIG = {
 };
 
 // ============================================
-//  ДИНАМИЧЕСКАЯ ЗАГРУЗКА СИМВОЛОВ
+//  ДИНАМИЧЕСКАЯ ЗАГРУЗКА СИМВОЛОВ С ФИЛЬТРАЦИЕЙ
 // ============================================
 async function loadSymbols(client) {
     try {
-        log.info('📡 Загрузка контрактов через symbolManager...');
         await symbolManager.loadContracts(client);
+        let symbols = symbolManager.getActiveSymbols();
         
-        const contractsCount = Object.keys(symbolManager.contracts).length;
-        log.info(`🔍 Загружено контрактов: ${contractsCount}`);
-        
-        const symbols = symbolManager.getActiveSymbols();
-        log.info(`🔍 Активных символов: ${symbols.length}`);
+        // === ФИЛЬТРУЕМ ТОЛЬКО ВАЛИДНЫЕ СИМВОЛЫ ===
+        symbols = symbols.filter(s => 
+            s.endsWith('-USDT') &&           // Только USDT-пары
+            !s.includes('USDC') &&           // Исключаем USDC
+            !s.startsWith('NCSK') &&         // Исключаем NCSK (акции)
+            !s.startsWith('NCCO') &&         // Исключаем NCCO (сырьё)
+            !s.startsWith('NCFX')            // Исключаем NCFX (валюты)
+        );
         
         if (symbols && symbols.length > 0) {
             CONFIG.symbols = symbols;
