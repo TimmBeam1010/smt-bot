@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ИСПРАВЛЕННАЯ ВЕРСИЯ - УБРАН ЛИШНИЙ &
+//  ИСПРАВЛЕННАЯ ВЕРСИЯ - getBalance() FIX
 // ============================================
 
 const crypto = require('crypto');
@@ -40,7 +40,6 @@ class BingX {
       .update(paramsStr)
       .digest('hex');
 
-    // ✅ ИСПРАВЛЕНО: убираем лишний &
     if (method === 'GET') {
       const getQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
       url = `${this.baseUrl}${endpoint}?${getQuery}`;
@@ -93,19 +92,45 @@ class BingX {
   async getBalance() {
     try {
       const response = await this._signedRequest('/openApi/swap/v2/user/balance', {}, 'GET');
+      
       if (response.code === 0 && response.data) {
-        const assets = response.data || [];
-        const usdt = assets.find(a => a.asset === 'USDT');
-        if (usdt) {
-          const balance = parseFloat(usdt.availableMargin || usdt.equity || usdt.balance || 0);
-          console.log(`💰 Баланс USDT: ${balance}`);
-          return balance;
+        let assets = response.data;
+        
+        // Если data — объект с полем balance (старый формат)
+        if (!Array.isArray(assets) && assets.balance) {
+          const balanceObj = assets.balance;
+          if (balanceObj.asset === 'USDT') {
+            const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
+            console.log(`💰 Баланс USDT: ${balance}`);
+            return balance;
+          }
+          for (const key of Object.keys(assets)) {
+            if (assets[key] && assets[key].asset === 'USDT') {
+              const balance = parseFloat(assets[key].availableMargin || assets[key].balance || 0);
+              console.log(`💰 Баланс USDT: ${balance}`);
+              return balance;
+            }
+          }
+          console.log('⚠️ USDT не найден в ответе');
+          return 0;
         }
-        const balanceObj = response.data.balance || {};
-        const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
-        console.log(`💰 Баланс USDT: ${balance}`);
-        return balance;
+        
+        // Если data — массив (новый формат)
+        if (Array.isArray(assets)) {
+          const usdt = assets.find(a => a.asset === 'USDT');
+          if (usdt) {
+            const balance = parseFloat(usdt.availableMargin || usdt.equity || usdt.balance || 0);
+            console.log(`💰 Баланс USDT: ${balance}`);
+            return balance;
+          }
+          console.log('⚠️ USDT не найден в массиве');
+          return 0;
+        }
+        
+        console.log('⚠️ Неизвестный формат данных:', typeof assets);
+        return 0;
       }
+      
       console.error(`❌ Ошибка getBalance (${response.code}): ${response.msg}`);
       return 0;
     } catch (error) {
