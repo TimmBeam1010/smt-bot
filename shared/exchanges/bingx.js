@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  С ПРОВЕРКОЙ КЛЮЧЕЙ И ЛОГИРОВАНИЕМ
+//  ИСПРАВЛЕННАЯ ПОДПИСЬ ДЛЯ GET-ЗАПРОСОВ
 // ============================================
 
 const crypto = require('crypto');
@@ -32,28 +32,36 @@ class BingX {
   }
 
   async _signedRequest(endpoint, params = {}, method = 'POST') {
-    console.log('🔑 API Key в _signedRequest:', this.apiKey ? '✅ ЕСТЬ' : '❌ НЕТ');
-    console.log('🔐 Secret Key в _signedRequest:', this.secretKey ? '✅ ЕСТЬ' : '❌ НЕТ');
-
     const timestamp = await this._getServerTime();
 
-    const sortedKeys = Object.keys(params).sort();
-    const queryString = sortedKeys
-      .map(key => `${key}=${params[key]}`)
-      .join('&');
-
-    const signature = crypto
-      .createHmac('sha256', this.secretKey)
-      .update(`${queryString}&timestamp=${timestamp}`)
-      .digest('hex');
+    let signature;
+    if (method === 'GET' && Object.keys(params).length === 0) {
+      // Для GET-запросов без параметров (баланс, позиции)
+      const paramsStr = `timestamp=${timestamp}`;
+      signature = crypto
+        .createHmac('sha256', this.secretKey)
+        .update(paramsStr)
+        .digest('hex');
+      console.log('🔑 GET подпись (без параметров):', paramsStr);
+    } else {
+      // Для POST-запросов и GET с параметрами
+      const sortedKeys = Object.keys(params).sort();
+      const queryString = sortedKeys
+        .map(key => `${key}=${params[key]}`)
+        .join('&');
+      const paramsStr = queryString ? `${queryString}&timestamp=${timestamp}` : `timestamp=${timestamp}`;
+      signature = crypto
+        .createHmac('sha256', this.secretKey)
+        .update(paramsStr)
+        .digest('hex');
+      console.log('🔑 Подпись (с параметрами):', paramsStr);
+    }
 
     const url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
-
     const body = method === 'POST' ? JSON.stringify(params) : undefined;
 
     console.log('📤 URL:', url);
     console.log('📦 BODY:', body || '{}');
-    console.log('🔑 X-BX-APIKEY:', this.apiKey ? this.apiKey.substring(0, 10) + '...' : '❌ ОТСУТСТВУЕТ');
 
     const response = await fetch(url, {
       method,
