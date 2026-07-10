@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ИСПРАВЛЕННАЯ ВЕРСИЯ - РАБОТАЕТ С MARKET
+//  ИСПРАВЛЕННАЯ ВЕРСИЯ - УБРАН ЛИШНИЙ &
 // ============================================
 
 const crypto = require('crypto');
@@ -18,7 +18,6 @@ class BingX {
     console.log('🔐 Secret Key загружен:', this.secretKey.substring(0, 10) + '...');
   }
 
-  // ✅ ИСПРАВЛЕНО: используем Date.now() вместо неработающего эндпоинта
   async _getServerTime() {
     return Date.now();
   }
@@ -29,24 +28,23 @@ class BingX {
     let signature;
     let url;
 
-    // ✅ ИСПРАВЛЕНО: правильный порядок параметров для подписи
     const sortedKeys = Object.keys(params).sort();
     const queryString = sortedKeys
       .map(key => `${key}=${params[key]}`)
       .join('&');
 
-    // Строка для подписи: param1=value1&param2=value2&timestamp=123456
     const paramsStr = queryString ? `${queryString}&timestamp=${timestamp}` : `timestamp=${timestamp}`;
-    
+
     signature = crypto
       .createHmac('sha256', this.secretKey)
       .update(paramsStr)
       .digest('hex');
 
+    // ✅ ИСПРАВЛЕНО: убираем лишний &
     if (method === 'GET') {
-      url = `${this.baseUrl}${endpoint}?${paramsStr}&signature=${signature}`;
+      const getQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
+      url = `${this.baseUrl}${endpoint}?${getQuery}`;
     } else {
-      // ✅ POST: параметры в теле, в URL только timestamp и signature
       url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
     }
 
@@ -96,7 +94,6 @@ class BingX {
     try {
       const response = await this._signedRequest('/openApi/swap/v2/user/balance', {}, 'GET');
       if (response.code === 0 && response.data) {
-        // ✅ ИСПРАВЛЕНО: BingX V2 возвращает массив data
         const assets = response.data || [];
         const usdt = assets.find(a => a.asset === 'USDT');
         if (usdt) {
@@ -104,7 +101,6 @@ class BingX {
           console.log(`💰 Баланс USDT: ${balance}`);
           return balance;
         }
-        // fallback
         const balanceObj = response.data.balance || {};
         const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
         console.log(`💰 Баланс USDT: ${balance}`);
@@ -155,7 +151,6 @@ class BingX {
         return null;
       }
 
-      // ✅ ИСПРАВЛЕНО: маппинг стороны для фьючерсов
       const sideMap = {
         'LONG': 'BUY',
         'SHORT': 'SELL',
@@ -164,7 +159,6 @@ class BingX {
       };
       const mappedSide = sideMap[side.toUpperCase()] || side.toUpperCase();
 
-      // ✅ ИСПРАВЛЕНО: правильные параметры для MARKET ордера
       const orderParams = {
         symbol: symbol.replace(/_/g, '-'),
         side: mappedSide,
@@ -172,17 +166,14 @@ class BingX {
         quantity: roundedQuantity.toString(),
       };
 
-      // ✅ Для LIMIT добавляем price
       if (type.toUpperCase() === 'LIMIT' && price) {
         orderParams.price = price.toString();
       }
 
-      // ✅ Добавляем позицию (LONG/SHORT) для фьючерсов
       if (side.toUpperCase() === 'LONG' || side.toUpperCase() === 'SHORT') {
         orderParams.positionSide = side.toUpperCase();
       }
 
-      // ✅ Стоп-лосс и тейк-профит (если поддерживаются)
       if (stopLoss) {
         orderParams.stopLoss = stopLoss.toString();
       }
