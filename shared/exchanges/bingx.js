@@ -1,5 +1,6 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (V2) — ТЕЛО JSON
+//  BINGX EXCHANGE CLIENT (V2)
+//  С ПРОВЕРКОЙ КЛЮЧЕЙ И ЛОГИРОВАНИЕМ
 // ============================================
 
 const crypto = require('crypto');
@@ -7,9 +8,14 @@ const { getSymbolConfig } = require('../../shared/symbol-config');
 
 class BingX {
   constructor(apiKey, secretKey) {
+    if (!apiKey || !secretKey) {
+      throw new Error('❌ API Key или Secret Key отсутствуют!');
+    }
     this.apiKey = apiKey;
     this.secretKey = secretKey;
     this.baseUrl = 'https://open-api.bingx.com';
+    console.log('🔑 API Key загружен:', this.apiKey.substring(0, 10) + '...');
+    console.log('🔐 Secret Key загружен:', this.secretKey.substring(0, 10) + '...');
   }
 
   async _getServerTime() {
@@ -26,28 +32,28 @@ class BingX {
   }
 
   async _signedRequest(endpoint, params = {}, method = 'POST') {
+    console.log('🔑 API Key в _signedRequest:', this.apiKey ? '✅ ЕСТЬ' : '❌ НЕТ');
+    console.log('🔐 Secret Key в _signedRequest:', this.secretKey ? '✅ ЕСТЬ' : '❌ НЕТ');
+
     const timestamp = await this._getServerTime();
 
-    // Параметры для подписи (сортируем)
     const sortedKeys = Object.keys(params).sort();
     const queryString = sortedKeys
       .map(key => `${key}=${params[key]}`)
       .join('&');
 
-    // Подпись
     const signature = crypto
       .createHmac('sha256', this.secretKey)
       .update(`${queryString}&timestamp=${timestamp}`)
       .digest('hex');
 
-    // URL: только timestamp + signature
     const url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
 
-    // Тело: параметры в JSON
-    const body = JSON.stringify(params);
+    const body = method === 'POST' ? JSON.stringify(params) : undefined;
 
     console.log('📤 URL:', url);
-    console.log('📦 BODY:', body);
+    console.log('📦 BODY:', body || '{}');
+    console.log('🔑 X-BX-APIKEY:', this.apiKey ? this.apiKey.substring(0, 10) + '...' : '❌ ОТСУТСТВУЕТ');
 
     const response = await fetch(url, {
       method,
@@ -55,7 +61,7 @@ class BingX {
         'X-BX-APIKEY': this.apiKey,
         'Content-Type': 'application/json',
       },
-      body: method === 'POST' ? body : undefined,
+      body,
     });
 
     const data = await response.json();
@@ -66,6 +72,23 @@ class BingX {
     }
 
     return data;
+  }
+
+  async getContracts() {
+    try {
+      const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts`, {
+        headers: { 'X-BX-APIKEY': this.apiKey },
+      });
+      const data = await response.json();
+      if (data.code === 0 && data.data) {
+        return data.data;
+      }
+      console.error('❌ Ошибка getContracts:', data);
+      return [];
+    } catch (error) {
+      console.error('❌ Исключение getContracts:', error.message);
+      return [];
+    }
   }
 
   async getBalance() {
