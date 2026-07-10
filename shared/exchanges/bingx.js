@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ФИНАЛЬНАЯ ВЕРСИЯ - С ДЕБАГОМ
+//  ФИНАЛЬНАЯ ВЕРСИЯ - БЕЗ SL/TP ДЛЯ MARKET
 // ============================================
 
 const crypto = require('crypto');
@@ -28,34 +28,28 @@ class BingX {
     let signature;
     let url;
 
-    // 1. Сортируем ключи и формируем queryString
     const sortedKeys = Object.keys(params).sort();
     const queryString = sortedKeys
       .map(key => `${key}=${params[key]}`)
       .join('&');
 
-    // 2. Строка для подписи: queryString + timestamp
     const paramsStr = queryString ? `${queryString}&timestamp=${timestamp}` : `timestamp=${timestamp}`;
 
-    // 3. Вычисляем подпись
     signature = crypto
       .createHmac('sha256', this.secretKey)
       .update(paramsStr)
       .digest('hex');
 
-    // 4. Формируем URL
     if (method === 'GET') {
       const getQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
       url = `${this.baseUrl}${endpoint}?${getQuery}`;
     } else {
-      // ✅ ДЛЯ POST: используем ТОЧНО ТАКОЙ ЖЕ queryString + timestamp + signature
       const postQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
       url = `${this.baseUrl}${endpoint}?${postQuery}`;
     }
 
     const body = method === 'POST' ? JSON.stringify(params) : undefined;
 
-    // 🔍 ДЕБАГ
     console.log('🔍 DEBUG: params =', JSON.stringify(params, null, 2));
     console.log('🔍 DEBUG: sortedKeys =', sortedKeys);
     console.log('🔍 DEBUG: queryString =', queryString);
@@ -209,12 +203,8 @@ class BingX {
         orderParams.positionSide = side.toUpperCase();
       }
 
-      if (stopLoss) {
-        orderParams.stopLoss = stopLoss.toString();
-      }
-      if (takeProfit) {
-        orderParams.takeProfit = takeProfit.toString();
-      }
+      // ✅ SL/TP НЕ поддерживаются для MARKET — убираем!
+      // Они будут установлены отдельно через setStopLoss/TakeProfit
 
       console.log('📤 Отправка ордера:', JSON.stringify(orderParams, null, 2));
 
