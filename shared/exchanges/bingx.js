@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ИСПРАВЛЕННАЯ ВЕРСИЯ - ПРАВИЛЬНАЯ ПОДПИСЬ
+//  ПРАВИЛЬНАЯ ПОДПИСЬ - ПАРАМЕТРЫ В URL
 // ============================================
 
 const crypto = require('crypto');
@@ -28,7 +28,7 @@ class BingX {
     let signature;
     let url;
 
-    // 1. Сортируем ключи и формируем queryString для подписи
+    // 1. Сортируем ключи и формируем queryString
     const sortedKeys = Object.keys(params).sort();
     const queryString = sortedKeys
       .map(key => `${key}=${params[key]}`)
@@ -49,10 +49,13 @@ class BingX {
       const getQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
       url = `${this.baseUrl}${endpoint}?${getQuery}`;
     } else {
-      // ✅ ДЛЯ POST: в URL только timestamp и signature
-      url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
+      // ✅ ДЛЯ POST: параметры + timestamp + signature в URL
+      // Тело запроса будет пустым (или с теми же параметрами, но это не обязательно)
+      const postQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
+      url = `${this.baseUrl}${endpoint}?${postQuery}`;
     }
 
+    // ✅ Для POST тело должно быть пустым (или содержать параметры, но это не обязательно)
     const body = method === 'POST' ? JSON.stringify(params) : undefined;
 
     console.log('🔍 DEBUG: params =', JSON.stringify(params, null, 2));
