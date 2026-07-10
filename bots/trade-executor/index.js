@@ -18,8 +18,8 @@ const log = {
 //  КОНФИГУРАЦИЯ ТОРГОВЛИ
 // ============================================
 const CONFIG = {
-  maxPositions: 10,               // Максимум открытых позиций
-  riskPercent: 0.05,             // 5% от депозита на сделку
+  maxPositions: 10,
+  riskPercent: 0.05,
   leverage: 10,
   checkInterval: 30000,
   maxSignalsPerRun: 20,
@@ -188,14 +188,15 @@ async function executeTrade(signal, balance) {
 
     log.info(`📊 Размер позиции: ${positionSize} (риск: ${(CONFIG.riskPercent * 100)}%)`);
 
+    // ✅ УБИРАЕМ stopLoss и takeProfit из MARKET ордера
     const order = await exchangeClient.placeOrder({
       symbol: signal.symbol,
       side: signal.side,
       type: 'MARKET',
       quantity: positionSize,
       leverage: CONFIG.leverage,
-      stopLoss: levels.stopLoss,
-      takeProfit: levels.takeProfit,
+      // stopLoss: levels.stopLoss,   // ❌ УБРАТЬ!
+      // takeProfit: levels.takeProfit, // ❌ УБРАТЬ!
       positionSide: signal.side.toUpperCase()
     });
 
@@ -229,7 +230,11 @@ async function mainLoop() {
   try {
     if (!exchangeClient) {
       log.info('🔧 Инициализация Exchange...');
-      exchangeClient = getExchange('bingx', process.env.BINGX_API_KEY, process.env.BINGX_SECRET_KEY);
+      // ✅ ИСПРАВЛЕНО: передаём объект с ключами
+      exchangeClient = getExchange('bingx', {
+        apiKey: process.env.BINGX_API_KEY,
+        secretKey: process.env.BINGX_SECRET_KEY
+      });
       log.info('✅ Клиент инициализирован');
     }
 
