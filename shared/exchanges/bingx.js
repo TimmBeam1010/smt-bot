@@ -42,7 +42,6 @@ class BingX {
         .createHmac('sha256', this.secretKey)
         .update(paramsStr)
         .digest('hex');
-      console.log('🔑 GET подпись (без параметров):', paramsStr);
     } else {
       // Для POST-запросов и GET с параметрами
       const sortedKeys = Object.keys(params).sort();
@@ -54,7 +53,6 @@ class BingX {
         .createHmac('sha256', this.secretKey)
         .update(paramsStr)
         .digest('hex');
-      console.log('🔑 Подпись (с параметрами):', paramsStr);
     }
 
     const url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
@@ -62,6 +60,7 @@ class BingX {
 
     console.log('📤 URL:', url);
     console.log('📦 BODY:', body || '{}');
+    console.log('🔑 X-BX-APIKEY:', this.apiKey ? this.apiKey.substring(0, 10) + '...' : '❌ ОТСУТСТВУЕТ');
 
     const response = await fetch(url, {
       method,
