@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  С ПРАВИЛЬНЫМ TIMESTAMP (СЕРВЕРНОЕ ВРЕМЯ)
+//  ИСПРАВЛЕННАЯ ПОДПИСЬ (TIMESTAMP В КОНЦЕ)
 // ============================================
 
 const crypto = require('crypto');
@@ -24,31 +24,31 @@ class BingX {
     } catch (error) {
       console.error('❌ Ошибка получения серверного времени:', error.message);
     }
-    // Если не удалось — используем локальное время с запасом
     return Date.now();
   }
 
-  // --- ПОДПИСАННЫЙ ЗАПРОС (С СЕРВЕРНЫМ ВРЕМЕНЕМ) ---
+  // --- ПОДПИСАННЫЙ ЗАПРОС (TIMESTAMP В КОНЦЕ) ---
   async _signedRequest(endpoint, params = {}, method = 'GET') {
     delete params.stopLoss;
     delete params.takeProfit;
     delete params.leverage;
 
-    // Используем серверное время вместо локального
     const timestamp = await this._getServerTime();
-    const allParams = { ...params, timestamp };
 
-    const sortedKeys = Object.keys(allParams).sort();
+    // Сортируем только параметры (без timestamp)
+    const sortedKeys = Object.keys(params).sort();
     const queryString = sortedKeys
-      .map(key => `${key}=${allParams[key]}`)
+      .map(key => `${key}=${params[key]}`)
       .join('&');
 
+    // Подпись: параметры + timestamp
     const signature = crypto
       .createHmac('sha256', this.secretKey)
-      .update(queryString)
+      .update(`${queryString}&timestamp=${timestamp}`)
       .digest('hex');
 
-    const url = `${this.baseUrl}${endpoint}?${queryString}&signature=${signature}`;
+    // URL: параметры + timestamp + подпись
+    const url = `${this.baseUrl}${endpoint}?${queryString}&timestamp=${timestamp}&signature=${signature}`;
 
     const options = {
       method,
