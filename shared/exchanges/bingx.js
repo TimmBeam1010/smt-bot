@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ИСПРАВЛЕННАЯ ВЕРСИЯ — БЕЗ ПРЕОБРАЗОВАНИЯ SIDE
+//  С ПРАВИЛЬНЫМ ПРЕОБРАЗОВАНИЕМ SIDE
 // ============================================
 
 const crypto = require('crypto');
@@ -123,9 +123,16 @@ class BingX {
         return null;
       }
 
+      // ПРАВИЛЬНОЕ ПРЕОБРАЗОВАНИЕ: LONG → BUY, SHORT → SELL
+      const sideMap = {
+        'LONG': 'BUY',
+        'SHORT': 'SELL',
+      };
+      const mappedSide = sideMap[side.toUpperCase()] || side.toUpperCase();
+
       const orderParams = {
         symbol: symbol.replace(/_/g, '-'),
-        side: side.toUpperCase(), // ← ИСПРАВЛЕНО: без преобразования
+        side: mappedSide,
         type: type.toUpperCase(),
         quantity: roundedQuantity.toString(),
       };
