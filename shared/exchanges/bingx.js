@@ -48,6 +48,7 @@ class BingX {
         .createHmac('sha256', this.secretKey)
         .update(paramsStr)
         .digest('hex');
+      // ВАЖНО: добавляем queryString в URL!
       url = `${this.baseUrl}${endpoint}?${queryString}&timestamp=${timestamp}&signature=${signature}`;
     } else {
       // Для POST-запросов: параметры в теле, подпись от params + timestamp
