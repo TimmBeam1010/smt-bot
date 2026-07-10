@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ИСПРАВЛЕННАЯ ВЕРСИЯ - ПРАВИЛЬНАЯ ПОДПИСЬ
+//  ФИНАЛЬНАЯ ВЕРСИЯ - С ДЕБАГОМ
 // ============================================
 
 const crypto = require('crypto');
@@ -45,17 +45,22 @@ class BingX {
 
     // 4. Формируем URL
     if (method === 'GET') {
-      // Для GET: параметры + timestamp + signature
       const getQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
       url = `${this.baseUrl}${endpoint}?${getQuery}`;
     } else {
-      // ✅ ДЛЯ POST: В URL добавляем queryString + timestamp + signature
+      // ✅ ДЛЯ POST: используем ТОЧНО ТАКОЙ ЖЕ queryString + timestamp + signature
       const postQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
       url = `${this.baseUrl}${endpoint}?${postQuery}`;
     }
 
     const body = method === 'POST' ? JSON.stringify(params) : undefined;
 
+    // 🔍 ДЕБАГ
+    console.log('🔍 DEBUG: params =', JSON.stringify(params, null, 2));
+    console.log('🔍 DEBUG: sortedKeys =', sortedKeys);
+    console.log('🔍 DEBUG: queryString =', queryString);
+    console.log('🔍 DEBUG: paramsStr =', paramsStr);
+    console.log('🔍 DEBUG: signature =', signature);
     console.log('📤 URL:', url);
     console.log('📦 BODY:', body || '{}');
     console.log('🔑 X-BX-APIKEY:', this.apiKey ? this.apiKey.substring(0, 10) + '...' : '❌ ОТСУТСТВУЕТ');
@@ -103,7 +108,6 @@ class BingX {
       if (response.code === 0 && response.data) {
         let assets = response.data;
         
-        // Если data — объект с полем balance (старый формат)
         if (!Array.isArray(assets) && assets.balance) {
           const balanceObj = assets.balance;
           if (balanceObj.asset === 'USDT') {
@@ -122,7 +126,6 @@ class BingX {
           return 0;
         }
         
-        // Если data — массив (новый формат)
         if (Array.isArray(assets)) {
           const usdt = assets.find(a => a.asset === 'USDT');
           if (usdt) {
