@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ФИНАЛЬНАЯ ВЕРСИЯ - ПРАВИЛЬНАЯ ПОДПИСЬ
+//  ИСПРАВЛЕННАЯ ВЕРСИЯ - ПРАВИЛЬНАЯ ПОДПИСЬ
 // ============================================
 
 const crypto = require('crypto');
@@ -28,29 +28,28 @@ class BingX {
     let signature;
     let url;
 
-    // Сортируем ключи и формируем queryString для подписи
+    // 1. Сортируем ключи и формируем queryString для подписи
     const sortedKeys = Object.keys(params).sort();
     const queryString = sortedKeys
       .map(key => `${key}=${params[key]}`)
       .join('&');
 
-    // Строка для подписи: queryString + timestamp
+    // 2. Строка для подписи: queryString + timestamp
     const paramsStr = queryString ? `${queryString}&timestamp=${timestamp}` : `timestamp=${timestamp}`;
 
-    // Вычисляем подпись
+    // 3. Вычисляем подпись
     signature = crypto
       .createHmac('sha256', this.secretKey)
       .update(paramsStr)
       .digest('hex');
 
-    // Формируем URL
+    // 4. Формируем URL
     if (method === 'GET') {
       // Для GET: параметры + timestamp + signature в URL
       const getQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
       url = `${this.baseUrl}${endpoint}?${getQuery}`;
     } else {
       // ✅ ДЛЯ POST: в URL только timestamp и signature
-      // Параметры передаются в теле запроса
       url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
     }
 
