@@ -1,9 +1,9 @@
 // ============================================
-//  BINGX EXCHANGE CLIENT (V2)
-//  ИСПРАВЛЕННАЯ ПОДПИСЬ (TIMESTAMP В КОНЦЕ)
+//  BINGX EXCHANGE CLIENT (V2) — С AXIOS
 // ============================================
 
 const crypto = require('crypto');
+const axios = require('axios');
 const { getSymbolConfig } = require('../../shared/symbol-config');
 
 class BingX {
@@ -13,13 +13,11 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
-  // --- ПОЛУЧЕНИЕ СЕРВЕРНОГО ВРЕМЕНИ ---
   async _getServerTime() {
     try {
-      const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/time`);
-      const data = await response.json();
-      if (data.timestamp) {
-        return data.timestamp;
+      const response = await axios.get(`${this.baseUrl}/openApi/swap/v2/quote/time`);
+      if (response.data?.timestamp) {
+        return response.data.timestamp;
       }
     } catch (error) {
       console.error('❌ Ошибка получения серверного времени:', error.message);
@@ -27,7 +25,6 @@ class BingX {
     return Date.now();
   }
 
-  // --- ПОДПИСАННЫЙ ЗАПРОС (TIMESTAMP В КОНЦЕ) ---
   async _signedRequest(endpoint, params = {}, method = 'GET') {
     delete params.stopLoss;
     delete params.takeProfit;
@@ -35,31 +32,30 @@ class BingX {
 
     const timestamp = await this._getServerTime();
 
-    // Сортируем только параметры (без timestamp)
     const sortedKeys = Object.keys(params).sort();
     const queryString = sortedKeys
       .map(key => `${key}=${params[key]}`)
       .join('&');
 
-    // Подпись: параметры + timestamp
     const signature = crypto
       .createHmac('sha256', this.secretKey)
       .update(`${queryString}&timestamp=${timestamp}`)
       .digest('hex');
 
-    // URL: параметры + timestamp + подпись
     const url = `${this.baseUrl}${endpoint}?${queryString}&timestamp=${timestamp}&signature=${signature}`;
 
-    const options = {
+    console.log('📤 Отправка:', url);
+
+    const response = await axios({
       method,
+      url,
       headers: {
         'X-BX-APIKEY': this.apiKey,
         'Content-Type': 'application/json',
       },
-    };
+    });
 
-    const response = await fetch(url, options);
-    const data = await response.json();
+    const data = response.data;
 
     if (data.code !== undefined && data.code !== 0) {
       console.error(`❌ BingX API Error [${data.code}]: ${data.msg || 'Unknown error'}`);
@@ -69,13 +65,12 @@ class BingX {
     return data;
   }
 
-  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ ---
   async getContracts() {
     try {
-      const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts`, {
+      const response = await axios.get(`${this.baseUrl}/openApi/swap/v2/quote/contracts`, {
         headers: { 'X-BX-APIKEY': this.apiKey },
       });
-      const data = await response.json();
+      const data = response.data;
       if (data.code === 0 && data.data) {
         return data.data;
       }
@@ -87,7 +82,6 @@ class BingX {
     }
   }
 
-  // --- БАЛАНС ---
   async getBalance() {
     try {
       const response = await this._signedRequest('/openApi/swap/v2/user/balance', {}, 'GET');
@@ -105,7 +99,6 @@ class BingX {
     }
   }
 
-  // --- ПОЗИЦИИ ---
   async getPositions() {
     try {
       const response = await this._signedRequest('/openApi/swap/v2/user/positions', {}, 'GET');
@@ -120,7 +113,6 @@ class BingX {
     }
   }
 
-  // --- ОТКРЫТИЕ ОРДЕРА ---
   async placeOrder(params) {
     try {
       const { symbol, side, type = 'MARKET', quantity } = params;
@@ -150,11 +142,12 @@ class BingX {
       };
       const mappedSide = sideMap[side.toUpperCase()] || side.toUpperCase();
 
+      // Параметры в алфавитном порядке
       const orderParams = {
-        symbol: symbol.replace(/_/g, '-'),
-        side: mappedSide,
-        type: type.toUpperCase(),
         quantity: roundedQuantity.toString(),
+        side: mappedSide,
+        symbol: symbol.replace(/_/g, '-'),
+        type: type.toUpperCase(),
       };
 
       console.log('📤 Отправка ордера (V2):', JSON.stringify(orderParams, null, 2));
@@ -174,7 +167,6 @@ class BingX {
     }
   }
 
-  // --- ЗАКРЫТИЕ ПОЗИЦИИ ---
   async closePosition(symbol, positionSide) {
     try {
       const params = {
@@ -194,7 +186,6 @@ class BingX {
     }
   }
 
-  // --- СВЕЧИ ---
   async getCandles({ symbol, interval = '5m', limit = 100 }) {
     try {
       const params = {
