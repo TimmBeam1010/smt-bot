@@ -188,15 +188,13 @@ async function executeTrade(signal, balance) {
 
     log.info(`📊 Размер позиции: ${positionSize} (риск: ${(CONFIG.riskPercent * 100)}%)`);
 
-    // ✅ УБИРАЕМ stopLoss и takeProfit из MARKET ордера
+    // ✅ ИСПРАВЛЕНО: Убираем stopLoss и takeProfit из MARKET ордера
     const order = await exchangeClient.placeOrder({
       symbol: signal.symbol,
       side: signal.side,
       type: 'MARKET',
       quantity: positionSize,
       leverage: CONFIG.leverage,
-      // stopLoss: levels.stopLoss,   // ❌ УБРАТЬ!
-      // takeProfit: levels.takeProfit, // ❌ УБРАТЬ!
       positionSide: signal.side.toUpperCase()
     });
 
@@ -230,7 +228,6 @@ async function mainLoop() {
   try {
     if (!exchangeClient) {
       log.info('🔧 Инициализация Exchange...');
-      // ✅ ИСПРАВЛЕНО: передаём объект с ключами
       exchangeClient = getExchange('bingx', {
         apiKey: process.env.BINGX_API_KEY,
         secretKey: process.env.BINGX_SECRET_KEY
