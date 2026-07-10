@@ -27,7 +27,7 @@ const FALLBACK_CONFIG = {
   'FIL-USDT': { precision: 2, minQty: 0.01 },
   'AAVE-USDT': { precision: 2, minQty: 0.01 },
   'VET-USDT': { precision: 2, minQty: 1 },
-  'TRX-USDT': { precision: 2, minQty: 1 },
+  'TRX-USDT': { precision: 0, minQty: 7 }, // ← ИСПРАВЛЕНО
   'XLM-USDT': { precision: 2, minQty: 1 },
   'ALGO-USDT': { precision: 2, minQty: 1 },
   'EGLD-USDT': { precision: 2, minQty: 0.01 },
@@ -163,6 +163,10 @@ const FALLBACK_CONFIG = {
   '1000CHEEMS-USDT': { precision: 2, minQty: 1 },
   '1000000MOG-USDT': { precision: 2, minQty: 1 },
   '1000000BABYDOGE-USDT': { precision: 2, minQty: 1 },
+  'CGPT-USDT': { precision: 2, minQty: 1 },
+  'COAI-USDT': { precision: 2, minQty: 1 },
+  'NCSKNOK2USD-USDT': { precision: 3, minQty: 0.01 },
+  'NCSKCISCO2USD-USDT': { precision: 3, minQty: 0.01 },
 };
 
 /**
