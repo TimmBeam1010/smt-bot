@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ИСПОЛЬЗУЕТ АБСОЛЮТНЫЙ ПУТЬ К symbol-config.js
+//  ИСПРАВЛЕННАЯ ВЕРСИЯ — БЕЗ ПРЕОБРАЗОВАНИЯ SIDE
 // ============================================
 
 const crypto = require('crypto');
@@ -17,7 +17,6 @@ class BingX {
     delete params.stopLoss;
     delete params.takeProfit;
     delete params.leverage;
-    delete params.positionSide;
 
     const timestamp = Date.now();
     const allParams = { ...params, timestamp };
@@ -126,7 +125,7 @@ class BingX {
 
       const orderParams = {
         symbol: symbol.replace(/_/g, '-'),
-        side: side.toUpperCase() === 'LONG' ? 'BUY' : 'SELL',
+        side: side.toUpperCase(), // ← ИСПРАВЛЕНО: без преобразования
         type: type.toUpperCase(),
         quantity: roundedQuantity.toString(),
       };
