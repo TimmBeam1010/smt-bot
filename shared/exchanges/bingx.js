@@ -1,10 +1,10 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  С УЧЁТОМ ТОЧНОСТИ И МИНИМАЛЬНОГО ЛОТА
+//  ИСПОЛЬЗУЕТ АВТОМАТИЧЕСКИ СГЕНЕРИРОВАННЫЙ КОНФИГ
 // ============================================
 
 const crypto = require('crypto');
-const { getSymbolConfig } = require('../symbol-config');
+const { getSymbolConfig } = require('../symbol-config-generated');
 
 class BingX {
   constructor(apiKey, secretKey) {
@@ -105,22 +105,22 @@ class BingX {
     try {
       const { symbol, side, type = 'MARKET', quantity } = params;
 
-      // Получаем параметры символа из конфига
+      // Получаем параметры символа из сгенерированного конфига
       const config = getSymbolConfig(symbol);
       const precision = config.precision;
       const minQty = config.minQty || 0;
 
-      // Округляем количество с учётом точности
+      // Округляем до нужной точности
       const factor = Math.pow(10, precision);
       let roundedQuantity = Math.round(quantity * factor) / factor;
 
-      // Проверяем минимальное количество
+      // Проверяем минимальный лот
       if (minQty > 0 && roundedQuantity < minQty) {
         console.warn(`⚠️ Количество ${roundedQuantity} меньше минимального ${minQty} для ${symbol}, устанавливаем минимум`);
         roundedQuantity = minQty;
       }
 
-      // Ещё раз округляем после установки минимума
+      // Повторное округление после корректировки
       roundedQuantity = Math.round(roundedQuantity * factor) / factor;
 
       if (roundedQuantity <= 0) {
