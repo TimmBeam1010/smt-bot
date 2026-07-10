@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  С ПРАВИЛЬНЫМ ПРЕОБРАЗОВАНИЕМ SIDE
+//  С ПРАВИЛЬНЫМ TIMESTAMP (СЕРВЕРНОЕ ВРЕМЯ)
 // ============================================
 
 const crypto = require('crypto');
@@ -13,12 +13,29 @@ class BingX {
     this.baseUrl = 'https://open-api.bingx.com';
   }
 
+  // --- ПОЛУЧЕНИЕ СЕРВЕРНОГО ВРЕМЕНИ ---
+  async _getServerTime() {
+    try {
+      const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/time`);
+      const data = await response.json();
+      if (data.timestamp) {
+        return data.timestamp;
+      }
+    } catch (error) {
+      console.error('❌ Ошибка получения серверного времени:', error.message);
+    }
+    // Если не удалось — используем локальное время с запасом
+    return Date.now();
+  }
+
+  // --- ПОДПИСАННЫЙ ЗАПРОС (С СЕРВЕРНЫМ ВРЕМЕНЕМ) ---
   async _signedRequest(endpoint, params = {}, method = 'GET') {
     delete params.stopLoss;
     delete params.takeProfit;
     delete params.leverage;
 
-    const timestamp = Date.now();
+    // Используем серверное время вместо локального
+    const timestamp = await this._getServerTime();
     const allParams = { ...params, timestamp };
 
     const sortedKeys = Object.keys(allParams).sort();
@@ -52,6 +69,7 @@ class BingX {
     return data;
   }
 
+  // --- ПОЛУЧЕНИЕ СПИСКА КОНТРАКТОВ ---
   async getContracts() {
     try {
       const response = await fetch(`${this.baseUrl}/openApi/swap/v2/quote/contracts`, {
@@ -69,6 +87,7 @@ class BingX {
     }
   }
 
+  // --- БАЛАНС ---
   async getBalance() {
     try {
       const response = await this._signedRequest('/openApi/swap/v2/user/balance', {}, 'GET');
@@ -86,6 +105,7 @@ class BingX {
     }
   }
 
+  // --- ПОЗИЦИИ ---
   async getPositions() {
     try {
       const response = await this._signedRequest('/openApi/swap/v2/user/positions', {}, 'GET');
@@ -100,6 +120,7 @@ class BingX {
     }
   }
 
+  // --- ОТКРЫТИЕ ОРДЕРА ---
   async placeOrder(params) {
     try {
       const { symbol, side, type = 'MARKET', quantity } = params;
@@ -123,7 +144,6 @@ class BingX {
         return null;
       }
 
-      // ПРАВИЛЬНОЕ ПРЕОБРАЗОВАНИЕ: LONG → BUY, SHORT → SELL
       const sideMap = {
         'LONG': 'BUY',
         'SHORT': 'SELL',
@@ -154,6 +174,7 @@ class BingX {
     }
   }
 
+  // --- ЗАКРЫТИЕ ПОЗИЦИИ ---
   async closePosition(symbol, positionSide) {
     try {
       const params = {
@@ -173,6 +194,7 @@ class BingX {
     }
   }
 
+  // --- СВЕЧИ ---
   async getCandles({ symbol, interval = '5m', limit = 100 }) {
     try {
       const params = {
