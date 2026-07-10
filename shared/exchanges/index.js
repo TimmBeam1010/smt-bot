@@ -1,24 +1,36 @@
-// ============================================
-//  EXCHANGE FACTORY
-//  Точка входа для всех бирж
-// ============================================
+/**
+ * Exchange Factory
+ * Создает клиентов для разных бирж
+ */
 
 const { BingX } = require('./bingx');
+// const { BingXWrapper } = require('./bingx-wrapper'); // ❌ ОТКЛЮЧАЕМ
 
 /**
- * Фабрика для создания клиентов бирж
- * @param {string} exchange - Название биржи ('bingx')
- * @param {string} apiKey - API ключ
- * @param {string} secretKey - Секретный ключ
- * @returns {object} - Экземпляр клиента биржи
+ * Создать клиент для биржи
  */
-function getExchange(exchange, apiKey, secretKey) {
-  switch (exchange.toLowerCase()) {
+function createExchangeClient(exchangeName, config) {
+  const { apiKey, secretKey } = config;
+  
+  if (!apiKey || !secretKey) {
+    throw new Error(`❌ API ключи не указаны для ${exchangeName}`);
+  }
+  
+  switch (exchangeName.toLowerCase()) {
     case 'bingx':
+      // ✅ Используем НАТИВНЫЙ клиент (не обертку)
       return new BingX(apiKey, secretKey);
+      
+    // case 'bybit':
+    //   return new ByBit(apiKey, secretKey);
+      
     default:
-      throw new Error(`Unsupported exchange: ${exchange}`);
+      throw new Error(`❌ Неподдерживаемая биржа: ${exchangeName}`);
   }
 }
 
-module.exports = { getExchange };
+module.exports = {
+  createExchangeClient,
+  BingX,
+  // BingXWrapper, // ❌ ОТКЛЮЧАЕМ
+};
