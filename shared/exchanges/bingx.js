@@ -4,7 +4,7 @@
 // ============================================
 
 const crypto = require('crypto');
-const { getSymbolConfig } = require('../symbol-config-generated');
+const { getSymbolConfig } = require('../symbol-config');
 
 class BingX {
   constructor(apiKey, secretKey) {
