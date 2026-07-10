@@ -8,6 +8,7 @@ const path = require('path');
 
 // Базовый конфиг для самых популярных монет
 const FALLBACK_CONFIG = {
+  // === ОСНОВНЫЕ КРИПТОВАЛЮТЫ ===
   'SOL-USDT': { precision: 3, minQty: 0.01 },
   'XRP-USDT': { precision: 3, minQty: 0.01 },
   'ETH-USDT': { precision: 3, minQty: 0.001 },
@@ -140,8 +141,28 @@ const FALLBACK_CONFIG = {
   'TRUST-USDT': { precision: 2, minQty: 1 },
   'BAS-USDT': { precision: 2, minQty: 1 },
   'JCT-USDT': { precision: 2, minQty: 1 },
+  'PYTH-USDT': { precision: 2, minQty: 1 },
+  'BEAM-USDT': { precision: 2, minQty: 1 },
+  'BABYSHARK-USDT': { precision: 2, minQty: 1 },
+  'NCFXEUR2CAD-USDT': { precision: 3, minQty: 0.01 },
+  'NCSKBE2USD-USDT': { precision: 3, minQty: 0.01 },
   'NCSKAMC2USD-USDT': { precision: 3, minQty: 0.01 },
   'WLFI-USDT': { precision: 3, minQty: 0.01 },
+  'DOGS-USDT': { precision: 2, minQty: 1 },
+  'NEIRO-USDT': { precision: 2, minQty: 1 },
+  'NOT-USDT': { precision: 2, minQty: 1 },
+  'POPCAT-USDT': { precision: 2, minQty: 1 },
+  'GOAT-USDT': { precision: 2, minQty: 1 },
+  'MOODENG-USDT': { precision: 2, minQty: 1 },
+  'PNUT-USDT': { precision: 2, minQty: 1 },
+  'ACT-USDT': { precision: 2, minQty: 1 },
+  'CATI-USDT': { precision: 2, minQty: 1 },
+  'HMSTR-USDT': { precision: 2, minQty: 1 },
+  'NEIROCTO-USDT': { precision: 2, minQty: 1 },
+  '1000CAT-USDT': { precision: 2, minQty: 1 },
+  '1000CHEEMS-USDT': { precision: 2, minQty: 1 },
+  '1000000MOG-USDT': { precision: 2, minQty: 1 },
+  '1000000BABYDOGE-USDT': { precision: 2, minQty: 1 },
 };
 
 /**
