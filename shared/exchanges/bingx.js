@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ИСПРАВЛЕННАЯ ПОДПИСЬ ДЛЯ GET-ЗАПРОСОВ
+//  ФИНАЛЬНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ============================================
 
 const crypto = require('crypto');
@@ -35,15 +35,10 @@ class BingX {
     const timestamp = await this._getServerTime();
 
     let signature;
-    if (method === 'GET' && Object.keys(params).length === 0) {
-      // Для GET-запросов без параметров (баланс, позиции)
-      const paramsStr = `timestamp=${timestamp}`;
-      signature = crypto
-        .createHmac('sha256', this.secretKey)
-        .update(paramsStr)
-        .digest('hex');
-    } else {
-      // Для POST-запросов и GET с параметрами
+    let url;
+
+    if (method === 'GET') {
+      // Для GET-запросов: параметры в URL, подпись от timestamp + params
       const sortedKeys = Object.keys(params).sort();
       const queryString = sortedKeys
         .map(key => `${key}=${params[key]}`)
@@ -53,9 +48,21 @@ class BingX {
         .createHmac('sha256', this.secretKey)
         .update(paramsStr)
         .digest('hex');
+      url = `${this.baseUrl}${endpoint}?${queryString}&timestamp=${timestamp}&signature=${signature}`;
+    } else {
+      // Для POST-запросов: параметры в теле, подпись от params + timestamp
+      const sortedKeys = Object.keys(params).sort();
+      const queryString = sortedKeys
+        .map(key => `${key}=${params[key]}`)
+        .join('&');
+      const paramsStr = queryString ? `${queryString}&timestamp=${timestamp}` : `timestamp=${timestamp}`;
+      signature = crypto
+        .createHmac('sha256', this.secretKey)
+        .update(paramsStr)
+        .digest('hex');
+      url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
     }
 
-    const url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
     const body = method === 'POST' ? JSON.stringify(params) : undefined;
 
     console.log('📤 URL:', url);
