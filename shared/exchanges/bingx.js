@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ФИНАЛЬНАЯ ВЕРСИЯ - БЕЗ SL/TP ДЛЯ MARKET
+//  ФИНАЛЬНАЯ ВЕРСИЯ - ПРАВИЛЬНАЯ ПОДПИСЬ
 // ============================================
 
 const crypto = require('crypto');
@@ -28,24 +28,30 @@ class BingX {
     let signature;
     let url;
 
+    // Сортируем ключи и формируем queryString для подписи
     const sortedKeys = Object.keys(params).sort();
     const queryString = sortedKeys
       .map(key => `${key}=${params[key]}`)
       .join('&');
 
+    // Строка для подписи: queryString + timestamp
     const paramsStr = queryString ? `${queryString}&timestamp=${timestamp}` : `timestamp=${timestamp}`;
 
+    // Вычисляем подпись
     signature = crypto
       .createHmac('sha256', this.secretKey)
       .update(paramsStr)
       .digest('hex');
 
+    // Формируем URL
     if (method === 'GET') {
+      // Для GET: параметры + timestamp + signature в URL
       const getQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
       url = `${this.baseUrl}${endpoint}?${getQuery}`;
     } else {
-      const postQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
-      url = `${this.baseUrl}${endpoint}?${postQuery}`;
+      // ✅ ДЛЯ POST: в URL только timestamp и signature
+      // Параметры передаются в теле запроса
+      url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
     }
 
     const body = method === 'POST' ? JSON.stringify(params) : undefined;
@@ -202,9 +208,6 @@ class BingX {
       if (side.toUpperCase() === 'LONG' || side.toUpperCase() === 'SHORT') {
         orderParams.positionSide = side.toUpperCase();
       }
-
-      // ✅ SL/TP НЕ поддерживаются для MARKET — убираем!
-      // Они будут установлены отдельно через setStopLoss/TakeProfit
 
       console.log('📤 Отправка ордера:', JSON.stringify(orderParams, null, 2));
 
