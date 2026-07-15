@@ -1,6 +1,6 @@
 // ============================================
 //  BINGX EXCHANGE CLIENT (V2)
-//  ПО СТАРОМУ РАБОЧЕМУ КОДУ - ПАРАМЕТРЫ В ТЕЛЕ
+//  ФИНАЛЬНАЯ ВЕРСИЯ - GET + ПАРАМЕТРЫ В URL
 // ============================================
 
 const crypto = require('crypto');
@@ -22,11 +22,8 @@ class BingX {
     return Date.now();
   }
 
-  async _signedRequest(endpoint, params = {}, method = 'POST') {
+  async _signedRequest(endpoint, params = {}) {
     const timestamp = await this._getServerTime();
-
-    let signature;
-    let url;
 
     // 1. Сортируем ключи и формируем queryString для подписи
     const sortedKeys = Object.keys(params).sort();
@@ -38,40 +35,24 @@ class BingX {
     const paramsStr = queryString ? `${queryString}&timestamp=${timestamp}` : `timestamp=${timestamp}`;
 
     // 3. Вычисляем подпись
-    signature = crypto
+    const signature = crypto
       .createHmac('sha256', this.secretKey)
       .update(paramsStr)
       .digest('hex');
 
-    // 4. Формируем URL
-    if (method === 'GET') {
-      // Для GET: параметры + timestamp + signature в URL
-      const getQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
-      url = `${this.baseUrl}${endpoint}?${getQuery}`;
-    } else {
-      // ✅ ДЛЯ POST: в URL только timestamp и signature
-      url = `${this.baseUrl}${endpoint}?timestamp=${timestamp}&signature=${signature}`;
-    }
+    // 4. Формируем URL (параметры в URL!)
+    const fullQuery = queryString ? `${queryString}&timestamp=${timestamp}&signature=${signature}` : `timestamp=${timestamp}&signature=${signature}`;
+    const url = `${this.baseUrl}${endpoint}?${fullQuery}`;
 
-    // ✅ Тело запроса: JSON с параметрами
-    const body = method === 'POST' ? JSON.stringify(params) : undefined;
-
-    console.log('🔍 DEBUG: params =', JSON.stringify(params, null, 2));
-    console.log('🔍 DEBUG: sortedKeys =', sortedKeys);
-    console.log('🔍 DEBUG: queryString =', queryString);
-    console.log('🔍 DEBUG: paramsStr =', paramsStr);
-    console.log('🔍 DEBUG: signature =', signature);
-    console.log('📤 URL:', url);
-    console.log('📦 BODY:', body || '{}');
+    console.log('📤 GET URL:', url);
     console.log('🔑 X-BX-APIKEY:', this.apiKey ? this.apiKey.substring(0, 10) + '...' : '❌ ОТСУТСТВУЕТ');
 
     const response = await fetch(url, {
-      method,
+      method: 'GET',
       headers: {
         'X-BX-APIKEY': this.apiKey,
         'Content-Type': 'application/json',
       },
-      body,
     });
 
     const data = await response.json();
@@ -103,29 +84,12 @@ class BingX {
 
   async getBalance() {
     try {
-      const response = await this._signedRequest('/openApi/swap/v2/user/balance', {}, 'GET');
+      const response = await this._signedRequest('/openApi/swap/v2/user/balance');
       
       if (response.code === 0 && response.data) {
-        let assets = response.data;
+        const assets = response.data;
         
-        if (!Array.isArray(assets) && assets.balance) {
-          const balanceObj = assets.balance;
-          if (balanceObj.asset === 'USDT') {
-            const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
-            console.log(`💰 Баланс USDT: ${balance}`);
-            return balance;
-          }
-          for (const key of Object.keys(assets)) {
-            if (assets[key] && assets[key].asset === 'USDT') {
-              const balance = parseFloat(assets[key].availableMargin || assets[key].balance || 0);
-              console.log(`💰 Баланс USDT: ${balance}`);
-              return balance;
-            }
-          }
-          console.log('⚠️ USDT не найден в ответе');
-          return 0;
-        }
-        
+        // Если data — массив (новый формат)
         if (Array.isArray(assets)) {
           const usdt = assets.find(a => a.asset === 'USDT');
           if (usdt) {
@@ -135,6 +99,16 @@ class BingX {
           }
           console.log('⚠️ USDT не найден в массиве');
           return 0;
+        }
+        
+        // fallback (старый формат)
+        if (assets && assets.balance) {
+          const balanceObj = assets.balance;
+          if (balanceObj.asset === 'USDT') {
+            const balance = parseFloat(balanceObj.availableMargin || balanceObj.balance || 0);
+            console.log(`💰 Баланс USDT: ${balance}`);
+            return balance;
+          }
         }
         
         console.log('⚠️ Неизвестный формат данных:', typeof assets);
@@ -151,7 +125,7 @@ class BingX {
 
   async getPositions() {
     try {
-      const response = await this._signedRequest('/openApi/swap/v2/user/positions', {}, 'GET');
+      const response = await this._signedRequest('/openApi/swap/v2/user/positions');
       if (response.code === 0 && response.data) {
         return response.data;
       }
@@ -209,9 +183,9 @@ class BingX {
         orderParams.positionSide = side.toUpperCase();
       }
 
-      console.log('📤 Отправка ордера:', JSON.stringify(orderParams, null, 2));
+      console.log('📤 Отправка ордера (GET):', JSON.stringify(orderParams, null, 2));
 
-      const response = await this._signedRequest('/openApi/swap/v2/trade/order', orderParams, 'POST');
+      const response = await this._signedRequest('/openApi/swap/v2/trade/order', orderParams);
 
       if (response.code === 0) {
         console.log(`✅ Ордер открыт: ${response.data?.orderId || 'OK'}`);
@@ -232,7 +206,7 @@ class BingX {
         symbol: symbol.replace(/_/g, '-'),
         positionSide: positionSide.toUpperCase(),
       };
-      const response = await this._signedRequest('/openApi/swap/v2/trade/closePosition', params, 'POST');
+      const response = await this._signedRequest('/openApi/swap/v2/trade/closePosition', params);
       if (response.code === 0) {
         console.log(`✅ Позиция закрыта: ${symbol} ${positionSide}`);
         return response.data;
@@ -252,7 +226,7 @@ class BingX {
         interval,
         limit: limit.toString(),
       };
-      const response = await this._signedRequest('/openApi/swap/v2/quote/klines', params, 'GET');
+      const response = await this._signedRequest('/openApi/swap/v2/quote/klines', params);
       if (response.code === 0 && response.data) {
         return response.data.map(candle => ({
           time: candle.time,
